@@ -1,0 +1,2888 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>図形エディター</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101218;
+      --stage: #14161c;
+      --panel: #1b1e26;
+      --panel-2: #232733;
+      --line: rgba(255, 244, 234, 0.12);
+      --text: #f4efe9;
+      --muted: #9c948b;
+      --accent: #e7b5a4;
+      --danger: #e7a097;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: var(--stage);
+      color: var(--text);
+      font-family: "Segoe UI", "Hiragino Sans", "Yu Gothic UI", sans-serif;
+      overflow: hidden;
+    }
+
+    body {
+      display: grid;
+      grid-template-columns: 272px minmax(0, 1fr) 268px;
+      grid-template-rows: minmax(0, 1fr) 34px;
+      grid-template-areas:
+        "side view parts"
+        "side status parts";
+    }
+
+    #sidebar {
+      grid-area: side;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 14px 12px 12px;
+      background: var(--bg);
+      border-right: 1px solid var(--line);
+      overflow: auto;
+    }
+
+    #viewport {
+      grid-area: view;
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      background: var(--stage);
+    }
+
+    #viewport canvas { display: block; }
+
+    #mask-banner {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      z-index: 2;
+      transform: translateX(-50%);
+      padding: 6px 12px;
+      border: 1px solid var(--accent);
+      border-radius: 999px;
+      background: rgba(16, 18, 24, 0.88);
+      color: #ffe8df;
+      font-size: 12px;
+      pointer-events: none;
+    }
+
+    #mask-banner[hidden] { display: none; }
+
+    #mask-editor {
+      padding: 10px;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      background: rgba(231, 181, 164, 0.08);
+    }
+
+    #mask-editor[hidden] { display: none; }
+    #mask-editor h2 { color: #ffe8df; }
+    #mask-caption { margin: 0 0 8px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    #mask-list { display: grid; gap: 4px; margin-bottom: 8px; }
+    #mask-list button { justify-content: flex-start; min-height: 28px; text-align: left; }
+    #mask-list button.active { border-color: var(--accent); background: rgba(231, 181, 164, 0.16); }
+    #mask-done { background: rgba(231, 181, 164, 0.18); border-color: var(--accent); }
+    #mask-clear { color: var(--danger); }
+
+    #statusbar {
+      grid-area: status;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 12px;
+      background: #0e1015;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    #statusbar strong { color: var(--text); font-weight: 600; }
+    #statusbar .spacer { margin-left: auto; }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 650;
+    }
+
+    .kicker {
+      margin: 0 0 2px;
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+    }
+
+    h2 {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 650;
+      letter-spacing: 0.08em;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 6px;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    button:hover { border-color: rgba(231, 181, 164, 0.7); background: var(--panel-2); }
+    button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    button[aria-pressed="true"] {
+      background: rgba(231, 181, 164, 0.16);
+      border-color: var(--accent);
+      color: #ffe8df;
+    }
+    button:disabled { opacity: 0.38; cursor: default; }
+
+    button svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .history {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .history button,
+    .wide button {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 6px 8px;
+      font-size: 12px;
+    }
+
+    kbd {
+      margin-left: auto;
+      color: var(--muted);
+      font-family: inherit;
+      font-size: 10px;
+    }
+
+    .tools {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .tools button {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      min-height: 58px;
+      padding: 8px 4px;
+      font-size: 11px;
+    }
+
+    .wide { display: grid; gap: 6px; margin-top: 6px; }
+    #remove[aria-pressed="false"],
+    #remove { color: var(--danger); }
+
+    .hint {
+      margin: auto 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    #scale-modal {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 16px;
+      width: min(380px, calc(100vw - 32px));
+    }
+
+    #scale-modal::backdrop { background: rgba(8, 9, 12, 0.62); }
+
+    #scale-modal h2 {
+      margin: 0 0 6px;
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 650;
+      letter-spacing: 0;
+    }
+
+    #scale-modal p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .scale-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .scale-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+
+    .scale-row input[type="number"] {
+      width: 76px;
+      padding: 6px 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--text);
+      font: inherit;
+      font-size: 13px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .modal-actions button { padding: 7px 12px; font-size: 13px; }
+
+    #scale-apply {
+      background: rgba(231, 181, 164, 0.18);
+      border-color: var(--accent);
+    }
+
+    #morph-section[hidden] { display: none; }
+
+    .morph-ends {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    #morph-range { width: 100%; accent-color: var(--accent); }
+
+    #outliner {
+      grid-area: parts;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      background: var(--bg);
+      border-left: 1px solid var(--line);
+    }
+
+    .outliner-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 14px 12px 8px;
+    }
+
+    .outliner-head h2 { margin: 0; }
+
+    #folder-add {
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+
+    #outliner-tree {
+      overflow: auto;
+      padding: 0 8px 12px;
+      min-height: 0;
+    }
+
+    .outliner-row {
+      display: grid;
+      grid-template-columns: 18px minmax(0, 1fr) 22px 22px 22px;
+      align-items: center;
+      gap: 2px;
+      min-height: 28px;
+      padding: 1px 4px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      user-select: none;
+    }
+
+    .outliner-row.part { grid-template-columns: 18px minmax(0, 1fr) 22px 22px; }
+
+    .outliner-row.selected { background: rgba(231, 181, 164, 0.14); }
+    .outliner-row.active { border-color: rgba(231, 181, 164, 0.85); }
+    .outliner-row.focused { background: rgba(231, 181, 164, 0.08); }
+    .outliner-row.drop { border-color: var(--accent); background: rgba(231, 181, 164, 0.2); }
+    .outliner-row.hidden-part .name,
+    .outliner-row.hidden-part .side { opacity: 0.4; }
+    .outliner-row.mask-target { box-shadow: inset 2px 0 0 var(--accent); }
+    .outliner-row .mask-mark { margin-left: 6px; color: var(--accent); font-size: 10px; }
+
+    .outliner-row .name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 12px;
+    }
+
+    .outliner-row .side {
+      margin-right: 4px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .outliner-row button.icon {
+      width: 22px;
+      height: 22px;
+      padding: 2px;
+      border-color: transparent;
+      background: transparent;
+    }
+
+    .outliner-row button.icon svg { width: 14px; height: 14px; }
+    .outliner-row button.icon[aria-pressed="true"] {
+      background: transparent;
+      border-color: transparent;
+      color: var(--accent);
+    }
+
+    .outliner-row button.icon[data-action="hide"][aria-pressed="true"] { color: var(--text); }
+
+    .outliner-row .rename {
+      width: 100%;
+      padding: 2px 4px;
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      background: var(--bg);
+      color: var(--text);
+      font: inherit;
+      font-size: 12px;
+    }
+
+    @media (max-width: 980px) {
+      body {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto minmax(120px, 30vh) minmax(0, 1fr) 34px;
+        grid-template-areas:
+          "side"
+          "parts"
+          "view"
+          "status";
+      }
+
+      #sidebar {
+        max-height: 34vh;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      #outliner {
+        border-left: 0;
+        border-bottom: 1px solid var(--line);
+      }
+    }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./node_modules/three/build/three.module.js",
+      "three/addons/": "./node_modules/three/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <aside id="sidebar">
+    <header class="brand">
+      <p class="kicker">EDITOR</p>
+      <h1>図形エディター</h1>
+    </header>
+    <div class="history">
+      <button id="undo" type="button" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
+        <span>戻す</span>
+        <kbd>Ctrl+Z</kbd>
+      </button>
+      <button id="redo" type="button" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg>
+        <span>やり直す</span>
+        <kbd>Ctrl+Y</kbd>
+      </button>
+    </div>
+    <section>
+      <h2>ファイル</h2>
+      <div class="wide">
+        <button id="save" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v6h8V4M8 20v-6h8v6"/></svg>
+          保存
+          <kbd>Ctrl+S</kbd>
+        </button>
+        <button id="load" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16v3h16v-3"/><path d="M12 4v12"/><path d="m7 11 5 5 5-5"/></svg>
+          読み込み
+        </button>
+      </div>
+      <input id="file-input" type="file" accept="application/json,.json" hidden />
+    </section>
+    <section id="mask-editor" hidden>
+      <p class="kicker">MASK</p>
+      <h2>マスク編集</h2>
+      <p id="mask-caption"></p>
+      <div id="mask-list"></div>
+      <div class="wide">
+        <button id="mask-done" type="button">完了</button>
+        <button id="mask-clear" type="button">マスクを削除</button>
+      </div>
+    </section>
+    <section id="add-section">
+      <h2>追加</h2>
+      <div class="tools">
+        <button id="add-sphere" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><path d="M5 12h14M12 5c2.2 2.2 3.2 4.6 3.2 7S14.2 16.8 12 19c-2.2-2.2-3.2-4.6-3.2-7S9.8 7.2 12 5z"/></svg>
+          球
+        </button>
+        <button id="add-triangle" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 4 8 15H4z"/></svg>
+          三角
+        </button>
+        <button id="add-box" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8 12 4l8 4v8l-8 4-8-4z"/><path d="m4 8 8 4 8-4M12 12v8"/></svg>
+          四角
+        </button>
+      </div>
+      <div class="wide">
+        <button id="place-symmetry" type="button" aria-pressed="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18"/><path d="M7 7 4 12l3 5M17 7l3 5-3 5"/></svg>
+          対称配置
+        </button>
+      </div>
+    </section>
+    <section>
+      <h2>変形</h2>
+      <div class="tools">
+        <button id="mode-move" type="button" aria-pressed="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18"/><path d="m8 7 4-4 4 4M8 17l4 4 4-4M7 8 3 12l4 4M17 8l4 4-4 4"/></svg>
+          移動
+        </button>
+        <button id="mode-rotate" type="button" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg>
+          回転
+        </button>
+        <button id="mode-scale" type="button" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20 20 4"/><path d="M14 4h6v6M10 20H4v-6"/></svg>
+          拡縮
+        </button>
+      </div>
+      <div class="wide">
+        <button id="scale-all" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20 20 4"/><path d="M14 4h6v6M10 20H4v-6"/></svg>
+          全体を拡縮
+        </button>
+      </div>
+      <div class="wide">
+        <button id="lock" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="9" rx="1.5"/><path d="M8 10V8a4 4 0 0 1 8 0v2"/></svg>
+          ロック
+        </button>
+        <button id="symmetry" type="button" aria-pressed="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18"/><path d="M7 7 4 12l3 5M17 7l3 5-3 5"/></svg>
+          左右対称
+        </button>
+        <button id="remove" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 13h6l1-13"/></svg>
+          削除
+          <kbd>Del</kbd>
+        </button>
+      </div>
+    </section>
+    <section id="morph-section" hidden>
+      <h2>モーフ</h2>
+      <div class="morph-ends">
+        <span id="morph-left">三角錐</span>
+        <span id="morph-right">円錐</span>
+      </div>
+      <input id="morph-range" type="range" min="0" max="100" value="0" step="1" aria-label="モーフ" />
+    </section>
+    <section>
+      <h2>表示</h2>
+      <div class="tools">
+        <button id="front" type="button">正面</button>
+        <button id="side" type="button">側面</button>
+        <button id="back" type="button">背面</button>
+        <button id="wire" type="button" aria-pressed="false">ワイヤ</button>
+        <button id="spin" type="button" aria-pressed="false">自動</button>
+      </div>
+    </section>
+    <p class="hint">クリックで選択し、Shift+クリックで追加します。移動・回転・拡縮はボタンで重ねて選べます。移動と拡縮を同時に選ぶと、拡縮のハンドルは外側に出ます。ロックしたパーツは動きません。対称配置を切ると、追加した形は1つだけ置かれます。パーツを右クリックするとマスク編集になり、置いた図形と重なる範囲が非表示になります。右の一覧では名前の変更、フォルダ分け、ロック、非表示ができます。</p>
+  </aside>
+  <div id="viewport">
+    <div id="mask-banner" hidden>マスク編集 · <span id="mask-banner-name"></span></div>
+  </div>
+  <aside id="outliner">
+    <div class="outliner-head">
+      <h2>パーツ</h2>
+      <button id="folder-add" type="button">フォルダ</button>
+    </div>
+    <div id="outliner-tree"></div>
+  </aside>
+  <dialog id="scale-modal" aria-labelledby="scale-title">
+    <h2 id="scale-title">全体を拡縮</h2>
+    <p>床の位置を基準に、体と追加した形を同じ比率で拡大・縮小します。</p>
+    <div class="scale-row">
+      <input id="scale-range" type="range" min="10" max="400" value="100" step="1" aria-label="倍率" />
+      <input id="scale-percent" type="number" min="10" max="400" value="100" aria-label="パーセント" />
+      <span>%</span>
+    </div>
+    <div class="modal-actions">
+      <button id="scale-cancel" type="button">キャンセル</button>
+      <button id="scale-apply" type="button">適用</button>
+    </div>
+  </dialog>
+  <footer id="statusbar">
+    <span>選択 <strong id="selection-label">なし</strong></span>
+    <span id="symmetry-state">左右対称オン</span>
+    <span id="file-state"></span>
+    <span class="spacer">パーツ <strong id="part-count">0</strong></span>
+  </footer>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+    import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+    import { TransformControls } from "three/addons/controls/TransformControls.js";
+
+    const VIEWS = {
+      front: { pos: [0, 1.05, 3.15], target: [0, 0.92, 0] },
+      side: { pos: [3.15, 1.05, 0.35], target: [0, 0.92, 0] },
+      back: { pos: [0, 1.05, -3.15], target: [0, 0.92, 0] },
+      three: { pos: [1.7, 1.12, 2.45], target: [0, 0.92, 0] },
+    };
+
+    const viewport = document.getElementById("viewport");
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    viewport.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x14161c);
+    scene.fog = new THREE.Fog(0x14161c, 7, 13);
+
+    const camera = new THREE.PerspectiveCamera(38, 1, 0.05, 40);
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    const requestedView = new URLSearchParams(location.search).get("view");
+    const initialView = VIEWS[requestedView] ? requestedView : "three";
+    controls.target.set(...VIEWS[initialView].target);
+    camera.position.set(...VIEWS[initialView].pos);
+    controls.minDistance = 0.7;
+    controls.maxDistance = 8;
+    controls.maxPolarAngle = Math.PI * 0.92;
+    controls.update();
+
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.05).texture;
+    scene.environmentIntensity = 0.28;
+
+    scene.add(new THREE.HemisphereLight(0xfff4ec, 0x2a3344, 0.72));
+
+    const key = new THREE.DirectionalLight(0xfff7f1, 1.25);
+    key.position.set(2.6, 4.4, 3.1);
+    key.target.position.set(0, 0.9, 0);
+    key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048);
+    key.shadow.camera.near = 0.5;
+    key.shadow.camera.far = 12;
+    key.shadow.camera.left = -2;
+    key.shadow.camera.right = 2;
+    key.shadow.camera.top = 2;
+    key.shadow.camera.bottom = -2;
+    key.shadow.bias = -0.00025;
+    key.shadow.normalBias = 0.02;
+    scene.add(key, key.target);
+
+    const fill = new THREE.DirectionalLight(0xd5e2ff, 0.38);
+    fill.position.set(-2.8, 1.8, 2.2);
+    scene.add(fill);
+
+    const rim = new THREE.DirectionalLight(0xffc8b4, 0.62);
+    rim.position.set(-1.6, 2.6, -3.2);
+    scene.add(rim);
+
+    const bounce = new THREE.DirectionalLight(0xffd8c8, 0.22);
+    bounce.position.set(0.2, 0.2, 2.4);
+    scene.add(bounce);
+
+    const floor = new THREE.Mesh(
+      new THREE.CircleGeometry(2.4, 80),
+      new THREE.MeshStandardMaterial({ color: 0x1c2030, roughness: 0.96, metalness: 0, envMapIntensity: 0.18 })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    const skin = new THREE.MeshStandardMaterial({
+      color: 0xf2c4ab,
+      roughness: 0.62,
+      metalness: 0.02,
+      envMapIntensity: 0.22,
+    });
+    const materials = [];
+
+    const MASK_MAX = 8;
+    const MASK_LIB = `
+      uniform int maskCount;
+      uniform mat4 maskInv[${MASK_MAX}];
+      uniform int maskKind[${MASK_MAX}];
+      uniform float maskMorph[${MASK_MAX}];
+      float maskProfileRadius(float theta, float sides, float apothem, float morph, float theta0) {
+        float alpha = 3.14159265 / sides;
+        float sector = alpha * 2.0;
+        float turns = (theta - theta0) / sector;
+        float sectorIndex = floor(turns);
+        float wrapped = (turns - sectorIndex) * sector;
+        float phi = wrapped <= alpha ? wrapped : sector - wrapped;
+        float fillet = apothem * morph;
+        float cosA = cos(alpha);
+        float centerDistance = (apothem - fillet) / max(cosA, 0.0001);
+        float tangent = fillet > 0.000001 ? atan(fillet * sin(alpha), centerDistance + fillet * cosA) : 0.0;
+        if (fillet > 0.000001 && phi <= tangent + 0.00001) {
+          float disc = max(0.0, fillet * fillet - pow(centerDistance * sin(phi), 2.0));
+          return centerDistance * cos(phi) + sqrt(disc);
+        }
+        return apothem / max(cos(alpha - phi), 0.0001);
+      }
+      bool insideProfile(vec3 p, float sides, float apothem, float height, float theta0, float morph, bool cone) {
+        float halfH = height * 0.5;
+        if (p.y > halfH + 0.0004 || p.y < -halfH - 0.0004) return false;
+        float yScale = cone ? clamp((halfH - p.y) / height, 0.0, 1.0) : 1.0;
+        float allowed = maskProfileRadius(atan(p.x, p.z), sides, apothem, morph, theta0) * yScale + 0.0004;
+        return dot(p.xz, p.xz) <= allowed * allowed;
+      }
+    `;
+    const MASK_FNS = Array.from({ length: MASK_MAX }, (_, index) => `
+      bool containsMask${index}(vec3 world) {
+        vec3 p = (maskInv[${index}] * vec4(world, 1.0)).xyz;
+        int kind = maskKind[${index}];
+        float morph = clamp(maskMorph[${index}], 0.0, 1.0);
+        if (kind == 0) return dot(p, p) <= 0.00812;
+        if (kind == 2) return insideProfile(p, 3.0, 0.05, 0.2, 0.0, morph, true);
+        return insideProfile(p, 4.0, 0.08, 0.16, 0.78539816, morph, false);
+      }
+    `).join("\n");
+    const MASK_EXEC = Array.from({ length: MASK_MAX }, (_, index) => `if (maskCount > ${index} && containsMask${index}(vMaskWorld)) discard;`).join("\n");
+
+    function patchMaskVertex(source) {
+      return source
+        .replace("#include <common>", "#include <common>\nvarying vec3 vMaskWorld;")
+        .replace("#include <skinning_vertex>", "#include <skinning_vertex>\nvMaskWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;");
+    }
+
+    function patchMaskFragment(source) {
+      return source
+        .replace("#include <common>", `#include <common>\nvarying vec3 vMaskWorld;\n${MASK_LIB}\n${MASK_FNS}`)
+        .replace("#include <clipping_planes_fragment>", `#include <clipping_planes_fragment>\n${MASK_EXEC}`);
+    }
+
+    function installMaskShader(material) {
+      const uniforms = {
+        maskCount: { value: 0 },
+        maskInv: { value: Array.from({ length: MASK_MAX }, () => new THREE.Matrix4()) },
+        maskKind: { value: new Int32Array(MASK_MAX) },
+        maskMorph: { value: new Float32Array(MASK_MAX) },
+      };
+      material.userData.maskUniforms = uniforms;
+      material.customProgramCacheKey = () => "mask-discard-v1";
+      material.onBeforeCompile = (shader) => {
+        shader.uniforms.maskCount = uniforms.maskCount;
+        shader.uniforms.maskInv = uniforms.maskInv;
+        shader.uniforms.maskKind = uniforms.maskKind;
+        shader.uniforms.maskMorph = uniforms.maskMorph;
+        shader.vertexShader = patchMaskVertex(shader.vertexShader);
+        shader.fragmentShader = patchMaskFragment(shader.fragmentShader);
+      };
+      const depth = new THREE.MeshDepthMaterial();
+      depth.customProgramCacheKey = () => "mask-discard-depth-v1";
+      depth.onBeforeCompile = (shader) => {
+        shader.uniforms.maskCount = uniforms.maskCount;
+        shader.uniforms.maskInv = uniforms.maskInv;
+        shader.uniforms.maskKind = uniforms.maskKind;
+        shader.uniforms.maskMorph = uniforms.maskMorph;
+        shader.vertexShader = patchMaskVertex(shader.vertexShader);
+        shader.fragmentShader = patchMaskFragment(shader.fragmentShader);
+      };
+      material.userData.depthMaterial = depth;
+    }
+
+    function updateMaskUniforms(mesh) {
+      const uniforms = mesh.material?.userData?.maskUniforms;
+      if (!uniforms) return;
+      const masks = mesh.userData.masks || [];
+      const count = Math.min(masks.length, MASK_MAX);
+      uniforms.maskCount.value = count;
+      for (let index = 0; index < count; index += 1) {
+        const shape = masks[index];
+        shape.updateWorldMatrix(true, false);
+        uniforms.maskInv.value[index].copy(shape.matrixWorld).invert();
+        uniforms.maskKind.value[index] = shape.userData.kind === "sphere" ? 0 : shape.userData.kind === "triangle" ? 2 : 1;
+        uniforms.maskMorph.value[index] = shape.userData.morph ?? 0;
+      }
+    }
+
+    function partMaterial() {
+      const material = skin.clone();
+      installMaskShader(material);
+      materials.push(material);
+      return material;
+    }
+
+    const figure = new THREE.Group();
+    scene.add(figure);
+    const PX = 0.054;
+    const armGroups = {};
+    let nextBodyId = 0;
+    let nextShapeId = 0;
+
+    function block(parent, w, h, d, x, y, z) {
+      const radius = Math.min(w, h, d) * PX * 0.18;
+      const material = partMaterial();
+      const mesh = new THREE.Mesh(new RoundedBoxGeometry(w * PX, h * PX, d * PX, 3, radius), material);
+      mesh.customDepthMaterial = material.userData.depthMaterial;
+      mesh.position.set(x * PX, y * PX, z * PX);
+      mesh.castShadow = true;
+      mesh.userData.kind = "body";
+      mesh.userData.masks = [];
+      mesh.userData.id = `body-${nextBodyId++}`;
+      parent.add(mesh);
+      return mesh;
+    }
+
+    function mirror(build) {
+      build(1);
+      build(-1);
+    }
+
+    const centerParts = [
+      block(figure, 8.4, 8.2, 8.2, 0, 27.2, 0.1),
+      block(figure, 3.2, 2.4, 3.2, 0, 22.0, 0),
+    ];
+    const torsoParts = [
+      block(figure, 6.4, 5.8, 3.6, 0, 18.4, -0.2),
+      block(figure, 4.6, 2.8, 3.1, 0, 14.7, 0.05),
+      block(figure, 9.6, 4.6, 5.1, 0, 11.5, -0.4),
+    ];
+    centerParts.push(...torsoParts);
+    const pairedParts = [[
+      block(figure, 4.8, 4.3, 3.7, 2.2, 17.15, 2.2),
+      block(figure, 4.8, 4.3, 3.7, -2.2, 17.15, 2.2),
+    ]];
+
+    const sideParts = { 1: [], [-1]: [] };
+    mirror((s) => {
+      const arm = new THREE.Group();
+      armGroups[s] = arm;
+      arm.position.set(5.35 * s * PX, 20.2 * PX, 0.15 * PX);
+      arm.rotation.z = 0.32 * s;
+      arm.rotation.x = 0.06;
+      figure.add(arm);
+      sideParts[s].push(
+        block(arm, 2.8, 5.8, 3.2, 0, -2.5, 0),
+        block(arm, 2.5, 5.4, 2.8, 0, -7.5, 0.05),
+        block(arm, 3.0, 2.3, 2.6, 0, -11.0, 0.15),
+        block(figure, 4.5, 6.4, 4.5, 2.05 * s, 8.7, 0),
+        block(figure, 3.7, 5.8, 3.7, 2.05 * s, 3.5, 0),
+        block(figure, 4.1, 1.7, 5.8, 2.05 * s, 0.85, 0.7)
+      );
+    });
+    for (let i = 0; i < sideParts[1].length; i += 1) {
+      pairedParts.push([sideParts[1][i], sideParts[-1][i]]);
+    }
+    ["頭", "首", "胸", "腰", "腰回り"].forEach((name, index) => {
+      centerParts[index].userData.label = name;
+    });
+    for (const mesh of pairedParts[0]) mesh.userData.label = "胸";
+    ["上腕", "前腕", "手", "太もも", "すね", "足"].forEach((name, index) => {
+      sideParts[1][index].userData.label = name;
+      sideParts[-1][index].userData.label = name;
+    });
+
+    const torsoBounds = new THREE.Box3();
+    for (const part of torsoParts) torsoBounds.expandByObject(part);
+    const torsoCenter = torsoBounds.getCenter(new THREE.Vector3());
+
+    const guide = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.35, torsoBounds.getSize(new THREE.Vector3()).y + 0.35),
+      new THREE.MeshBasicMaterial({
+        color: 0xe7b5a4,
+        transparent: true,
+        opacity: 0.16,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+      })
+    );
+    guide.position.copy(torsoCenter);
+    guide.rotation.y = Math.PI / 2;
+    guide.raycast = () => {};
+    scene.add(guide);
+
+    const edits = new THREE.Group();
+    scene.add(edits);
+    const records = [
+      ...centerParts.map((mesh) => ({ mesh, mirror: null, kind: "body" })),
+      ...pairedParts.map(([mesh, mirror]) => ({ mesh, mirror, kind: "body" })),
+    ];
+    for (const record of records) {
+      for (const mesh of [record.mesh, record.mirror]) {
+        if (!mesh) continue;
+        mesh.userData.folderId = null;
+        mesh.userData.hidden = false;
+        mesh.userData.order = 0;
+        mesh.visible = true;
+      }
+    }
+    const folderPlan = [
+      { id: "folder-1", name: "頭", parentId: null, order: 0, parts: [centerParts[0], centerParts[1]] },
+      {
+        id: "folder-2",
+        name: "胴体",
+        parentId: null,
+        order: 1,
+        parts: [centerParts[2], pairedParts[0][0], pairedParts[0][1], centerParts[3], centerParts[4]],
+      },
+      { id: "folder-3", name: "腕", parentId: null, order: 2, parts: [] },
+      { id: "folder-4", name: "左腕", parentId: "folder-3", order: 0, parts: sideParts[1].slice(0, 3) },
+      { id: "folder-5", name: "右腕", parentId: "folder-3", order: 1, parts: sideParts[-1].slice(0, 3) },
+      { id: "folder-6", name: "脚", parentId: null, order: 3, parts: [] },
+      { id: "folder-7", name: "左脚", parentId: "folder-6", order: 0, parts: sideParts[1].slice(3) },
+      { id: "folder-8", name: "右脚", parentId: "folder-6", order: 1, parts: sideParts[-1].slice(3) },
+    ];
+    for (const folder of folderPlan) {
+      folder.parts.forEach((mesh, order) => {
+        mesh.userData.folderId = folder.id;
+        mesh.userData.order = order;
+      });
+    }
+    let folders = folderPlan.map(({ id, name, parentId, order }) => ({ id, name, parentId, order }));
+    let nextFolderId = folderPlan.length + 1;
+    let focusedFolder = null;
+    let renaming = null;
+    let holdChrome = false;
+    let lastRowClick = { id: "", time: 0 };
+    const collapsedFolders = new Set();
+    const sideProbe = new THREE.Vector3();
+    let selection = [];
+    let selected = null;
+    let maskTarget = null;
+    let symmetric = true;
+    let placeSymmetric = true;
+    const worldPos = new THREE.Vector3();
+    const worldQuat = new THREE.Quaternion();
+    const mirroredPos = new THREE.Vector3();
+    const mirroredQuat = new THREE.Quaternion();
+    const parentQuat = new THREE.Quaternion();
+
+    const toolModes = new Set(["translate"]);
+    const toolList = ["translate", "rotate", "scale"].map((mode) => {
+      const control = new TransformControls(camera, renderer.domElement);
+      control.setMode(mode);
+      scene.add(control.getHelper());
+      return control;
+    });
+    const toolByMode = { translate: toolList[0], rotate: toolList[1], scale: toolList[2] };
+    let activeTool = toolByMode.translate;
+    let scaleApart = false;
+    let usedGizmo = false;
+    let dragSignature = "";
+    let groupDrag = false;
+    const dragOrigins = new Map();
+    const currentPos = new THREE.Vector3();
+    const currentQuat = new THREE.Quaternion();
+    const currentScl = new THREE.Vector3();
+    const toolPointer = new THREE.Vector2();
+    const toolRaycaster = new THREE.Raycaster();
+    const scaleShift = new THREE.Vector3();
+    const scaleCenter = new THREE.Vector3();
+    const scaleSize = new THREE.Vector3();
+    const scaleRight = new THREE.Vector3();
+    const scaleUp = new THREE.Vector3();
+    const scaleGizmo = toolByMode.scale._gizmo;
+    const updateScaleGizmo = scaleGizmo.updateMatrixWorld.bind(scaleGizmo);
+    scaleGizmo.updateMatrixWorld = function (force) {
+      updateScaleGizmo(force);
+      if (!scaleApart) return;
+      let reach = 0;
+      for (const handle of this.gizmo.scale.children) reach = Math.max(reach, Math.abs(handle.scale.x));
+      if (!reach) return;
+      placeScaleHandles(this.gizmo.scale, reach, true);
+      placeScaleHandles(this.picker.scale, reach, false);
+      THREE.Object3D.prototype.updateMatrixWorld.call(this, true);
+    };
+
+    function placeScaleHandles(group, reach, visual) {
+      for (const handle of group.children) {
+        if (!handle.geometry) continue;
+        if (!handle.geometry.boundingBox) handle.geometry.computeBoundingBox();
+        const box = handle.geometry.boundingBox;
+        box.getCenter(scaleCenter);
+        box.getSize(scaleSize);
+        const longest = Math.max(scaleSize.x, scaleSize.y, scaleSize.z);
+        const shortest = Math.min(scaleSize.x, scaleSize.y, scaleSize.z);
+        if (visual && longest > 0.25 && shortest < 0.05) {
+          handle.visible = false;
+          continue;
+        }
+        const axis = handle.name === "X" || handle.name === "Y" || handle.name === "Z";
+        if (scaleCenter.lengthSq() > 1e-8) {
+          const grab = visual || !axis ? 1 : 0.36;
+          if (grab !== 1) handle.scale.multiplyScalar(grab);
+          const centerSpan = scaleCenter.length() * grab;
+          const target = axis ? 1.05 : 0.84;
+          scaleShift.copy(scaleCenter).normalize().applyQuaternion(handle.quaternion);
+          handle.position.addScaledVector(scaleShift, reach * (target - centerSpan));
+        } else if (handle.name === "XYZ") {
+          scaleRight.set(1, 0, 0).applyQuaternion(camera.quaternion);
+          scaleUp.set(0, 1, 0).applyQuaternion(camera.quaternion);
+          handle.position.addScaledVector(scaleRight, reach * 0.48);
+          handle.position.addScaledVector(scaleUp, reach * 0.48);
+        }
+      }
+    }
+
+    function pickTool(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      toolPointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      toolPointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      toolRaycaster.setFromCamera(toolPointer, camera);
+      let winner = null;
+      let distance = Infinity;
+      for (const control of toolList) {
+        if (!control.object || !toolModes.has(control.mode)) continue;
+        const hits = toolRaycaster.intersectObject(control._gizmo.picker[control.mode], true);
+        for (const hit of hits) {
+          if (!hit.object.visible || hit.distance >= distance) continue;
+          distance = hit.distance;
+          winner = control;
+        }
+      }
+      return winner;
+    }
+
+    function syncTools() {
+      scaleApart = toolModes.has("scale") && toolModes.has("translate");
+      toolByMode.scale.setSize(scaleApart ? 0.9 : 1);
+      const target = selected && selected.visible && !selected.userData.locked ? selected : null;
+      for (const control of toolList) {
+        if (target && toolModes.has(control.mode)) control.attach(target);
+        else control.detach();
+      }
+    }
+
+    for (const control of toolList) {
+      control.addEventListener("mouseDown", () => {
+        activeTool = control;
+        controls.enabled = false;
+        usedGizmo = true;
+        dragSignature = liveSignature();
+        captureDragOrigins();
+        groupDrag = true;
+      });
+      control.addEventListener("mouseUp", () => {
+        controls.enabled = true;
+        groupDrag = false;
+        dragOrigins.clear();
+        if (liveSignature() !== dragSignature) commit();
+      });
+      control.addEventListener("objectChange", () => {
+        if (groupDrag && activeTool === control) applyGroupDrag();
+        else if (activeTool === control) syncFrom(control.object);
+      });
+    }
+    renderer.domElement.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) return;
+      const winner = pickTool(event);
+      for (const control of toolList) control.enabled = !winner || control === winner;
+    }, true);
+    renderer.domElement.addEventListener("pointermove", (event) => {
+      if (event.buttons) return;
+      const winner = pickTool(event);
+      for (const control of toolList) {
+        if (control !== winner) control.axis = null;
+      }
+    });
+    renderer.domElement.addEventListener("pointerup", () => {
+      for (const control of toolList) control.enabled = true;
+    });
+    renderer.domElement.addEventListener("pointercancel", () => {
+      for (const control of toolList) control.enabled = true;
+    });
+
+    const PER_FACE = 24;
+
+    function shapeSpec(kind) {
+      if (kind === "triangle") return { sides: 3, height: 0.2, circumradius: 0.1, theta0: 0, cone: true };
+      return { sides: 4, height: 0.16, circumradius: 0.08 * Math.SQRT2, theta0: Math.PI / 4, cone: false };
+    }
+
+    function sampleProfile(theta, sides, apothem, morph, theta0) {
+      const alpha = Math.PI / sides;
+      const sector = alpha * 2;
+      const turns = (theta - theta0) / sector;
+      const sectorIndex = Math.floor(turns);
+      const wrapped = (turns - sectorIndex) * sector;
+      const vertexAngle = sectorIndex * sector;
+      const faceAngle = vertexAngle + alpha;
+      const nearStart = wrapped <= alpha;
+      const phi = nearStart ? wrapped : sector - wrapped;
+      const cornerAngle = nearStart ? vertexAngle : vertexAngle + sector;
+      const fillet = apothem * morph;
+      const cosA = Math.cos(alpha);
+      const sinA = Math.sin(alpha);
+      const centerDistance = (apothem - fillet) / cosA;
+      const tangent = fillet > 1e-6
+        ? Math.atan2(fillet * sinA, centerDistance + fillet * cosA)
+        : 0;
+      const onArc = fillet > 1e-6 && phi <= tangent + 1e-5;
+      const pointTheta = vertexAngle + wrapped + theta0;
+      let radius;
+      let nx;
+      let nz;
+      let support;
+      if (onArc) {
+        const disc = Math.max(0, fillet * fillet - (centerDistance * Math.sin(phi)) ** 2);
+        radius = centerDistance * Math.cos(phi) + Math.sqrt(disc);
+        const cornerTheta = cornerAngle + theta0;
+        const px = Math.sin(pointTheta) * radius;
+        const pz = Math.cos(pointTheta) * radius;
+        nx = px - Math.sin(cornerTheta) * centerDistance;
+        nz = pz - Math.cos(cornerTheta) * centerDistance;
+        const length = Math.hypot(nx, nz) || 1;
+        nx /= length;
+        nz /= length;
+        support = px * nx + pz * nz;
+      } else {
+        radius = apothem / Math.cos(alpha - phi);
+        const faceTheta = faceAngle + theta0;
+        nx = Math.sin(faceTheta);
+        nz = Math.cos(faceTheta);
+        support = apothem;
+      }
+      return { radius, nx, nz, support, onArc };
+    }
+
+    function buildProfile(kind, morph) {
+      const { sides, height, circumradius, theta0, cone } = shapeSpec(kind);
+      const apothem = circumradius * Math.cos(Math.PI / sides);
+      const sector = (Math.PI * 2) / sides;
+      const cols = sides * (PER_FACE + 1);
+      const positions = [];
+      const normals = [];
+      const indices = [];
+
+      function pushVertex(x, y, z, nx, ny, nz) {
+        positions.push(x, y, z);
+        const length = Math.hypot(nx, ny, nz) || 1;
+        normals.push(nx / length, ny / length, nz / length);
+      }
+
+      function addRing(y, radiusScale) {
+        for (let face = 0; face < sides; face += 1) {
+          const faceTheta = (face + 0.5) * sector + theta0;
+          const faceNx = Math.sin(faceTheta);
+          const faceNz = Math.cos(faceTheta);
+          for (let step = 0; step <= PER_FACE; step += 1) {
+            const angle = (face + step / PER_FACE) * sector;
+            const theta = angle + theta0;
+            const sample = sampleProfile(theta, sides, apothem, morph, theta0);
+            const flat = !sample.onArc;
+            const horizontal = cone ? height : 1;
+            pushVertex(
+              Math.sin(theta) * sample.radius * radiusScale,
+              y,
+              Math.cos(theta) * sample.radius * radiusScale,
+              (flat ? faceNx : sample.nx) * horizontal,
+              cone ? (flat ? apothem : sample.support) : 0,
+              (flat ? faceNz : sample.nz) * horizontal
+            );
+          }
+        }
+      }
+
+      const topY = height / 2;
+      const bottomY = -height / 2;
+      addRing(topY, cone ? 0 : 1);
+      addRing(bottomY, 1);
+      for (let face = 0; face < sides; face += 1) {
+        for (let step = 0; step < PER_FACE; step += 1) {
+          const a = face * (PER_FACE + 1) + step;
+          const d = a + 1;
+          const b = cols + a;
+          const c = cols + d;
+          indices.push(a, b, d, b, c, d);
+        }
+      }
+
+      function addCap(top) {
+        const y = top ? topY : bottomY;
+        const center = positions.length / 3;
+        pushVertex(0, y, 0, 0, top ? 1 : -1, 0);
+        const rim = positions.length / 3;
+        const count = sides * PER_FACE;
+        for (let i = 0; i < count; i += 1) {
+          const angle = (i / count) * Math.PI * 2;
+          const theta = angle + theta0;
+          const sample = sampleProfile(theta, sides, apothem, morph, theta0);
+          pushVertex(Math.sin(theta) * sample.radius, y, Math.cos(theta) * sample.radius, 0, top ? 1 : -1, 0);
+        }
+        for (let i = 0; i < count; i += 1) {
+          const current = rim + i;
+          const next = rim + (i + 1) % count;
+          if (top) indices.push(current, next, center);
+          else indices.push(next, current, center);
+        }
+      }
+
+      if (!cone) addCap(true);
+      addCap(false);
+      return {
+        positions: new Float32Array(positions),
+        normals: new Float32Array(normals),
+        indices,
+      };
+    }
+
+    function createProfileGeometry(kind) {
+      const built = buildProfile(kind, 0);
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.BufferAttribute(built.positions, 3));
+      geometry.setAttribute("normal", new THREE.BufferAttribute(built.normals, 3));
+      geometry.setIndex(built.indices);
+      geometry.computeBoundingBox();
+      geometry.computeBoundingSphere();
+      return geometry;
+    }
+
+    function setMorph(mesh, morph) {
+      const kind = mesh.userData.kind;
+      if (kind !== "triangle" && kind !== "box") return;
+      const clamped = Math.min(1, Math.max(0, morph));
+      mesh.userData.morph = clamped;
+      const built = buildProfile(kind, clamped);
+      const position = mesh.geometry.attributes.position;
+      const normal = mesh.geometry.attributes.normal;
+      position.array.set(built.positions);
+      normal.array.set(built.normals);
+      position.needsUpdate = true;
+      normal.needsUpdate = true;
+      mesh.geometry.computeBoundingBox();
+      mesh.geometry.computeBoundingSphere();
+    }
+
+    function createMesh(kind) {
+      let geometry;
+      if (kind === "sphere") geometry = new THREE.SphereGeometry(0.09, 28, 20);
+      else geometry = createProfileGeometry(kind);
+      const material = skin.clone();
+      material.wireframe = wireButton.getAttribute("aria-pressed") === "true";
+      installMaskShader(material);
+      materials.push(material);
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.customDepthMaterial = material.userData.depthMaterial;
+      mesh.castShadow = true;
+      mesh.userData.kind = kind;
+      mesh.userData.masks = [];
+      mesh.userData.label = { sphere: "球", triangle: "三角", box: "四角" }[kind];
+      if (kind !== "sphere") mesh.userData.morph = 0;
+      mesh.userData.folderId = null;
+      mesh.userData.hidden = false;
+      mesh.userData.order = nextPartOrder();
+      mesh.visible = true;
+      mesh.userData.id = `shape-${nextShapeId++}`;
+      return mesh;
+    }
+
+    function applyMirror(source, target) {
+      source.updateWorldMatrix(true, false);
+      source.getWorldPosition(worldPos);
+      source.getWorldQuaternion(worldQuat);
+      mirroredPos.set(torsoCenter.x * 2 - worldPos.x, worldPos.y, worldPos.z);
+      mirroredQuat.set(worldQuat.x, -worldQuat.y, -worldQuat.z, worldQuat.w).normalize();
+      const parent = target.parent;
+      parent.updateWorldMatrix(true, false);
+      parent.worldToLocal(mirroredPos);
+      target.position.copy(mirroredPos);
+      parent.getWorldQuaternion(parentQuat);
+      target.quaternion.copy(parentQuat.invert()).multiply(mirroredQuat);
+      target.scale.copy(source.scale);
+      if ((source.userData.kind === "triangle" || source.userData.kind === "box")
+        && target.userData.morph !== source.userData.morph) {
+        setMorph(target, source.userData.morph ?? 0);
+      }
+    }
+
+    function otherOf(record, source) {
+      if (!record || !source) return null;
+      if (source === record.mesh) return record.mirror;
+      if (source === record.mirror) return record.mesh;
+      return null;
+    }
+
+    function duplicate(source) {
+      const material = source.material.clone();
+      material.wireframe = source.material.wireframe;
+      installMaskShader(material);
+      materials.push(material);
+      const mesh = new THREE.Mesh(source.geometry.clone(), material);
+      mesh.customDepthMaterial = material.userData.depthMaterial;
+      mesh.castShadow = true;
+      mesh.userData.kind = source.userData.kind;
+      mesh.userData.masks = [];
+      mesh.userData.label = source.userData.label;
+      if (source.userData.morph != null) mesh.userData.morph = source.userData.morph;
+      mesh.userData.folderId = source.userData.folderId ?? null;
+      mesh.userData.hidden = false;
+      mesh.userData.order = (source.userData.order ?? 0) + 0.5;
+      mesh.visible = true;
+      mesh.userData.id = source.userData.kind === "body" ? `body-${nextBodyId++}` : `shape-${nextShapeId++}`;
+      return mesh;
+    }
+
+    function discard(mesh) {
+      if (!mesh) return;
+      mesh.removeFromParent();
+    }
+
+    function recordOf(mesh) {
+      return records.find((item) => item.mesh === mesh || item.mirror === mesh) ?? null;
+    }
+
+    function leaders() {
+      const driven = new Set();
+      if (symmetric) {
+        for (const record of records) {
+          if (!record.mirror) continue;
+          const left = record.mesh;
+          const right = record.mirror;
+          if (!selection.includes(left) || !selection.includes(right)) continue;
+          const leader = selected === left || selected === right ? selected : left;
+          driven.add(leader === left ? right : left);
+        }
+      }
+      return selection.filter((mesh) => !mesh.userData.locked && !driven.has(mesh));
+    }
+
+    function captureDragOrigins() {
+      dragOrigins.clear();
+      for (const mesh of leaders()) {
+        mesh.updateWorldMatrix(true, false);
+        const pos = new THREE.Vector3();
+        const quat = new THREE.Quaternion();
+        const scl = new THREE.Vector3();
+        mesh.matrixWorld.decompose(pos, quat, scl);
+        dragOrigins.set(mesh, { pos, quat, scl, localScale: mesh.scale.clone() });
+      }
+    }
+
+    function writeWorldTransform(mesh, worldPosition, worldQuaternion, localScale) {
+      const parent = mesh.parent;
+      parent.updateWorldMatrix(true, false);
+      mesh.position.copy(parent.worldToLocal(worldPosition.clone()));
+      parent.getWorldQuaternion(parentQuat);
+      mesh.quaternion.copy(parentQuat.invert()).multiply(worldQuaternion);
+      mesh.scale.copy(localScale);
+    }
+
+    function applyGroupDrag() {
+      const active = activeTool.object;
+      const origin = dragOrigins.get(active);
+      if (!origin) {
+        syncFrom(active);
+        return;
+      }
+      active.updateWorldMatrix(true, false);
+      active.matrixWorld.decompose(currentPos, currentQuat, currentScl);
+      const deltaPos = currentPos.clone().sub(origin.pos);
+      const deltaQuat = currentQuat.clone().multiply(origin.quat.clone().invert());
+      const ratio = new THREE.Vector3(
+        origin.localScale.x ? active.scale.x / origin.localScale.x : 1,
+        origin.localScale.y ? active.scale.y / origin.localScale.y : 1,
+        origin.localScale.z ? active.scale.z / origin.localScale.z : 1,
+      );
+      for (const [mesh, start] of dragOrigins) {
+        if (mesh === active) continue;
+        if (activeTool.mode === "translate") {
+          writeWorldTransform(mesh, start.pos.clone().add(deltaPos), start.quat.clone(), start.localScale);
+        } else if (activeTool.mode === "rotate") {
+          const offset = start.pos.clone().sub(origin.pos).applyQuaternion(deltaQuat);
+          writeWorldTransform(mesh, origin.pos.clone().add(offset), deltaQuat.clone().multiply(start.quat), start.localScale);
+        } else {
+          const offset = start.pos.clone().sub(origin.pos).applyQuaternion(origin.quat.clone().invert());
+          offset.multiply(ratio).applyQuaternion(origin.quat);
+          writeWorldTransform(mesh, origin.pos.clone().add(offset), start.quat.clone(), start.localScale.clone().multiply(ratio));
+        }
+      }
+      for (const mesh of dragOrigins.keys()) syncFrom(mesh);
+    }
+
+    function syncFrom(source, force = false) {
+      if (!source || source.userData.locked) return;
+      if (!symmetric && !force) return;
+      const record = records.find((item) => item.mesh === source || item.mirror === source);
+      if (!record || record.solo) return;
+      source.updateWorldMatrix(true, false);
+      source.getWorldPosition(worldPos);
+      const offset = worldPos.x - torsoCenter.x;
+      let other = otherOf(record, source);
+      if (other?.userData.locked) return;
+      if (Math.abs(offset) < 0.04) {
+        if (other) {
+          const keep = source;
+          discard(other);
+          if (record.mesh === other) record.mesh = keep;
+          record.mirror = null;
+          selection = selection.filter((mesh) => mesh !== other);
+          if (selected === other) {
+            selected = keep;
+            if (!selection.includes(keep)) selection.push(keep);
+          }
+          setSelection(selection, selected);
+        }
+        return;
+      }
+      if (!other) {
+        other = duplicate(source);
+        (source.userData.kind === "body" ? figure : edits).add(other);
+        if (source === record.mesh) record.mirror = other;
+        else record.mesh = other;
+      }
+      applyMirror(source, other);
+    }
+
+    function setSelection(meshes, active = undefined) {
+      const unique = [];
+      for (const mesh of meshes) {
+        if (mesh && !unique.includes(mesh)) unique.push(mesh);
+      }
+      selection = unique;
+      const requested = active === undefined ? unique.at(-1) ?? null : active;
+      selected = requested && selection.includes(requested) ? requested : (selection.at(-1) ?? null);
+      for (const record of records) {
+        for (const part of [record.mesh, record.mirror]) {
+          if (!part) continue;
+          const activePart = part === selected;
+          const chosen = selection.includes(part);
+          const locked = Boolean(part.userData.locked);
+          if (activePart && !locked) {
+            part.material.emissive.setHex(0x8a4b3c);
+            part.material.emissiveIntensity = 0.5;
+          } else if (chosen) {
+            part.material.emissive.setHex(locked ? 0x6e6248 : 0x3f6f8a);
+            part.material.emissiveIntensity = 0.42;
+          } else if (locked) {
+            part.material.emissive.setHex(0x243044);
+            part.material.emissiveIntensity = 0.2;
+          } else {
+            part.material.emissive.setHex(0x000000);
+            part.material.emissiveIntensity = 0;
+          }
+        }
+      }
+      syncTools();
+      paintMaskShapes();
+      refreshChrome();
+    }
+
+    function paintMaskShapes() {
+      for (const mesh of editableMeshes()) {
+        for (const shape of mesh.userData.masks || []) {
+          const on = selection.includes(shape);
+          shape.material.opacity = on ? 0.58 : 0.34;
+          shape.material.emissive.setHex(on ? 0x2a4a66 : 0x000000);
+          shape.material.emissiveIntensity = on ? 0.7 : 0;
+        }
+      }
+    }
+
+    function select(mesh) {
+      setSelection(mesh ? [mesh] : [], mesh ?? null);
+    }
+
+    function createMaskShape(kind) {
+      const geometry = kind === "sphere" ? new THREE.SphereGeometry(0.09, 28, 20) : createProfileGeometry(kind);
+      const material = new THREE.MeshStandardMaterial({
+        color: 0x8eb4ff,
+        roughness: 0.35,
+        metalness: 0,
+        transparent: true,
+        opacity: 0.34,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        envMapIntensity: 0.2,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = false;
+      mesh.receiveShadow = false;
+      mesh.renderOrder = 3;
+      mesh.userData.isMask = true;
+      mesh.userData.kind = kind;
+      mesh.userData.label = { sphere: "球", triangle: "三角", box: "四角" }[kind];
+      if (kind !== "sphere") mesh.userData.morph = 0;
+      return mesh;
+    }
+
+    function addMaskShape(kind) {
+      const target = maskTarget;
+      if (!target) return;
+      const shapes = target.userData.masks || (target.userData.masks = []);
+      if (shapes.length >= MASK_MAX) {
+        refreshChrome();
+        return;
+      }
+      const shape = createMaskShape(kind);
+      if (!target.geometry.boundingBox) target.geometry.computeBoundingBox();
+      const bounds = target.geometry.boundingBox;
+      const center = bounds.getCenter(new THREE.Vector3());
+      const size = bounds.getSize(new THREE.Vector3());
+      shape.position.copy(center);
+      shape.position.z += size.z * 0.5;
+      shape.position.x += shapes.length * size.x * 0.15;
+      shape.userData.order = shapes.length;
+      shape.visible = true;
+      target.add(shape);
+      shapes.push(shape);
+      select(shape);
+      commit();
+    }
+
+    function beginMaskEdit(mesh) {
+      if (!mesh || mesh.userData.isMask) return;
+      if (!editableMeshes().includes(mesh)) return;
+      if (maskTarget && maskTarget !== mesh) {
+        for (const shape of maskTarget.userData.masks || []) shape.visible = false;
+      }
+      if (!mesh.userData.masks) mesh.userData.masks = [];
+      maskTarget = mesh;
+      for (const shape of mesh.userData.masks) shape.visible = true;
+      select(null);
+    }
+
+    function finishMaskEdit() {
+      if (!maskTarget) return;
+      for (const shape of maskTarget.userData.masks || []) shape.visible = false;
+      maskTarget = null;
+      select(null);
+    }
+
+    function clearMask() {
+      const target = maskTarget;
+      if (!target) return;
+      for (const shape of target.userData.masks || []) shape.removeFromParent();
+      target.userData.masks = [];
+      updateMaskUniforms(target);
+      maskTarget = null;
+      select(null);
+      commit();
+    }
+
+    function addShape(kind) {
+      if (maskTarget) {
+        addMaskShape(kind);
+        return;
+      }
+      const mesh = createMesh(kind);
+      const step = records.filter((item) => item.kind !== "body").length * 0.16;
+      const x = placeSymmetric ? torsoCenter.x + 0.28 : torsoCenter.x;
+      mesh.position.set(x, torsoCenter.y + 0.06 + step, torsoCenter.z + 0.26);
+      edits.add(mesh);
+      const record = { mesh, mirror: null, kind, solo: !placeSymmetric };
+      records.push(record);
+      if (placeSymmetric) syncFrom(mesh, true);
+      select(mesh);
+      commit();
+    }
+
+    function toggleLock() {
+      if (!selection.length) return;
+      const next = selection.some((mesh) => !mesh.userData.locked);
+      for (const mesh of selection) mesh.userData.locked = next;
+      setSelection(selection, selected);
+      commit();
+    }
+
+    function removeSelected() {
+      const maskShapes = selection.filter((mesh) => mesh.userData.isMask && !mesh.userData.locked);
+      if (maskShapes.length) {
+        const drop = new Set(maskShapes);
+        for (const mesh of editableMeshes()) {
+          mesh.userData.masks = (mesh.userData.masks || []).filter((shape) => {
+            if (!drop.has(shape)) return true;
+            shape.removeFromParent();
+            return false;
+          });
+          updateMaskUniforms(mesh);
+        }
+        select(null);
+        commit();
+        return;
+      }
+      const targets = selection.filter((mesh) => !mesh.userData.locked);
+      if (!targets.length) return;
+      const removing = new Set(targets);
+      if (symmetric) {
+        for (const mesh of targets) {
+          const other = otherOf(recordOf(mesh), mesh);
+          if (other && !other.userData.locked) removing.add(other);
+        }
+      }
+      for (let index = records.length - 1; index >= 0; index -= 1) {
+        const record = records[index];
+        const dropMesh = removing.has(record.mesh);
+        const dropMirror = Boolean(record.mirror && removing.has(record.mirror));
+        if (!dropMesh && !dropMirror) continue;
+        if (dropMesh) discard(record.mesh);
+        if (dropMirror) discard(record.mirror);
+        if (dropMesh && dropMirror) records.splice(index, 1);
+        else if (dropMesh) {
+          record.mesh = record.mirror;
+          record.mirror = null;
+          if (!record.mesh) records.splice(index, 1);
+        } else record.mirror = null;
+      }
+      select(null);
+      commit();
+    }
+
+    function editableMeshes() {
+      const meshes = [];
+      for (const record of records) {
+        meshes.push(record.mesh);
+        if (record.mirror) meshes.push(record.mirror);
+      }
+      return meshes;
+    }
+
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    let press = null;
+    let rightPress = null;
+
+    function pickScene(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const masks = maskTarget ? (maskTarget.userData.masks || []).filter((shape) => shape.visible) : [];
+      const hits = raycaster.intersectObjects([...masks, ...editableMeshes().filter((mesh) => mesh.visible)], false);
+      return hits.length ? hits[0].object : null;
+    }
+
+    renderer.domElement.addEventListener("contextmenu", (event) => event.preventDefault());
+    renderer.domElement.addEventListener("pointerdown", (event) => {
+      if (event.button === 0) press = { x: event.clientX, y: event.clientY };
+      if (event.button === 2) rightPress = { x: event.clientX, y: event.clientY };
+    });
+    renderer.domElement.addEventListener("pointerup", (event) => {
+      if (event.button === 2) {
+        const start = rightPress;
+        rightPress = null;
+        if (!start) return;
+        const moved = (event.clientX - start.x) ** 2 + (event.clientY - start.y) ** 2;
+        if (moved > 16) return;
+        const hit = pickScene(event);
+        if (!hit) return;
+        if (hit.userData.isMask) {
+          select(hit);
+          return;
+        }
+        beginMaskEdit(hit);
+        return;
+      }
+      if (event.button !== 0) return;
+      if (!press || usedGizmo) {
+        usedGizmo = false;
+        press = null;
+        return;
+      }
+      const moved = (event.clientX - press.x) ** 2 + (event.clientY - press.y) ** 2;
+      press = null;
+      if (moved > 16) return;
+      const hit = pickScene(event);
+      if (!hit) {
+        if (!event.shiftKey && !event.ctrlKey && !event.metaKey) select(null);
+        return;
+      }
+      if (event.shiftKey && !event.ctrlKey && !event.metaKey) {
+        if (selection.includes(hit)) setSelection(selection, hit);
+        else setSelection([...selection, hit], hit);
+        return;
+      }
+      if (event.ctrlKey || event.metaKey) {
+        if (selection.includes(hit)) {
+          setSelection(selection.filter((mesh) => mesh !== hit), selected === hit ? null : selected);
+        } else setSelection([...selection, hit], hit);
+        return;
+      }
+      select(hit);
+    });
+
+    document.getElementById("add-sphere").addEventListener("click", () => addShape("sphere"));
+    document.getElementById("add-triangle").addEventListener("click", () => addShape("triangle"));
+    document.getElementById("add-box").addEventListener("click", () => addShape("box"));
+    document.getElementById("place-symmetry").addEventListener("click", () => {
+      placeSymmetric = !placeSymmetric;
+      document.getElementById("place-symmetry").setAttribute("aria-pressed", String(placeSymmetric));
+    });
+    document.getElementById("mask-done").addEventListener("click", finishMaskEdit);
+    document.getElementById("mask-clear").addEventListener("click", clearMask);
+    document.getElementById("mask-list").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-mask-index]");
+      if (!button || !maskTarget) return;
+      const shape = maskTarget.userData.masks?.[Number(button.dataset.maskIndex)];
+      if (shape) select(shape);
+    });
+    document.getElementById("remove").addEventListener("click", removeSelected);
+    document.getElementById("lock").addEventListener("click", toggleLock);
+
+    const symmetryButton = document.getElementById("symmetry");
+    symmetryButton.addEventListener("click", () => {
+      symmetric = symmetryButton.getAttribute("aria-pressed") !== "true";
+      symmetryButton.setAttribute("aria-pressed", String(symmetric));
+      guide.visible = symmetric;
+      if (symmetric) {
+        for (const record of records) syncFrom(record.mesh);
+      }
+      commit();
+    });
+
+    function toggleTool(mode, buttonId) {
+      if (toolModes.has(mode)) toolModes.delete(mode);
+      else toolModes.add(mode);
+      document.getElementById(buttonId).setAttribute("aria-pressed", String(toolModes.has(mode)));
+      syncTools();
+    }
+    document.getElementById("mode-move").addEventListener("click", () => toggleTool("translate", "mode-move"));
+    document.getElementById("mode-rotate").addEventListener("click", () => toggleTool("rotate", "mode-rotate"));
+    document.getElementById("mode-scale").addEventListener("click", () => toggleTool("scale", "mode-scale"));
+
+    const history = [];
+    let historyIndex = -1;
+    let restoring = false;
+    let baseline = null;
+    let overallScale = null;
+    const STORAGE_KEY = "geometric-figure-viewer";
+
+    function transformSignature(mesh) {
+      return [
+        mesh.position.x, mesh.position.y, mesh.position.z,
+        mesh.quaternion.x, mesh.quaternion.y, mesh.quaternion.z, mesh.quaternion.w,
+        mesh.scale.x, mesh.scale.y, mesh.scale.z,
+        mesh.userData.morph ?? -1,
+        mesh.userData.locked ? 1 : 0,
+        mesh.userData.hidden ? 1 : 0,
+        mesh.userData.order ?? 0,
+      ].map((value) => value.toFixed(5)).join(",")
+        + `|${mesh.userData.folderId ?? "-"}|${mesh.userData.label ?? ""}`;
+    }
+
+    function maskSignature(mesh) {
+      return (mesh.userData.masks || []).map((shape) => `${shape.uuid}:${transformSignature(shape)}`).join("~");
+    }
+
+    function liveSignature() {
+      const folderSig = folders.map((folder) => [
+        folder.id,
+        folder.parentId ?? "-",
+        folder.order,
+        folder.name,
+      ].join(",")).join(";");
+      return `${records.map((record) => [
+        record.kind,
+        record.solo ? 1 : 0,
+        record.mesh.uuid,
+        transformSignature(record.mesh),
+        maskSignature(record.mesh),
+        record.mirror ? `${record.mirror.uuid}:${transformSignature(record.mirror)}:${maskSignature(record.mirror)}` : "-",
+      ].join("|")).join(";")}|folders:${folderSig}`;
+    }
+
+    function packMesh(mesh) {
+      return {
+        mesh,
+        parent: mesh.parent,
+        position: mesh.position.clone(),
+        quaternion: mesh.quaternion.clone(),
+        scale: mesh.scale.clone(),
+        morph: mesh.userData.morph ?? null,
+        locked: Boolean(mesh.userData.locked),
+        hidden: Boolean(mesh.userData.hidden),
+        folderId: mesh.userData.folderId ?? null,
+        order: mesh.userData.order ?? 0,
+        label: mesh.userData.label ?? "",
+      };
+    }
+
+    function packMaskList(mesh) {
+      return (mesh.userData.masks || []).map((shape) => ({
+        mesh: shape,
+        parent: shape.parent,
+        position: shape.position.clone(),
+        quaternion: shape.quaternion.clone(),
+        scale: shape.scale.clone(),
+        morph: shape.userData.morph ?? null,
+        locked: false,
+        hidden: false,
+        folderId: null,
+        order: shape.userData.order ?? 0,
+        label: shape.userData.label ?? "",
+      }));
+    }
+
+    function packState() {
+      return {
+        signature: `${liveSignature()}|${symmetric ? 1 : 0}|${[torsoCenter.x, torsoCenter.y, torsoCenter.z, guide.position.x, guide.position.y, guide.position.z, guide.scale.x, guide.scale.y, guide.scale.z].map((value) => value.toFixed(5)).join(",")}`,
+        symmetric,
+        selected,
+        selection: selection.slice(),
+        torso: torsoCenter.clone(),
+        guidePosition: guide.position.clone(),
+        guideScale: guide.scale.clone(),
+        folders: folders.map((folder) => ({ ...folder })),
+        records: records.map((record) => ({
+          kind: record.kind,
+          solo: Boolean(record.solo),
+          mesh: packMesh(record.mesh),
+          meshMasks: packMaskList(record.mesh),
+          mirror: record.mirror ? packMesh(record.mirror) : null,
+          mirrorMasks: record.mirror ? packMaskList(record.mirror) : null,
+        })),
+      };
+    }
+
+    function restoreMesh(packed) {
+      if (packed.mesh.parent !== packed.parent) packed.parent.add(packed.mesh);
+      packed.mesh.position.copy(packed.position);
+      packed.mesh.quaternion.copy(packed.quaternion);
+      packed.mesh.scale.copy(packed.scale);
+      packed.mesh.userData.locked = Boolean(packed.locked);
+      packed.mesh.userData.hidden = Boolean(packed.hidden);
+      packed.mesh.visible = !packed.mesh.userData.hidden;
+      packed.mesh.userData.folderId = packed.folderId ?? null;
+      packed.mesh.userData.order = packed.order ?? 0;
+      if (packed.label) packed.mesh.userData.label = packed.label;
+      if (packed.morph != null) setMorph(packed.mesh, packed.morph);
+    }
+
+    function restoreMasks(target, packedList) {
+      const next = [];
+      for (const packed of packedList || []) {
+        if (!packed?.mesh) continue;
+        restoreMesh(packed);
+        packed.mesh.visible = maskTarget === target;
+        next.push(packed.mesh);
+      }
+      const keep = new Set(next);
+      for (const shape of target.userData.masks || []) {
+        if (!keep.has(shape)) shape.removeFromParent();
+      }
+      target.userData.masks = next;
+      updateMaskUniforms(target);
+    }
+
+    function applyState(state) {
+      restoring = true;
+      const keep = new Set();
+      for (const record of state.records) {
+        keep.add(record.mesh.mesh);
+        for (const packed of record.meshMasks || []) keep.add(packed.mesh);
+        if (record.mirror) {
+          keep.add(record.mirror.mesh);
+          for (const packed of record.mirrorMasks || []) keep.add(packed.mesh);
+        }
+      }
+      for (const record of records) {
+        if (!keep.has(record.mesh)) record.mesh.removeFromParent();
+        if (record.mirror && !keep.has(record.mirror)) record.mirror.removeFromParent();
+      }
+      records.length = 0;
+      for (const record of state.records) {
+        restoreMesh(record.mesh);
+        restoreMasks(record.mesh.mesh, record.meshMasks);
+        if (record.mirror) {
+          restoreMesh(record.mirror);
+          restoreMasks(record.mirror.mesh, record.mirrorMasks);
+        }
+        records.push({
+          kind: record.kind,
+          solo: Boolean(record.solo),
+          mesh: record.mesh.mesh,
+          mirror: record.mirror ? record.mirror.mesh : null,
+        });
+      }
+      symmetric = state.symmetric;
+      symmetryButton.setAttribute("aria-pressed", String(symmetric));
+      guide.visible = symmetric;
+      if (state.torso) torsoCenter.copy(state.torso);
+      if (state.guidePosition) guide.position.copy(state.guidePosition);
+      if (state.guideScale) guide.scale.copy(state.guideScale);
+      folders = (state.folders ?? []).map((folder) => ({ ...folder }));
+      rememberFolderIds();
+      const restored = (state.selection ?? (state.selected ? [state.selected] : [])).filter((mesh) => keep.has(mesh));
+      setSelection(restored, keep.has(state.selected) ? state.selected : null);
+      restoring = false;
+      refreshChrome();
+    }
+
+    function commit() {
+      if (restoring) return;
+      const next = packState();
+      if (historyIndex >= 0 && history[historyIndex].signature === next.signature) {
+        if (!holdChrome) refreshChrome();
+        return;
+      }
+      history.splice(historyIndex + 1);
+      history.push(next);
+      historyIndex = history.length - 1;
+      if (history.length > 100) {
+        history.shift();
+        historyIndex -= 1;
+      }
+      if (!holdChrome) refreshChrome();
+    }
+
+    function undo() {
+      if (historyIndex <= 0) return;
+      historyIndex -= 1;
+      applyState(history[historyIndex]);
+    }
+
+    function redo() {
+      if (historyIndex >= history.length - 1) return;
+      historyIndex += 1;
+      applyState(history[historyIndex]);
+    }
+
+    function refreshChrome() {
+      document.getElementById("undo").disabled = historyIndex <= 0;
+      document.getElementById("redo").disabled = historyIndex >= history.length - 1;
+      const names = selection.map((mesh) => mesh.userData.label ?? "パーツ");
+      let selectionText = "なし";
+      if (names.length === 1) selectionText = names[0];
+      else if (names.length > 1) selectionText = `${names[0]} ほか ${names.length - 1}`;
+      if (selected?.userData.locked) selectionText += "（ロック）";
+      else if (selection.some((mesh) => mesh.userData.locked)) selectionText += "（一部ロック）";
+      document.getElementById("selection-label").textContent = selectionText;
+      const lockButton = document.getElementById("lock");
+      lockButton.disabled = selection.length === 0;
+      lockButton.setAttribute("aria-pressed", String(selection.length > 0 && selection.every((mesh) => mesh.userData.locked)));
+      document.getElementById("part-count").textContent = String(editableMeshes().length);
+      document.getElementById("symmetry-state").textContent = symmetric ? "左右対称オン" : "左右対称オフ";
+      const morphSection = document.getElementById("morph-section");
+      const morphKind = selected?.userData.kind;
+      const morphable = morphKind === "triangle" || morphKind === "box";
+      morphSection.hidden = !morphable;
+      if (morphable) {
+        document.getElementById("morph-left").textContent = morphKind === "triangle" ? "三角錐" : "立方体";
+        document.getElementById("morph-right").textContent = morphKind === "triangle" ? "円錐" : "円柱";
+        document.getElementById("morph-range").value = String(Math.round((selected.userData.morph ?? 0) * 100));
+        document.getElementById("morph-range").disabled = Boolean(selected.userData.locked);
+      }
+      if (maskTarget && !editableMeshes().includes(maskTarget)) maskTarget = null;
+      const masking = Boolean(maskTarget);
+      document.getElementById("mask-editor").hidden = !masking;
+      document.getElementById("mask-banner").hidden = !masking;
+      document.getElementById("place-symmetry").disabled = masking;
+      const addHeading = document.querySelector("#add-section h2");
+      if (addHeading) addHeading.textContent = masking ? "マスク範囲" : "追加";
+      if (masking) {
+        const side = sideText(maskTarget);
+        const name = `${side}${maskTarget.userData.label ?? "パーツ"}`;
+        document.getElementById("mask-banner-name").textContent = name;
+        const shapes = maskTarget.userData.masks || [];
+        let caption = `${name}に図形を置くと、重なった範囲が非表示になります。`;
+        if (shapes.length) caption = `${name}の範囲は${shapes.length}個です。重なった部分は非表示です。`;
+        if (shapes.length >= MASK_MAX) caption += " 範囲は8個までです。";
+        document.getElementById("mask-caption").textContent = caption;
+        document.getElementById("mask-list").innerHTML = shapes.map((shape, index) => {
+          const active = selection.includes(shape) ? "active" : "";
+          return `<button type="button" class="${active}" data-mask-index="${index}">${escapeHtml(shape.userData.label ?? "範囲")}</button>`;
+        }).join("");
+      }
+      if (!renaming) renderOutliner();
+    }
+
+    function nextPartOrder() {
+      let max = 0;
+      for (const mesh of editableMeshes()) max = Math.max(max, mesh.userData.order ?? 0);
+      for (const folder of folders) max = Math.max(max, folder.order ?? 0);
+      return max + 1;
+    }
+
+    function rememberFolderIds() {
+      for (const folder of folders) {
+        const match = /^folder-(\d+)$/.exec(folder.id);
+        if (match) nextFolderId = Math.max(nextFolderId, Number(match[1]) + 1);
+      }
+    }
+
+    function sanitizeFolders(list) {
+      const clean = [];
+      const ids = new Set();
+      for (const folder of list) {
+        if (!folder || typeof folder.id !== "string" || ids.has(folder.id)) continue;
+        ids.add(folder.id);
+        clean.push({
+          id: folder.id,
+          name: String(folder.name || "フォルダ").slice(0, 40),
+          parentId: typeof folder.parentId === "string" ? folder.parentId : null,
+          order: Number.isFinite(folder.order) ? folder.order : 0,
+        });
+      }
+      const byId = new Map(clean.map((folder) => [folder.id, folder]));
+      for (const folder of clean) {
+        if (folder.parentId && !byId.has(folder.parentId)) folder.parentId = null;
+        const seen = new Set();
+        let cursor = folder;
+        while (cursor?.parentId) {
+          if (seen.has(cursor.id)) {
+            folder.parentId = null;
+            break;
+          }
+          seen.add(cursor.id);
+          cursor = byId.get(cursor.parentId);
+        }
+      }
+      return clean;
+    }
+
+    function meshById(id) {
+      for (const record of records) {
+        if (record.mesh.userData.id === id) return record.mesh;
+        if (record.mirror?.userData.id === id) return record.mirror;
+      }
+      return null;
+    }
+
+    function folderContains(ancestorId, id) {
+      if (!id) return false;
+      let cursor = id;
+      const seen = new Set();
+      while (cursor) {
+        if (cursor === ancestorId) return true;
+        if (seen.has(cursor)) return true;
+        seen.add(cursor);
+        cursor = folders.find((folder) => folder.id === cursor)?.parentId ?? null;
+      }
+      return false;
+    }
+
+    function descendantFolderIds(folderId) {
+      const ids = new Set([folderId]);
+      let grew = true;
+      while (grew) {
+        grew = false;
+        for (const folder of folders) {
+          if (folder.parentId && ids.has(folder.parentId) && !ids.has(folder.id)) {
+            ids.add(folder.id);
+            grew = true;
+          }
+        }
+      }
+      return ids;
+    }
+
+    function descendantMeshes(folderId) {
+      const ids = descendantFolderIds(folderId);
+      return editableMeshes().filter((mesh) => ids.has(mesh.userData.folderId));
+    }
+
+    function childrenOf(parentId) {
+      const items = [
+        ...folders.filter((folder) => folder.parentId === parentId).map((folder) => ({
+          type: "folder",
+          id: folder.id,
+          order: folder.order ?? 0,
+          folder,
+        })),
+        ...editableMeshes().filter((mesh) => (mesh.userData.folderId ?? null) === parentId).map((mesh) => ({
+          type: "part",
+          id: mesh.userData.id,
+          order: mesh.userData.order ?? 0,
+          mesh,
+        })),
+      ];
+      items.sort((a, b) => a.order - b.order);
+      return items;
+    }
+
+    function setItemParent(type, id, parentId, order) {
+      if (type === "folder") {
+        const folder = folders.find((item) => item.id === id);
+        if (!folder) return;
+        folder.parentId = parentId;
+        folder.order = order;
+        return;
+      }
+      const mesh = meshById(id);
+      if (!mesh) return;
+      mesh.userData.folderId = parentId;
+      mesh.userData.order = order;
+    }
+
+    function insertItem(type, id, parentId, beforeOrder) {
+      if (type === "folder" && (parentId === id || folderContains(id, parentId))) return;
+      const siblings = childrenOf(parentId).filter((item) => !(item.type === type && item.id === id));
+      let order = 0;
+      let placed = false;
+      const writes = [];
+      for (const sibling of siblings) {
+        if (!placed && beforeOrder != null && sibling.order >= beforeOrder) {
+          writes.push([type, id, order]);
+          order += 1;
+          placed = true;
+        }
+        writes.push([sibling.type, sibling.id, order]);
+        order += 1;
+      }
+      if (!placed) writes.push([type, id, order]);
+      for (const [itemType, itemId, itemOrder] of writes) setItemParent(itemType, itemId, parentId, itemOrder);
+      if (parentId) collapsedFolders.delete(parentId);
+      commit();
+    }
+
+    function sideText(mesh) {
+      const record = recordOf(mesh);
+      if (!record?.mirror) return "";
+      mesh.getWorldPosition(sideProbe);
+      return sideProbe.x < torsoCenter.x ? "右" : "左";
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;",
+      }[char]));
+    }
+
+    function iconLock(locked) {
+      const shackle = locked
+        ? "<path d=\"M8 10V8a4 4 0 0 1 8 0v2\"/>"
+        : "<path d=\"M8 10V8a4 4 0 0 1 8 0\"/>";
+      return `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="9" rx="1.5"/>${shackle}</svg>`;
+    }
+
+    function iconEye(open) {
+      if (open) return "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M2 12s4-6 10-6 10 6 10 6-4 6-10 6S2 12 2 12z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg>";
+      return "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 3l18 18\"/><path d=\"M10.6 6.2A10.7 10.7 0 0 1 12 6c6 0 10 6 10 6a18.5 18.5 0 0 1-4.1 4.3M6.1 6.1C3.5 7.8 2 12 2 12a18.8 18.8 0 0 0 6.2 5.6\"/><path d=\"M9.9 9.9a3 3 0 0 0 4.2 4.2\"/></svg>";
+    }
+
+    function renderBranch(parentId, depth, html) {
+      for (const item of childrenOf(parentId)) {
+        const pad = 8 + depth * 14;
+        if (item.type === "folder") {
+          const folder = item.folder;
+          const open = !collapsedFolders.has(folder.id);
+          const descendants = descendantMeshes(folder.id);
+          const allLocked = descendants.length > 0 && descendants.every((mesh) => mesh.userData.locked);
+          const allHidden = descendants.length > 0 && descendants.every((mesh) => mesh.userData.hidden);
+          const renamingFolder = renaming?.type === "folder" && renaming.id === folder.id;
+          const name = renamingFolder
+            ? `<input class="rename" value="${escapeHtml(folder.name)}" />`
+            : `<span class="name">${escapeHtml(folder.name)}</span>`;
+          html.push(`<div class="outliner-row${focusedFolder === folder.id ? " focused" : ""}" draggable="true" data-type="folder" data-id="${escapeHtml(folder.id)}" style="padding-left:${pad}px">
+            <button class="icon" type="button" data-action="collapse" aria-label="${open ? "折りたたむ" : "開く"}" style="transform:rotate(${open ? 90 : 0}deg)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+            ${name}
+            <button class="icon" type="button" data-action="lock" aria-pressed="${allLocked}" aria-label="ロック">${iconLock(allLocked)}</button>
+            <button class="icon" type="button" data-action="hide" aria-pressed="${!allHidden}" aria-label="${allHidden ? "表示" : "非表示"}">${iconEye(!allHidden)}</button>
+            <button class="icon" type="button" data-action="delete-folder" aria-label="フォルダを外す"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </div>`);
+          if (open) renderBranch(folder.id, depth + 1, html);
+        } else {
+          const mesh = item.mesh;
+          const renamingPart = renaming?.type === "part" && renaming.id === mesh.userData.id;
+          const side = sideText(mesh);
+          const maskMark = (mesh.userData.masks || []).length ? `<span class="mask-mark">マスク</span>` : "";
+          const name = renamingPart
+            ? `<input class="rename" value="${escapeHtml(mesh.userData.label ?? "")}" />`
+            : `<span class="name">${side ? `<span class="side">${side}</span>` : ""}${escapeHtml(mesh.userData.label ?? "パーツ")}${maskMark}</span>`;
+          const classes = ["outliner-row", "part"];
+          if (selection.includes(mesh)) classes.push("selected");
+          if (mesh === selected) classes.push("active");
+          if (mesh === maskTarget) classes.push("mask-target");
+          if (mesh.userData.hidden) classes.push("hidden-part");
+          html.push(`<div class="${classes.join(" ")}" draggable="true" data-type="part" data-id="${escapeHtml(mesh.userData.id)}" style="padding-left:${pad}px">
+            <span></span>
+            ${name}
+            <button class="icon" type="button" data-action="lock" aria-pressed="${Boolean(mesh.userData.locked)}" aria-label="ロック">${iconLock(Boolean(mesh.userData.locked))}</button>
+            <button class="icon" type="button" data-action="hide" aria-pressed="${!mesh.userData.hidden}" aria-label="${mesh.userData.hidden ? "表示" : "非表示"}">${iconEye(!mesh.userData.hidden)}</button>
+          </div>`);
+        }
+      }
+    }
+
+    function renderOutliner() {
+      const tree = document.getElementById("outliner-tree");
+      const html = [];
+      renderBranch(null, 0, html);
+      tree.innerHTML = html.join("");
+    }
+
+    function beginRename(type, id) {
+      renaming = { type, id };
+      renderOutliner();
+      const input = document.querySelector("#outliner-tree .rename");
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }
+
+    function finishRename(apply, explicitValue) {
+      if (!renaming) return;
+      const current = renaming;
+      const input = document.querySelector("#outliner-tree .rename");
+      const value = (explicitValue ?? input?.value ?? "").trim().slice(0, 40);
+      renaming = null;
+      if (apply && value) {
+        if (current.type === "part") {
+          const mesh = meshById(current.id);
+          if (mesh) mesh.userData.label = value;
+        } else {
+          const folder = folders.find((item) => item.id === current.id);
+          if (folder) folder.name = value;
+        }
+        commit();
+        return;
+      }
+      renderOutliner();
+    }
+
+    function toggleMeshLock(mesh) {
+      mesh.userData.locked = !mesh.userData.locked;
+      setSelection(selection, selected);
+      commit();
+    }
+
+    function toggleMeshHidden(mesh) {
+      mesh.userData.hidden = !mesh.userData.hidden;
+      mesh.visible = !mesh.userData.hidden;
+      setSelection(selection, selected);
+      commit();
+    }
+
+    function toggleFolderLock(folderId) {
+      const meshes = descendantMeshes(folderId);
+      if (!meshes.length) return;
+      const next = meshes.some((mesh) => !mesh.userData.locked);
+      for (const mesh of meshes) mesh.userData.locked = next;
+      setSelection(selection, selected);
+      commit();
+    }
+
+    function toggleFolderHidden(folderId) {
+      const meshes = descendantMeshes(folderId);
+      if (!meshes.length) return;
+      const next = meshes.some((mesh) => !mesh.userData.hidden);
+      for (const mesh of meshes) {
+        mesh.userData.hidden = next;
+        mesh.visible = !next;
+      }
+      setSelection(selection, selected);
+      commit();
+    }
+
+    function removeFolder(folderId) {
+      const folder = folders.find((item) => item.id === folderId);
+      if (!folder) return;
+      for (const child of folders) {
+        if (child.parentId === folderId) child.parentId = folder.parentId;
+      }
+      for (const mesh of editableMeshes()) {
+        if (mesh.userData.folderId === folderId) mesh.userData.folderId = folder.parentId;
+      }
+      folders = folders.filter((item) => item.id !== folderId);
+      collapsedFolders.delete(folderId);
+      if (focusedFolder === folderId) focusedFolder = folder.parentId;
+      commit();
+    }
+
+    function uniqueFolderName() {
+      const names = new Set(folders.map((folder) => folder.name));
+      if (!names.has("フォルダ")) return "フォルダ";
+      let index = 2;
+      while (names.has(`フォルダ ${index}`)) index += 1;
+      return `フォルダ ${index}`;
+    }
+
+    function addFolder() {
+      const id = `folder-${nextFolderId++}`;
+      const folder = {
+        id,
+        name: uniqueFolderName(),
+        parentId: selection.length ? null : focusedFolder,
+        order: nextPartOrder(),
+      };
+      folders.push(folder);
+      for (const mesh of selection) mesh.userData.folderId = id;
+      focusedFolder = id;
+      collapsedFolders.delete(id);
+      commit();
+    }
+
+    const outlinerTree = document.getElementById("outliner-tree");
+    outlinerTree.addEventListener("pointerdown", (event) => {
+      if (!renaming || event.target.closest("input.rename")) return;
+      const input = outlinerTree.querySelector("input.rename");
+      holdChrome = true;
+      try {
+        finishRename(true, input?.value ?? "");
+      } finally {
+        holdChrome = false;
+      }
+    }, true);
+    document.getElementById("folder-add").addEventListener("click", addFolder);
+    outlinerTree.addEventListener("contextmenu", (event) => {
+      const row = event.target.closest(".outliner-row.part");
+      if (!row) return;
+      event.preventDefault();
+      const mesh = meshById(row.dataset.id);
+      if (mesh) beginMaskEdit(mesh);
+    });
+    outlinerTree.addEventListener("click", (event) => {
+      const action = event.target.closest("[data-action]");
+      const row = event.target.closest(".outliner-row");
+      if (!row) {
+        focusedFolder = null;
+        renderOutliner();
+        return;
+      }
+      const { type, id } = row.dataset;
+      if (action) {
+        event.stopPropagation();
+        if (action.dataset.action === "collapse" && type === "folder") {
+          if (collapsedFolders.has(id)) collapsedFolders.delete(id);
+          else collapsedFolders.add(id);
+          renderOutliner();
+        } else if (action.dataset.action === "lock") {
+          if (type === "folder") toggleFolderLock(id);
+          else {
+            const mesh = meshById(id);
+            if (mesh) toggleMeshLock(mesh);
+          }
+        } else if (action.dataset.action === "hide") {
+          if (type === "folder") toggleFolderHidden(id);
+          else {
+            const mesh = meshById(id);
+            if (mesh) toggleMeshHidden(mesh);
+          }
+        } else if (action.dataset.action === "delete-folder") removeFolder(id);
+        return;
+      }
+      const clickKey = `${type}:${id}`;
+      const now = performance.now();
+      const repeated = !event.shiftKey && !event.ctrlKey && !event.metaKey
+        && lastRowClick.id === clickKey && now - lastRowClick.time < 450;
+      lastRowClick = { id: clickKey, time: now };
+      if (repeated) {
+        beginRename(type, id);
+        return;
+      }
+      if (type === "folder") {
+        focusedFolder = id;
+        renderOutliner();
+        return;
+      }
+      const mesh = meshById(id);
+      if (!mesh) return;
+      focusedFolder = null;
+      if (event.shiftKey && !event.ctrlKey && !event.metaKey) {
+        if (selection.includes(mesh)) setSelection(selection, mesh);
+        else setSelection([...selection, mesh], mesh);
+        return;
+      }
+      if (event.ctrlKey || event.metaKey) {
+        if (selection.includes(mesh)) {
+          setSelection(selection.filter((item) => item !== mesh), selected === mesh ? null : selected);
+        } else setSelection([...selection, mesh], mesh);
+        return;
+      }
+      select(mesh);
+    });
+    outlinerTree.addEventListener("dblclick", (event) => {
+      if (event.target.closest("button, input")) return;
+      const row = event.target.closest(".outliner-row");
+      if (!row) return;
+      beginRename(row.dataset.type, row.dataset.id);
+    });
+    outlinerTree.addEventListener("focusout", (event) => {
+      if (!event.target.classList?.contains("rename")) return;
+      const value = event.target.value;
+      setTimeout(() => {
+        if (document.activeElement === event.target) return;
+        finishRename(true, value);
+      }, 0);
+    });
+    outlinerTree.addEventListener("keydown", (event) => {
+      if (!event.target.classList?.contains("rename")) return;
+      if (event.key === "Enter") {
+        event.preventDefault();
+        event.target.blur();
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        finishRename(false);
+      }
+    });
+    outlinerTree.addEventListener("dragstart", (event) => {
+      const row = event.target.closest(".outliner-row");
+      if (!row || event.target.closest("button, input")) {
+        event.preventDefault();
+        return;
+      }
+      event.dataTransfer.setData("text/plain", `${row.dataset.type}:${row.dataset.id}`);
+      event.dataTransfer.effectAllowed = "move";
+    });
+    outlinerTree.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      for (const row of outlinerTree.querySelectorAll(".drop")) row.classList.remove("drop");
+      const row = event.target.closest(".outliner-row");
+      if (row) row.classList.add("drop");
+    });
+    outlinerTree.addEventListener("drop", (event) => {
+      event.preventDefault();
+      for (const row of outlinerTree.querySelectorAll(".drop")) row.classList.remove("drop");
+      const payload = event.dataTransfer.getData("text/plain");
+      const split = payload.indexOf(":");
+      if (split < 1) return;
+      const type = payload.slice(0, split);
+      const id = payload.slice(split + 1);
+      if (type !== "part" && type !== "folder") return;
+      const row = event.target.closest(".outliner-row");
+      if (row?.dataset.type === type && row.dataset.id === id) return;
+      if (!row) {
+        insertItem(type, id, null, null);
+        return;
+      }
+      if (row.dataset.type === "folder") {
+        insertItem(type, id, row.dataset.id, null);
+        return;
+      }
+      const mesh = meshById(row.dataset.id);
+      if (!mesh) return;
+      insertItem(type, id, mesh.userData.folderId ?? null, mesh.userData.order ?? 0);
+    });
+
+    document.getElementById("undo").addEventListener("click", undo);
+    document.getElementById("redo").addEventListener("click", redo);
+
+    window.addEventListener("keydown", (event) => {
+      if (document.getElementById("scale-modal").open) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          finishOverallScale(true);
+        }
+        return;
+      }
+      const typing = (event.target instanceof HTMLInputElement && event.target.type !== "file")
+        || event.target instanceof HTMLTextAreaElement;
+      if (typing) return;
+      if (event.key === "Escape" && maskTarget) {
+        event.preventDefault();
+        finishMaskEdit();
+        return;
+      }
+      const command = event.ctrlKey || event.metaKey;
+      if (command && event.code === "KeyS") {
+        event.preventDefault();
+        saveDocument();
+        return;
+      }
+      if (command && event.code === "KeyZ" && !event.shiftKey) {
+        event.preventDefault();
+        undo();
+        return;
+      }
+      if (command && (event.code === "KeyY" || (event.code === "KeyZ" && event.shiftKey))) {
+        event.preventDefault();
+        redo();
+        return;
+      }
+      if ((event.key === "l" || event.key === "L") && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        event.preventDefault();
+        toggleLock();
+        return;
+      }
+      if (event.key === "F2") {
+        event.preventDefault();
+        if (focusedFolder) beginRename("folder", focusedFolder);
+        else if (selection.length === 1 && !selection[0].userData.isMask) beginRename("part", selection[0].userData.id);
+        return;
+      }
+      if (event.key === "Delete" || event.key === "Backspace") {
+        event.preventDefault();
+        removeSelected();
+      }
+    });
+
+    function setView(name) {
+      const view = VIEWS[name];
+      camera.position.set(...view.pos);
+      controls.target.set(...view.target);
+      controls.update();
+    }
+
+    document.getElementById("front").addEventListener("click", () => setView("front"));
+    document.getElementById("side").addEventListener("click", () => setView("side"));
+    document.getElementById("back").addEventListener("click", () => setView("back"));
+
+    const wireButton = document.getElementById("wire");
+    wireButton.addEventListener("click", () => {
+      const next = wireButton.getAttribute("aria-pressed") !== "true";
+      wireButton.setAttribute("aria-pressed", String(next));
+      for (const material of materials) material.wireframe = next;
+    });
+
+    const spinButton = document.getElementById("spin");
+    spinButton.addEventListener("click", () => {
+      controls.autoRotate = spinButton.getAttribute("aria-pressed") !== "true";
+      spinButton.setAttribute("aria-pressed", String(controls.autoRotate));
+    });
+
+    function resize() {
+      const width = viewport.clientWidth;
+      const height = viewport.clientHeight;
+      if (width < 1 || height < 1) return;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    }
+
+    function parentKey(object) {
+      if (object === edits) return "edits";
+      if (object === armGroups[1]) return "arm-1";
+      if (object === armGroups[-1]) return "arm--1";
+      return "figure";
+    }
+
+    function parentByKey(key) {
+      if (key === "edits") return edits;
+      if (key === "arm-1") return armGroups[1];
+      if (key === "arm--1") return armGroups[-1];
+      return figure;
+    }
+
+    function roundNumber(value) {
+      return Math.round(value * 1e5) / 1e5;
+    }
+
+    function serializeMesh(mesh) {
+      return {
+        id: mesh.userData.id,
+        kind: mesh.userData.kind,
+        label: mesh.userData.label,
+        parent: parentKey(mesh.parent),
+        position: mesh.position.toArray().map(roundNumber),
+        quaternion: mesh.quaternion.toArray().map(roundNumber),
+        scale: mesh.scale.toArray().map(roundNumber),
+        morph: mesh.userData.morph ?? undefined,
+        locked: mesh.userData.locked || undefined,
+        hidden: mesh.userData.hidden || undefined,
+        folderId: mesh.userData.folderId ?? undefined,
+        order: mesh.userData.order ?? 0,
+        masks: (mesh.userData.masks || []).map((shape) => ({
+          kind: shape.userData.kind,
+          morph: shape.userData.morph ?? undefined,
+          position: shape.position.toArray().map(roundNumber),
+          quaternion: shape.quaternion.toArray().map(roundNumber),
+          scale: shape.scale.toArray().map(roundNumber),
+        })),
+      };
+    }
+
+    function serialize() {
+      return {
+        version: 1,
+        symmetric,
+        torso: torsoCenter.toArray().map(roundNumber),
+        guide: {
+          position: guide.position.toArray().map(roundNumber),
+          scale: guide.scale.toArray().map(roundNumber),
+        },
+        folders: folders.map((folder) => ({
+          id: folder.id,
+          name: folder.name,
+          parentId: folder.parentId,
+          order: folder.order,
+        })),
+        records: records.map((record) => ({
+          kind: record.kind,
+          solo: record.solo || undefined,
+          mesh: serializeMesh(record.mesh),
+          mirror: record.mirror ? serializeMesh(record.mirror) : null,
+        })),
+      };
+    }
+
+    function isVector(value, length) {
+      return Array.isArray(value) && value.length === length && value.every((item) => Number.isFinite(item));
+    }
+
+    function assertDocument(data) {
+      if (!data || data.version !== 1 || !Array.isArray(data.records)) throw new Error("invalid");
+      const parents = new Set(["figure", "edits", "arm-1", "arm--1"]);
+      const kinds = new Set(["body", "sphere", "triangle", "box"]);
+      const seen = new Set();
+      const baselineIds = new Set();
+      for (const record of baseline.records) {
+        baselineIds.add(record.mesh.mesh.userData.id);
+        if (record.mirror) baselineIds.add(record.mirror.mesh.userData.id);
+      }
+      for (const record of data.records) {
+        if (record?.solo != null && typeof record.solo !== "boolean") throw new Error("invalid");
+        const parts = [record?.mesh, record?.mirror].filter(Boolean);
+        if (!record?.mesh) throw new Error("invalid");
+        for (const part of parts) {
+          if (typeof part.id !== "string" || seen.has(part.id) || !kinds.has(part.kind) || !parents.has(part.parent)) {
+            throw new Error("invalid");
+          }
+          if (!isVector(part.position, 3) || !isVector(part.quaternion, 4) || !isVector(part.scale, 3)) {
+            throw new Error("invalid");
+          }
+          if (part.morph != null && (typeof part.morph !== "number" || part.morph < 0 || part.morph > 1)) {
+            throw new Error("invalid");
+          }
+          if (part.locked != null && typeof part.locked !== "boolean") throw new Error("invalid");
+          if (part.hidden != null && typeof part.hidden !== "boolean") throw new Error("invalid");
+          if (part.folderId != null && typeof part.folderId !== "string") throw new Error("invalid");
+          if (part.order != null && typeof part.order !== "number") throw new Error("invalid");
+          if (part.label != null && typeof part.label !== "string") throw new Error("invalid");
+          if (part.masks != null) {
+            if (!Array.isArray(part.masks)) throw new Error("invalid");
+            for (const mask of part.masks) {
+              if (!mask || !kinds.has(mask.kind) || mask.kind === "body") throw new Error("invalid");
+              if (!isVector(mask.position, 3) || !isVector(mask.quaternion, 4) || !isVector(mask.scale, 3)) throw new Error("invalid");
+              if (mask.morph != null && (typeof mask.morph !== "number" || mask.morph < 0 || mask.morph > 1)) throw new Error("invalid");
+            }
+          }
+          seen.add(part.id);
+        }
+      }
+      if (data.folders != null) {
+        if (!Array.isArray(data.folders)) throw new Error("invalid");
+        const folderIds = new Set();
+        for (const folder of data.folders) {
+          if (!folder || typeof folder.id !== "string" || typeof folder.name !== "string" || folderIds.has(folder.id)) {
+            throw new Error("invalid");
+          }
+          if (folder.parentId != null && typeof folder.parentId !== "string") throw new Error("invalid");
+          if (folder.order != null && typeof folder.order !== "number") throw new Error("invalid");
+          folderIds.add(folder.id);
+        }
+      }
+      for (const record of data.records) {
+        const parts = [record?.mesh, record?.mirror].filter(Boolean);
+        for (const part of parts) {
+          if (part.kind !== "body" || baselineIds.has(part.id)) continue;
+          const sibling = part === record.mesh ? record.mirror : record.mesh;
+          if (!sibling || sibling.kind !== "body" || !baselineIds.has(sibling.id)) throw new Error("invalid");
+        }
+      }
+    }
+
+    function rememberId(id) {
+      const shape = /^shape-(\d+)$/.exec(id);
+      if (shape) nextShapeId = Math.max(nextShapeId, Number(shape[1]) + 1);
+      const body = /^body-(\d+)$/.exec(id);
+      if (body) nextBodyId = Math.max(nextBodyId, Number(body[1]) + 1);
+    }
+
+    function knownMeshes() {
+      const map = new Map();
+      const visit = (mesh) => {
+        if (mesh?.userData?.id) map.set(mesh.userData.id, mesh);
+      };
+      for (const record of records) {
+        visit(record.mesh);
+        visit(record.mirror);
+      }
+      for (const state of history) {
+        for (const record of state.records) {
+          visit(record.mesh.mesh);
+          if (record.mirror) visit(record.mirror.mesh);
+        }
+      }
+      return map;
+    }
+
+    function adopt(part, sibling) {
+      rememberId(part.id);
+      let mesh = knownMeshes().get(part.id);
+      if (!mesh) {
+        mesh = part.kind === "body" ? duplicate(sibling) : createMesh(part.kind);
+        mesh.userData.id = part.id;
+      }
+      mesh.userData.kind = part.kind;
+      if (part.label) mesh.userData.label = part.label;
+      const parent = parentByKey(part.parent);
+      if (mesh.parent !== parent) parent.add(mesh);
+      mesh.position.fromArray(part.position);
+      mesh.quaternion.fromArray(part.quaternion);
+      mesh.scale.fromArray(part.scale);
+      mesh.material.wireframe = wireButton.getAttribute("aria-pressed") === "true";
+      if (mesh.userData.kind === "triangle" || mesh.userData.kind === "box") {
+        setMorph(mesh, Number.isFinite(part.morph) ? part.morph : 0);
+      }
+      mesh.userData.locked = Boolean(part.locked);
+      mesh.userData.hidden = Boolean(part.hidden);
+      mesh.visible = !mesh.userData.hidden;
+      mesh.userData.folderId = typeof part.folderId === "string" ? part.folderId : null;
+      mesh.userData.order = Number.isFinite(part.order) ? part.order : 0;
+      attachLoadedMasks(mesh, part.masks);
+      return mesh;
+    }
+
+    function attachLoadedMasks(target, list) {
+      for (const shape of target.userData.masks || []) shape.removeFromParent();
+      target.userData.masks = [];
+      if (!Array.isArray(list)) return;
+      for (const spec of list) {
+        const shape = createMaskShape(spec.kind);
+        if (Number.isFinite(spec.morph)) setMorph(shape, spec.morph);
+        shape.position.fromArray(spec.position);
+        shape.quaternion.fromArray(spec.quaternion);
+        shape.scale.fromArray(spec.scale);
+        shape.visible = false;
+        target.add(shape);
+        target.userData.masks.push(shape);
+      }
+      updateMaskUniforms(target);
+    }
+
+    function setFileStatus(message) {
+      document.getElementById("file-state").textContent = message;
+    }
+
+    function loadDocument(data) {
+      assertDocument(data);
+      applyState(baseline);
+      restoring = true;
+      const keep = new Set();
+      const nextRecords = [];
+      try {
+        for (const record of data.records) {
+          const meshKnown = knownMeshes().has(record.mesh.id) || record.mesh.kind !== "body";
+          let mesh = meshKnown ? adopt(record.mesh, null) : null;
+          let mirror = null;
+          if (record.mirror) {
+            const mirrorKnown = knownMeshes().has(record.mirror.id) || record.mirror.kind !== "body";
+            mirror = mirrorKnown ? adopt(record.mirror, mesh) : null;
+          }
+          if (!mesh) mesh = adopt(record.mesh, mirror);
+          if (record.mirror && !mirror) mirror = adopt(record.mirror, mesh);
+          keep.add(mesh);
+          if (mirror) keep.add(mirror);
+          nextRecords.push({ kind: record.kind || mesh.userData.kind, mesh, mirror, solo: Boolean(record.solo) });
+        }
+      } catch (error) {
+        restoring = false;
+        applyState(baseline);
+        throw error;
+      }
+      for (const record of [...records]) {
+        if (!keep.has(record.mesh)) record.mesh.removeFromParent();
+        if (record.mirror && !keep.has(record.mirror)) record.mirror.removeFromParent();
+      }
+      records.length = 0;
+      records.push(...nextRecords);
+      symmetric = Boolean(data.symmetric);
+      symmetryButton.setAttribute("aria-pressed", String(symmetric));
+      guide.visible = symmetric;
+      if (isVector(data.torso, 3)) torsoCenter.fromArray(data.torso);
+      if (isVector(data.guide?.position, 3)) guide.position.fromArray(data.guide.position);
+      if (isVector(data.guide?.scale, 3)) guide.scale.fromArray(data.guide.scale);
+      folders = sanitizeFolders(data.folders ?? []);
+      rememberFolderIds();
+      const folderIds = new Set(folders.map((folder) => folder.id));
+      for (const mesh of editableMeshes()) {
+        if (mesh.userData.folderId && !folderIds.has(mesh.userData.folderId)) mesh.userData.folderId = null;
+      }
+      history.length = 0;
+      historyIndex = -1;
+      restoring = false;
+      select(null);
+      commit();
+    }
+
+    function saveDocument() {
+      const json = JSON.stringify(serialize());
+      localStorage.setItem(STORAGE_KEY, json);
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+      link.href = url;
+      link.download = "figure.json";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setFileStatus("保存しました");
+    }
+
+    function applyOverallFactor(factor) {
+      for (const mesh of editableMeshes()) {
+        if (mesh.userData.locked) continue;
+        mesh.updateWorldMatrix(true, false);
+        mesh.getWorldPosition(worldPos);
+        worldPos.multiplyScalar(factor);
+        mesh.parent.updateWorldMatrix(true, false);
+        mesh.parent.worldToLocal(worldPos);
+        mesh.position.copy(worldPos);
+        mesh.scale.multiplyScalar(factor);
+      }
+      guide.position.multiplyScalar(factor);
+      guide.scale.multiplyScalar(factor);
+      torsoCenter.multiplyScalar(factor);
+    }
+
+    function previewOverallScale() {
+      if (!overallScale) return;
+      applyState(overallScale);
+      const percent = Number(document.getElementById("scale-percent").value);
+      const factor = Math.min(400, Math.max(10, percent)) / 100;
+      if (Number.isFinite(factor) && Math.abs(factor - 1) > 1e-6) applyOverallFactor(factor);
+    }
+
+    function syncScaleInputs(percent, source) {
+      const clamped = Math.min(400, Math.max(10, Math.round(percent)));
+      if (source !== "range") document.getElementById("scale-range").value = String(clamped);
+      if (source !== "number") document.getElementById("scale-percent").value = String(clamped);
+      previewOverallScale();
+    }
+
+    function finishOverallScale(apply) {
+      const dialog = document.getElementById("scale-modal");
+      if (!overallScale) {
+        if (dialog.open) dialog.close();
+        return;
+      }
+      if (apply) previewOverallScale();
+      else applyState(overallScale);
+      overallScale = null;
+      if (apply) commit();
+      if (dialog.open) dialog.close();
+    }
+
+    function applySelectedMorph(morph) {
+      if (!selected || selected.userData.locked) return;
+      const kind = selected.userData.kind;
+      if (kind !== "triangle" && kind !== "box") return;
+      for (const mesh of selection) {
+        if (mesh.userData.locked || mesh.userData.kind !== kind) continue;
+        setMorph(mesh, morph);
+        if (!symmetric) continue;
+        const other = otherOf(recordOf(mesh), mesh);
+        if (other && !other.userData.locked) setMorph(other, morph);
+      }
+    }
+
+    document.getElementById("morph-range").addEventListener("input", (event) => {
+      applySelectedMorph(Number(event.target.value) / 100);
+    });
+    document.getElementById("morph-range").addEventListener("change", () => {
+      commit();
+    });
+
+    document.getElementById("scale-all").addEventListener("click", () => {
+      if (overallScale) return;
+      overallScale = packState();
+      document.getElementById("scale-range").value = "100";
+      document.getElementById("scale-percent").value = "100";
+      document.getElementById("scale-modal").showModal();
+      document.getElementById("scale-range").focus();
+    });
+    document.getElementById("scale-range").addEventListener("input", (event) => {
+      syncScaleInputs(Number(event.target.value), "range");
+    });
+    document.getElementById("scale-percent").addEventListener("input", (event) => {
+      const value = Number(event.target.value);
+      if (!Number.isFinite(value)) return;
+      document.getElementById("scale-range").value = String(Math.min(400, Math.max(10, value)));
+      previewOverallScale();
+    });
+    document.getElementById("scale-percent").addEventListener("change", (event) => {
+      const value = Number(event.target.value);
+      if (!Number.isFinite(value)) return;
+      syncScaleInputs(value, "number");
+    });
+    document.getElementById("scale-apply").addEventListener("click", () => finishOverallScale(true));
+    document.getElementById("scale-cancel").addEventListener("click", () => finishOverallScale(false));
+    document.getElementById("scale-modal").addEventListener("cancel", (event) => {
+      event.preventDefault();
+      finishOverallScale(false);
+    });
+    document.getElementById("scale-modal").addEventListener("click", (event) => {
+      if (event.target === event.currentTarget) finishOverallScale(false);
+    });
+
+    document.getElementById("save").addEventListener("click", saveDocument);
+    document.getElementById("load").addEventListener("click", () => {
+      document.getElementById("file-input").click();
+    });
+    document.getElementById("file-input").addEventListener("change", async (event) => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file) return;
+      try {
+        loadDocument(JSON.parse(await file.text()));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(serialize()));
+        setFileStatus("読み込みました");
+      } catch {
+        setFileStatus("読み込めませんでした");
+      }
+    });
+
+    new ResizeObserver(() => resize()).observe(viewport);
+    resize();
+    commit();
+    baseline = packState();
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        loadDocument(JSON.parse(stored));
+        setFileStatus("前回の保存を開きました");
+      }
+    } catch {
+      setFileStatus("前回の保存を読めませんでした");
+    }
+
+    globalThis.__debugMasks = () => editableMeshes().flatMap((mesh) => mesh.userData.masks || []);
+    renderer.setAnimationLoop(() => {
+      controls.update();
+      for (const mesh of editableMeshes()) updateMaskUniforms(mesh);
+      renderer.render(scene, camera);
+    });
+  </script>
+</body>
+</html>

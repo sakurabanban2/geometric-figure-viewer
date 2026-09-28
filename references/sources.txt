@@ -1,0 +1,14 @@
+Minecraft player-model references
+- Angela | Player model Minecraft (Sketchfab, Starlit Models)
+  https://sketchfab.com/3d-models/angela-player-model-minecraft-38a41d1d07b14a3889b7402318c03ac9
+- Minecraft girl (Sketchfab, MedSamer)
+  https://sketchfab.com/3d-models/minecraft-girl-fcfe40aab39c4fcfb37cad80913bba0a
+
+Roblox body references
+- Character body specifications (15 parts, Classic / Slender / Normal scales)
+  https://create.roblox.com/docs/en-us/avatar/character-bodies/specifications
+- Classic Blocky Woman, a fan-made block body bundle
+  https://www.roblox.com/bundles/2722/Classic-Blocky-Woman-Torso
+
+Saved images: minecraft-angela.jpg, minecraft-girl.jpg
+The model in this project is original geometry based on those silhouettes.

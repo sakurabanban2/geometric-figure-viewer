@@ -1,0 +1,12 @@
+{
+  "name": "geometric-figure-viewer",
+  "private": true,
+  "version": "1.0.0",
+  "description": "単純な図形で組んだ全身3Dモデルのビューワー",
+  "scripts": {
+    "start": "npx --yes serve -l 8765 ."
+  },
+  "dependencies": {
+    "three": "^0.180.0"
+  }
+}
