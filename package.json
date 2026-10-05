@@ -7,6 +7,7 @@
     "start": "npx --yes serve -l 8765 ."
   },
   "dependencies": {
+    "manifold-3d": "^3.5.4",
     "three": "^0.180.0"
   }
 }
