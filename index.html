@@ -243,6 +243,8 @@
     #mask-banner,
     #relief-banner,
     #feature-banner,
+    #soft-banner,
+    #rig-banner,
     #path-draw-banner {
       position: absolute;
       top: 36px;
@@ -262,6 +264,8 @@
     #mask-banner[hidden],
     #relief-banner[hidden],
     #feature-banner[hidden],
+    #soft-banner[hidden],
+    #rig-banner[hidden],
     #path-draw-banner[hidden] { display: none; }
     body.path-drawing #viewport { box-shadow: inset 0 0 0 2px rgba(53, 214, 255, 0.55); }
     body.path-drawing #viewport canvas { cursor: crosshair; }
@@ -387,6 +391,67 @@
     .feature-group { margin-top: 8px; }
     .feature-group .relief-check { margin-bottom: 2px; color: var(--text); }
     .feature-group.off .slider-row { display: none; }
+
+    #soft-section { display: none; }
+    body.soft-edit #soft-section { display: block; }
+    #file-soft { display: none; }
+    body.soft-edit #file-section { display: block; }
+    body.soft-edit #file-soft { display: grid; }
+    body.soft-edit #add-section,
+    body.soft-edit #transform-section { display: none; }
+    body.soft-edit #viewport { box-shadow: inset 0 0 0 2px rgba(231, 181, 164, 0.55); }
+    body.soft-edit #viewport canvas { cursor: grab; }
+    body.soft-edit.soft-shaking #viewport canvas { cursor: grabbing; }
+    body.soft-edit #outliner-tree { opacity: 0.55; pointer-events: none; }
+    .rig-panel { display: none; }
+    body.rig-edit .rig-panel { display: block; }
+    #file-rig { display: none; }
+    body.rig-edit #file-section { display: block; }
+    body.rig-edit #file-rig { display: grid; }
+    body.rig-edit #add-section,
+    body.rig-edit #transform-section { display: none; }
+    body.rig-edit #viewport { box-shadow: inset 0 0 0 2px rgba(255, 209, 102, 0.55); }
+    body.rig-edit.rig-hover #viewport canvas { cursor: grab; }
+    body.rig-edit.rig-dragging #viewport canvas { cursor: grabbing; }
+    body.rig-edit #outliner-tree { opacity: 0.55; pointer-events: none; }
+    .rig-panel .wide { margin-bottom: 8px; }
+    #rig-focus { margin: 0 0 6px; }
+    #rig-bone-hint.busy { color: #ffd166; }
+    .rig-checks { display: flex; gap: 14px; flex-wrap: wrap; }
+    .rig-transport { display: flex; gap: 6px; margin: 0 0 8px; }
+    .rig-transport button { flex: 1; }
+    #rig-assign { max-height: 340px; overflow-y: auto; margin: 0 0 10px; border: 1px solid var(--line); border-radius: 6px; }
+    .rig-group + .rig-group { border-top: 1px solid var(--line); }
+    .rig-group-head { display: flex; align-items: center; gap: 6px; width: 100%; padding: 5px 8px; border: 0; border-radius: 0; background: transparent; color: var(--text); font-size: 12px; font-weight: 600; text-align: left; cursor: pointer; }
+    .rig-group-head:hover, .rig-group.active .rig-group-head { background: rgba(255, 209, 102, 0.12); }
+    .rig-group-head .rig-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+    .rig-group-head .rig-count { margin-left: auto; color: var(--muted); font-weight: 400; font-size: 11px; }
+    .rig-item { display: flex; align-items: center; gap: 4px; padding: 2px 6px 2px 20px; }
+    .rig-item.active { background: rgba(255, 255, 255, 0.07); }
+    .rig-item-name { flex: 1; min-width: 0; padding: 2px 4px; border: 0; background: transparent; color: var(--text); font-size: 12px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+    .rig-item-name:hover { text-decoration: underline; }
+    .rig-item-name small { margin-left: 4px; color: var(--muted); font-size: 10px; }
+    .rig-item select { width: 118px; flex: none; font-size: 11px; }
+    .rig-empty { margin: 0; padding: 8px; color: var(--muted); font-size: 12px; }
+    .rig-time { min-width: 72px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; text-align: right; }
+    #sag-open-edit { margin: 0 0 8px; }
+    #sag-open-edit[hidden],
+    #sag-group-block[hidden],
+    #sag-follow-row[hidden],
+    #sag-group-info[hidden] { display: none; }
+    #sag-group { margin: 0 0 4px; }
+    #sag-modes { margin-bottom: 4px; }
+    #sag-mode-hint { margin: 0 0 8px; }
+    #sag-group-info { margin: 0 0 6px; }
+    .sag-legend { display: flex; gap: 12px; margin: 0 0 4px 22px; font-size: 11px; color: var(--muted); }
+    .sag-legend span::before { content: ""; display: inline-block; width: 14px; height: 3px; margin-right: 4px; vertical-align: middle; border-radius: 2px; background: currentColor; }
+    .sag-legend .root::before { width: 8px; height: 8px; border-radius: 50%; }
+    .sag-legend .root { color: #ffd166; }
+    .sag-legend .gravity { color: #4cc9f0; }
+    .sag-legend .bounce { color: #ff5fa2; }
+    .soft-poses { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin: 4px 0 8px; }
+    .soft-poses button { min-width: 0; padding: 4px 2px; font-size: 12px; }
+    #soft-section .relief-check { margin: 2px 0 4px; }
 
     #view-dock {
       position: absolute;
@@ -790,6 +855,10 @@
     }
 
     .curve-modes input { accent-color: var(--accent); }
+    #sag-anchors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 8px; }
+    .sag-follow-row { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; margin: 2px 0 8px; font-size: 12px; color: var(--muted); }
+    #sag-follow { min-width: 0; height: 26px; padding: 0 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); font: inherit; font-size: 12px; }
+    #sag-own[hidden], #sag-mode-follow[hidden], #sag-anchors[hidden], #sag-path-anchors[hidden] { display: none; }
     #dome-curve {
       display: block;
       width: 100%;
@@ -898,10 +967,18 @@
     }
 
     #outliner-tree {
+      position: relative;
       overflow: auto;
       padding: 0 8px 12px;
       min-height: 0;
     }
+
+    #outliner-tree .path-links { position: absolute; top: 0; left: 0; overflow: visible; pointer-events: none; }
+    #outliner-tree .path-links g { opacity: 0.5; }
+    #outliner-tree .path-links g.active { opacity: 1; }
+    #outliner-tree .path-links path { fill: none; stroke: #35d6ff; stroke-width: 1.2; }
+    #outliner-tree .path-links circle { fill: #35d6ff; }
+    #outliner-tree .path-links circle.head { fill: #14161c; stroke: #35d6ff; stroke-width: 1.4; }
 
     .outliner-row {
       display: grid;
@@ -916,8 +993,6 @@
     }
 
     .outliner-row.part { grid-template-columns: 18px minmax(0, 1fr) 22px 22px; }
-    .outliner-row.part.path { grid-template-columns: 18px 18px minmax(0, 1fr) 22px 22px; }
-
     .outliner-row.selected { background: rgba(231, 181, 164, 0.14); }
     .outliner-row.active { border-color: rgba(231, 181, 164, 0.85); }
     .outliner-row.focused { background: rgba(231, 181, 164, 0.08); }
@@ -1130,6 +1205,8 @@
           <button type="button" role="menuitem" data-action="rasterize">ラスタライズ</button>
           <button type="button" role="menuitem" data-action="relief">法線編集</button>
           <button type="button" role="menuitem" data-action="feature">顔・手・足の編集</button>
+          <button type="button" role="menuitem" data-action="soft">柔らかさの編集</button>
+          <button type="button" role="menuitem" data-action="rig">ボーンとモーション</button>
           <button type="button" role="menuitem" data-command="reset-position">位置リセット</button>
           <button type="button" role="menuitem" data-command="reset-rotation">回転リセット</button>
           <hr />
@@ -1218,6 +1295,29 @@
           破棄
         </button>
         <button id="feature-leave" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
+          メインエディターに戻る
+          <kbd>Esc</kbd>
+        </button>
+      </div>
+      <div class="wide" id="file-soft">
+        <button id="soft-save" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v6h8V4M8 20v-6h8v6"/></svg>
+          保存
+          <kbd>Ctrl+S</kbd>
+        </button>
+        <button id="soft-discard" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M8 7l1 13h6l1-13"/></svg>
+          破棄
+        </button>
+        <button id="soft-leave" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
+          メインエディターに戻る
+          <kbd>Esc</kbd>
+        </button>
+      </div>
+      <div class="wide" id="file-rig">
+        <button id="rig-leave" type="button">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
           メインエディターに戻る
           <kbd>Esc</kbd>
@@ -1475,6 +1575,101 @@
       </div>
       <p class="hint dome-hint">空いた所をクリックで点を追加、ドラッグで移動、ダブルクリックか右クリックで削除します。</p>
     </section>
+    <section id="sag-section" hidden>
+      <h2>柔らかさ</h2>
+      <div class="curve-modes" id="sag-modes" role="radiogroup" aria-label="動き方">
+        <label title="柔らかさを付けない"><input type="radio" name="sag-mode" value="none" /> なし</label>
+        <label title="このパーツ自身が重力で垂れたり、動かしたときに揺れたりする"><input type="radio" name="sag-mode" value="own" /> 柔らかく</label>
+        <label id="sag-mode-follow" title="乳首など、柔らかいパーツに付いて一緒に動く"><input type="radio" name="sag-mode" value="follow" /> 付いて動く</label>
+      </div>
+      <p class="hint" id="sag-mode-hint"></p>
+      <div id="sag-own">
+        <div class="slider-row" title="重力で垂れる強さ（起点は動かず、先端と下側ほど大きく垂れる）"><span>垂れ</span><input id="sag-amount" type="range" min="0" max="100" value="0" step="1" aria-label="重力で垂れる強さ" /><span class="num-field"><input id="sag-amount-num" class="num" type="number" aria-label="重力で垂れる強さ（%）" /><span class="unit">%</span></span></div>
+        <div class="slider-row" title="動かしたときに、遅れてぷるんと揺れる強さ"><span>揺れ</span><input id="sag-wobble" type="range" min="0" max="100" value="0" step="1" aria-label="動かしたときの揺れ" /><span class="num-field"><input id="sag-wobble-num" class="num" type="number" aria-label="動かしたときの揺れ（%）" /><span class="unit">%</span></span></div>
+        <div class="slider-row" title="体の動きにどれだけ敏感に揺れるか。100% が標準で、上げるほど小さな動きでも大きく揺れる（ひとまとめにしたパーツにも効く）"><span>揺れやすさ</span><input id="sag-ease" type="range" min="0" max="500" value="100" step="10" aria-label="揺れやすさ" /><span class="num-field"><input id="sag-ease-num" class="num" type="number" aria-label="揺れやすさ（%）" /><span class="unit">%</span></span></div>
+        <h3 class="sub-heading">起点（体にくっついて動かない側）</h3>
+        <div class="curve-modes" id="sag-path-anchors" role="radiogroup" aria-label="パスの起点">
+          <label title="パスの最初の点を動かさず、終わりの点ほど垂れて揺れる"><input type="radio" name="sag-path-anchor" value="start" checked /> 始点</label>
+          <label title="パスの最後の点を動かさず、最初の点ほど垂れて揺れる"><input type="radio" name="sag-path-anchor" value="end" /> 終点</label>
+        </div>
+        <div class="curve-modes" id="sag-anchors" role="radiogroup" aria-label="起点の向き">
+          <label><input type="radio" name="sag-anchor" value="back" checked /> 後ろ</label>
+          <label><input type="radio" name="sag-anchor" value="top" /> 上</label>
+          <label><input type="radio" name="sag-anchor" value="right" /> 右</label>
+          <label><input type="radio" name="sag-anchor" value="front" /> 前</label>
+          <label><input type="radio" name="sag-anchor" value="bottom" /> 下</label>
+          <label><input type="radio" name="sag-anchor" value="left" /> 左</label>
+        </div>
+      </div>
+      <label class="sag-follow-row" id="sag-follow-row" title="一緒に動く柔らかいパーツ（近い順）"><span>付き先</span><select id="sag-follow" aria-label="一緒に動く柔らかいパーツ"></select></label>
+      <p class="hint" id="sag-group-info"></p>
+      <div id="sag-group-block">
+        <h3 class="sub-heading">選択中の複数パーツ</h3>
+        <button id="sag-group" class="wide" type="button" title="選んだパーツの中でいちばん大きいパーツを中心に、ほかのパーツをそこに付けて、1つのかたまりとして垂れたり揺れたりさせる">ひとまとめにする</button>
+      </div>
+      <h3 class="sub-heading">表示と確認</h3>
+      <label class="relief-check" title="ビューに起点（黄）・重力（青）・弾み（ピンク）を表示する"><input id="sag-guides" type="checkbox" checked /> 起点・重力・弾みを表示</label>
+      <div class="sag-legend" aria-hidden="true"><span class="root">起点</span><span class="gravity">重力</span><span class="bounce">弾み</span></div>
+      <button id="sag-open-edit" class="wide" type="button" title="柔らかさの編集モードで、傾けたり揺らしたりしながら設定を確かめる">編集モードで動きを確認</button>
+    </section>
+    <section id="soft-section">
+      <h2>動きの確認</h2>
+      <p class="hint">ビューを左ドラッグすると体をつかんで揺らせます（右ドラッグで視点、パーツをクリックで切り替え）。ここでの傾きや揺れは確認用で、保存されません。</p>
+      <h3 class="sub-heading">重力</h3>
+      <div class="slider-row" title="重力の強さ。0% で無重力、200% で 2 倍の重力のときの垂れ方になります"><span>大きさ</span><input id="soft-gravity" type="range" min="0" max="300" value="100" step="5" aria-label="重力の大きさ" /><span class="num-field"><input id="soft-gravity-num" class="num" type="number" aria-label="重力の大きさ（%）" /><span class="unit">%</span></span></div>
+      <h3 class="sub-heading">体の傾き</h3>
+      <div class="slider-row" title="前かがみ（＋）や仰向け（−）のときの重力の向き"><span>前後</span><input id="soft-pitch" type="range" min="-90" max="90" value="0" step="1" aria-label="前後の傾き" /><span class="num-field"><input id="soft-pitch-num" class="num" type="number" aria-label="前後の傾き（度）" /><span class="unit">°</span></span></div>
+      <div class="slider-row" title="右（＋）や左（−）へ体を傾けたときの重力の向き"><span>左右</span><input id="soft-roll" type="range" min="-90" max="90" value="0" step="1" aria-label="左右の傾き" /><span class="num-field"><input id="soft-roll-num" class="num" type="number" aria-label="左右の傾き（度）" /><span class="unit">°</span></span></div>
+      <div class="soft-poses" role="group" aria-label="姿勢">
+        <button type="button" data-pose="0,0">立ち</button>
+        <button type="button" data-pose="60,0">前かがみ</button>
+        <button type="button" data-pose="-90,0">仰向け</button>
+        <button type="button" data-pose="90,0">うつ伏せ</button>
+        <button type="button" data-pose="0,90">右を下</button>
+        <button type="button" data-pose="0,-90">左を下</button>
+      </div>
+      <h3 class="sub-heading">揺らす</h3>
+      <div class="slider-row" title="ボタンやドラッグで揺らすときの動きの大きさ"><span>強さ</span><input id="soft-power" type="range" min="10" max="300" value="50" step="1" aria-label="揺らす強さ" /><span class="num-field"><input id="soft-power-num" class="num" type="number" aria-label="揺らす強さ（%）" /><span class="unit">%</span></span></div>
+      <div class="soft-poses" role="group" aria-label="揺らす向き">
+        <button type="button" data-shake="0,1,0" title="上下に一度揺らす">上下</button>
+        <button type="button" data-shake="1,0,0" title="左右に一度揺らす">左右</button>
+        <button type="button" data-shake="0,0,1" title="前後に一度揺らす">前後</button>
+      </div>
+      <label class="relief-check"><input id="soft-bounce" type="checkbox" /> 跳ね続ける</label>
+      <p class="hint">「柔らかさ」の揺れが 0% のパーツは、揺らしても動きません。</p>
+    </section>
+    <section id="rig-motion-section" class="rig-panel">
+      <h2>モーション</h2>
+      <div class="wide"><button id="rig-load" type="button" title="MMD のモーション（.vmd）か、モーションキャプチャーの .bvh を読み込む">モーションを読み込む…</button></div>
+      <p id="rig-motion-name" class="hint">.vmd か .bvh を読み込むと再生が始まります。</p>
+      <div class="rig-transport">
+        <button id="rig-play" type="button" title="再生と一時停止を切り替える（Space）">再生</button>
+        <button id="rig-stop" type="button" title="再生をやめて元の姿勢に戻す">停止</button>
+      </div>
+      <div class="slider-row" title="再生している位置"><span>位置</span><input id="rig-time" type="range" min="0" max="1000" value="0" step="1" aria-label="再生位置" /><span id="rig-time-label" class="rig-time">0.0 秒</span></div>
+      <div class="slider-row" title="再生の速さ"><span>速さ</span><input id="rig-speed" type="range" min="10" max="200" value="100" step="5" aria-label="再生の速さ" /><span class="num-field"><input id="rig-speed-num" class="num" type="number" aria-label="再生の速さ（%）" /><span class="unit">%</span></span></div>
+      <div class="slider-row" title="再生中、すべての柔らかいパーツの揺れに掛ける倍率。パーツごとの差は「柔らかさ」の「揺れやすさ」で付ける"><span>全体の揺れ</span><input id="rig-sway" type="range" min="0" max="500" value="100" step="10" aria-label="再生中の揺れの大きさ" /><span class="num-field"><input id="rig-sway-num" class="num" type="number" aria-label="再生中の揺れの大きさ（%）" /><span class="unit">%</span></span></div>
+      <div class="rig-checks">
+        <label class="relief-check" title="最後まで再生したら最初に戻る"><input id="rig-loop" type="checkbox" checked /> くり返す</label>
+        <label class="relief-check" title="オフにすると、前後左右には動かずその場で動く"><input id="rig-travel" type="checkbox" checked /> 移動もする</label>
+      </div>
+      <input id="rig-input" type="file" accept=".vmd,.bvh" hidden />
+    </section>
+    <section id="rig-bone-section" class="rig-panel">
+      <h2>ボーンの配置</h2>
+      <p id="rig-bone-hint" class="hint">ビューの点（関節）をドラッグして、体の関節に合わせます。</p>
+      <label class="relief-check"><input id="rig-mirror" type="checkbox" checked /> 左右対称に動かす</label>
+      <div class="rig-transport">
+        <button id="rig-copy-left" type="button" title="左のボーンの位置を右に鏡写しにする">左 → 右に写す</button>
+        <button id="rig-copy-right" type="button" title="右のボーンの位置を左に鏡写しにする">右 → 左に写す</button>
+      </div>
+      <div class="wide"><button id="rig-fit" type="button" title="今の配置を捨てて、体の大きさに合わせて最初から置き直す">自動で置き直す</button></div>
+    </section>
+    <section id="rig-assign-section" class="rig-panel">
+      <h2>パーツの割り当て</h2>
+      <p id="rig-focus" class="hint"></p>
+      <div id="rig-assign" role="list" aria-label="ボーンごとのパーツ"></div>
+    </section>
     <section id="loft-section" hidden>
       <h2>断面</h2>
       <div class="loft-editor" id="loft-editor">
@@ -1603,6 +1798,8 @@
     <div id="mask-banner" hidden>マスク編集 · <span id="mask-banner-name"></span></div>
     <div id="path-draw-banner" hidden>パスを描く（<span id="path-draw-count"></span>） · クリックで点 · 最初の点でループ · 右クリック／Enterで確定 · Backspaceで戻す</div>
     <div id="feature-banner" hidden>顔・手・足の編集 · <span id="feature-banner-name"></span> · 右ドラッグで視点 · Escで終了</div>
+    <div id="rig-banner" hidden>ボーンとモーション · 点をドラッグで関節を動かす · 左ドラッグで視点 · Spaceで再生/一時停止 · Escで終了</div>
+    <div id="soft-banner" hidden>柔らかさの編集 · <span id="soft-banner-name"></span> · 左ドラッグで揺らす · 右ドラッグで視点 · Escで終了</div>
     <div id="relief-banner" hidden>法線編集 · <span id="relief-banner-name"></span> · <span id="relief-banner-hint">左ドラッグで描く</span> · 右ドラッグで視点 · Escで終了</div>
     <div id="relief-cursor" hidden></div>
     <div id="sketch-layer"></div>
@@ -1734,16 +1931,20 @@
     <p>メニューバーの左右対称アイコンがオンのときは、追加した形が左右1組で置かれ、片側の編集がもう一方にも反映されます。オフにすると、追加した形は1つだけ置かれ、編集も片側だけになります。</p>
     <p>パーツやフォルダを右クリックするとメニューが開き、マスク編集・名前の変更・ロック・非表示・削除を選べます。マスク編集では、置いた図形と重なる範囲が非表示になります。マスク範囲の図形はパーツ作成と同じ立体（球・三角・四角・断面）と平面（円・三角・四角）から選べ、断面は通常のパーツと同じく断面パネルで形を編集できます。パーツを Ctrl+C でコピーしておき、マスク編集中に Ctrl+V で貼り付けると、そのパーツと同じ形・位置・大きさ・回転のマスク範囲になります（傾きと平面のドームは反映されません）。マスク編集中に「カーブ」「ループ」を押すと、パスとそれに沿って曲がる筒状のマスク範囲が追加されます（ループなら輪になります）。パスの点を動かすと切り取る範囲も曲がり、範囲を選ぶとパーツと同じカーブのパネルで始点・終点・太さの変化などを調整できます。ほかのマスク範囲も右クリックから既存のパスに沿わせたり外したりできます。フォルダでマスク編集すると、置いた図形1つでフォルダ内の全パーツをまとめて切り取れます。リンクパーツも右クリックからマスク編集でき、リンク先の中身全体をまとめて切り取れます（マスクは元のモデル側に保存されます）。フォルダを右クリックして「左右対称に配置」を選ぶと、中の片側だけのパーツ（サブフォルダやマスク、リンクパーツも含む）に反対側の鏡像コピーが付きます。「左右対称を解除」で反対側のコピーを外せます。</p>
     <p>「別モデル化して別タブで編集」を選ぶと、そのパーツやフォルダが別モデルになり、別タブで開きます。別タブでの変更は自動で元のモデルに反映されます。元のモデルではリンクアイコン付きの1つのパーツとして扱われ、まとめて移動・回転・拡大縮小できます（中身はリンク先で編集します）。右クリックでリンク先の編集やリンクの解除ができ、「左右対称に配置」を選ぶと反対側に鏡像のコピーが表示されます（移動・回転・マスクも自動で反映）。リンクを残すには、元のモデルを保存してください。リンク先が表示できないときは、右クリックの「リンクをつけなおす…」か、リンク先タブに出るウィンドウから保存したファイル（.json）を選ぶと、つけなおせます。</p>
-    <p>「追加」は立体・平面・パスに分かれています。立体は球・三角柱・四角柱・断面、平面は薄い円・三角・四角です。「パス」の「カーブ」でベジエ曲線を置けます。パスは、右のパーツ一覧でそのパスを選んでいるときと、パスに沿わせたパーツやマスク範囲を選んでいるときだけ画面に表示されます。フォルダの表示・非表示を切り替えると、中のパスとそれに沿わせたパーツもまとめて切り替わります。カーブをクリックすると点（黄）とハンドル（ピンク）が表示され、点やハンドルを選んで移動ギズモで形を変えられます。ハンドルは反対側も連動して滑らかにつながります。点を右クリックして「角にする」を選ぶと、点が四角になり、2本のハンドルを別々に動かしてカーブを折り曲げられます（「滑らかな点にする」で元に戻ります）。角の点やそのハンドルを右クリックして「前のハンドルを削除」「次のハンドルを削除」を選ぶとハンドルがなくなり、その側はまっすぐ点に入ります（「…のハンドルを戻す」で再び出せます）。右クリックで点の追加・削除ができます（線の上で右クリックすると、その位置に中間点を追加できます）。パスを右クリックして「中間点で左右対称に編集」をオンにすると、真ん中の点（点が偶数なら真ん中の2点の間）を通る左右の面を境に、パスの形が鏡のように揃います。オンにしたときは右クリックした側（パス全体なら前半）の形がもう半分に写され、以後は点やハンドルを動かす・角にする・ハンドルを削除するといった操作が反対側の対になる点にも反映されます。点の追加と削除も左右で同時に行われ、真ん中の点は境の面の上に留まります。点を選んで回転ギズモを使うと、点のまわりでハンドルの向きがまとめて回ります。赤い輪（カーブの進む方向が軸）で回すと、カーブに沿わせたパーツがその点でねじれます。カーブ全体を選ぶと移動・回転・拡縮できます。パーツを右クリックして「カーブに沿わせる」または「ループに沿わせる」を選ぶと、パーツがそのパスに沿って曲がります。リンクパーツも右クリックから同じようにパスに沿わせられ、リンク先のモデル全体がひとまとまりで曲がります。パスに沿わせたパーツやリンクは、右のパーツ一覧でそのパスの行の下にまとめて表示され、パスの行の矢印でフォルダのように開閉できます（パーツが入っているフォルダはそのままで、パスから外すと元の場所に戻ります）。左のパネルで始点・終点の範囲と両端の太さを調整できます。パスに沿わせたパーツを選ぶと、沿わせる前の形が元の位置に半透明の青で表示されます。点を選ぶと左のパネルに「点の太さ」が出て、その点を通る所でパーツを太く・細くできます（「拡縮」を選んで点の拡縮ギズモをドラッグしても変えられ、複数の点を選んでいればまとめて変わります）。点と点のあいだの太さはなめらかにつながり、両端の太さとも掛け合わされます。「曲がり具合」を下げるとパーツの曲がりが弱まり、0%ではパーツはまっすぐのまま、パスの位置と向きにだけ合わせて置かれます（並べたときはそれぞれが1つずつまっすぐになります）。「伸ばす」はパーツ1つをその区間の長さに引き延ばして曲げます。「並べる」は同じ形を引き延ばさず、区間の中に等間隔で置いて、それぞれをパスに沿って曲げます（角をつけた点でも隣同士の間に隙間ができません）。「個数を指定」では個数で並べる数を変えられ、「均等に配置」ではパーツの長さに合わせて入るだけ等間隔に並べ、「重なり」スライダーで間隔を変えられます（0%で隣同士がちょうど接し、プラスにすると重なって数が増え、マイナスにすると隙間が空きます。区間やパーツの長さを変えると数も変わり、ループ一周に並べたときは継ぎ目も同じ間隔になります）。法線編集で描いた模様や法線マップは、曲げたパーツに合わせて一緒に曲がります（左右対称オンなら反対側も鏡像で曲がります。拡縮ギズモで太さや長さも変えられます）。パスに沿わせたパーツやリンクは、「回転」を選ぶと回転ギズモで回せます。パーツ自身の向きの輪で、緑はパスの進む方向を軸にしたねじり、赤と青はパスに対する傾きになります。寸法の「回転」に数値を入れても回せます。回転はパスに沿わせたときの向きを基準にします。</p>
+    <p>「追加」は立体・平面・パスに分かれています。立体は球・三角柱・四角柱・断面、平面は薄い円・三角・四角です。「パス」の「カーブ」でベジエ曲線を置けます。パスは、右のパーツ一覧でそのパスを選んでいるときと、パスに沿わせたパーツやマスク範囲を選んでいるときだけ画面に表示されます。フォルダの表示・非表示を切り替えると、中のパスもまとめて切り替わります。カーブをクリックすると点（黄）とハンドル（ピンク）が表示され、点やハンドルを選んで移動ギズモで形を変えられます。ハンドルは反対側も連動して滑らかにつながります。点を右クリックして「角にする」を選ぶと、点が四角になり、2本のハンドルを別々に動かしてカーブを折り曲げられます（「滑らかな点にする」で元に戻ります）。角の点やそのハンドルを右クリックして「前のハンドルを削除」「次のハンドルを削除」を選ぶとハンドルがなくなり、その側はまっすぐ点に入ります（「…のハンドルを戻す」で再び出せます）。右クリックで点の追加・削除ができます（線の上で右クリックすると、その位置に中間点を追加できます）。パスを右クリックして「中間点で左右対称に編集」をオンにすると、真ん中の点（点が偶数なら真ん中の2点の間）を通る左右の面を境に、パスの形が鏡のように揃います。オンにしたときは右クリックした側（パス全体なら前半）の形がもう半分に写され、以後は点やハンドルを動かす・角にする・ハンドルを削除するといった操作が反対側の対になる点にも反映されます。点の追加と削除も左右で同時に行われ、真ん中の点は境の面の上に留まります。点を選んで回転ギズモを使うと、点のまわりでハンドルの向きがまとめて回ります。赤い輪（カーブの進む方向が軸）で回すと、カーブに沿わせたパーツがその点でねじれます。カーブ全体を選ぶと移動・回転・拡縮できます。パーツを右クリックして「カーブに沿わせる」または「ループに沿わせる」を選ぶと、パーツがそのパスに沿って曲がります。リンクパーツも右クリックから同じようにパスに沿わせられ、リンク先のモデル全体がひとまとまりで曲がります。パスに沿わせたパーツやリンクは、右のパーツ一覧ではそれぞれ元の場所（フォルダや並び順）のまま表示され、パスの行と水色の線でつながります（パスの行は白抜きの丸、沿わせたものは塗りの丸です）。閉じたフォルダの中にあるものは、そのフォルダの行に線がつながります。パスや沿わせたものを選んでいると線が濃くなります。左のパネルで始点・終点の範囲と両端の太さを調整できます。パスに沿わせたパーツを選ぶと、沿わせる前の形が元の位置に半透明の青で表示されます。点を選ぶと左のパネルに「点の太さ」が出て、その点を通る所でパーツを太く・細くできます（「拡縮」を選んで点の拡縮ギズモをドラッグしても変えられ、複数の点を選んでいればまとめて変わります）。点と点のあいだの太さはなめらかにつながり、両端の太さとも掛け合わされます。「曲がり具合」を下げるとパーツの曲がりが弱まり、0%ではパーツはまっすぐのまま、パスの位置と向きにだけ合わせて置かれます（並べたときはそれぞれが1つずつまっすぐになります）。「伸ばす」はパーツ1つをその区間の長さに引き延ばして曲げます。「並べる」は同じ形を引き延ばさず、区間の中に等間隔で置いて、それぞれをパスに沿って曲げます（角をつけた点でも隣同士の間に隙間ができません）。「個数を指定」では個数で並べる数を変えられ、「均等に配置」ではパーツの長さに合わせて入るだけ等間隔に並べ、「重なり」スライダーで間隔を変えられます（0%で隣同士がちょうど接し、プラスにすると重なって数が増え、マイナスにすると隙間が空きます。区間やパーツの長さを変えると数も変わり、ループ一周に並べたときは継ぎ目も同じ間隔になります）。法線編集で描いた模様や法線マップは、曲げたパーツに合わせて一緒に曲がります（左右対称オンなら反対側も鏡像で曲がります。拡縮ギズモで太さや長さも変えられます）。パスに沿わせたパーツやリンクは、「回転」を選ぶと回転ギズモで回せます。パーツ自身の向きの輪で、緑はパスの進む方向を軸にしたねじり、赤と青はパスに対する傾きになります。寸法の「回転」に数値を入れても回せます。回転はパスに沿わせたときの向きを基準にします。</p>
     <p>「パス」の「ループ」は、端を持たない閉じた輪です。カーブの端にあるような視点の終点はなく、最初は左右の2点と、そのあいだの中間点で輪っかになります。線は最後の点から最初の点へ戻ります。点やハンドルの編集、右クリックでの追加・削除、パーツを沿わせる操作はカーブと同じです。</p>
     <p>「パス」の「クリック」を押すと、中央の画面をクリックした位置に点を打ってパスを描けます。マウスの先に表示中のパーツがあればその表面に、何もなければ直前の点と同じ奥行きに点が付きます（カーソルの点が黄色なら表面、灰色なら空中です）。点が2つ以上の状態で右クリック・Enter・Esc を押すとカーブとして確定し、3点以上打ってから最初の点をクリックするとループになります。Backspace（または Ctrl+Z）で直前の点を取り消せます。描いている間は右ドラッグで視点を回せます。点のあいだは滑らかにつながり、確定後は通常のパスと同じように編集できます。</p>
     <p>「追加」の「下書き」で、画面に重ねて描ける下書きレイヤーを置けます。下書きは視点を回しても動かず、画面に貼り付いたまま表示されます（画面の中央を基準に、画面の高さに合わせて拡縮されます）。右のパーツ一覧にパーツやパスと同じように並び、ドラッグで並べ替えやフォルダへの出し入れができます。一覧で上にある下書きほど手前に表示されます。行を右クリックして「描く」を選ぶか、行のペンのボタンを押すと描画モードになり、画面上部のバーでペン・鉛筆・マーカー・直線・消しゴムを切り替え、色と太さを選んで左ドラッグで描けます。描画モード中も、右ドラッグで視点を回し、中ドラッグで平行移動、ホイールで拡大縮小できます。「透過率」で下書きの透け具合を変えられ、右クリックのメニューからも 0〜75% を選べます。描いた線は Ctrl+Z で1本ずつ取り消せ、保存ファイルにも含まれます。「完了」か Esc で描画モードを終えます。</p>
     <p>パーツを2つ以上選んで右クリック（または「編集」メニュー）から「選択中のパーツを結合」を選ぶと、重なった内側の面が消え、表面がすき間なくつながった1つのメッシュになります。元のパーツの表面はそのまま残り、変わるのはパーツどうしが接している部分だけです。左のパネルの「なだらか」で、接している部分のまわりの表面そのものを粘土のように盛り上げてなめらかにつなげます（つなぎ目のまわりは自動で細かく分割されます）。立体と平面の板も結合できます。結合したあとは元のパーツに戻せません（戻すには Ctrl+Z）。左右対称オンで片側のパーツだけを選んで結合すると、反対側も鏡像で結合されます。平面の円・三角・四角どうしも、同じ向きなら結合でき、輪郭が1つにつながった板になります。前後に重ねた平面は、飛び出した部分の厚みをそのまま残します。平面の「なだらか」は、パーツどうしが接している部分（輪郭が交わる角や、重ねた板の段差の付け根）にだけ丸みを付け、ほかの輪郭は変えません。パーツを1つ右クリックして「ラスタライズ」を選ぶと、モーフ・マスク・カーブに沿った曲がりをそのまま焼き込んだ形に変わります（リンクパーツ以外）。ラスタライズしたパーツや結合したパーツは、左のパネルの「角の丸み」で角や切り口をまとめて丸められます。マスクで切り取ったパーツでは「切り口」も表示され、ほかの角はそのままで切り口の縁だけを丸められます。マスク編集中でもラスタライズできます。</p>
     <p>「ファイル」→「新規作成」で、パーツが1つもないまっさらな状態から始められます。保存していない変更は破棄されます。「インポート」では、保存済みのモデルファイルを、1つのリンクパーツとして取り込むか、パーツとフォルダをすべて取り込むかを選べます。左のパネルと右のパーツ一覧は、境目をドラッグして幅を変えられます。左のパネルの見出し（「追加」「変形」など）をクリックすると、その項目を折りたためます。折りたたんだ状態は次に開いたときも保たれます。</p>
-    <p>フォルダの ×、または右クリックの「フォルダを削除」で、フォルダと中身をまとめて削除できます。中にパーツやリンク、カーブ、ループがあるときは確認が出ます。「フォルダを外す」は中身を残してフォルダだけを外します。右クリックの「色を設定…」でフォルダに色をつけると、中のパーツやリンクパーツ（下の階層のフォルダの中身も含む）がその色になります。中のフォルダに別の色をつけると、そちらが優先されます。「色を元に戻す」で元の肌色（または上のフォルダの色）に戻ります。</p>
+    <p>フォルダの ×、または右クリックの「フォルダを削除」で、フォルダと中身をまとめて削除できます。中にパーツやリンク、カーブ、ループがあるときは確認が出ます。「フォルダを外す」は中身を残してフォルダだけを外します。右クリックの「色を設定…」でフォルダに色をつけると、中のパーツやリンクパーツ（下の階層のフォルダの中身も含む）がその色になります。中のフォルダに別の色をつけると、そちらが優先されます。「色を元に戻す」で元の肌色（または上のフォルダの色）に戻ります。パーツを右クリックして「色を設定…」を選ぶと、そのパーツだけに色をつけられ、フォルダの色より優先されます（複数選んでいるときは選んでいるパーツすべて、左右対称なら反対側にも同じ色がつきます）。色をつけたパーツやフォルダは、一覧の名前の前に色の印が出ます。パーツ一覧では、複数の行を選んだ状態で選んでいる行のどれかをドラッグすると、まとめて並べ替えたりフォルダに出し入れしたりできます。</p>
     <p>パーツを選ぶと左のパネルの「寸法」に、中心の位置・サイズ（パーツ自身の向きでの幅・高さ・奥行き）を cm で、回転を度で表示します。数値を入力して Enter で反映され、Esc で取り消せます。サイズを変えても中心の位置は変わりません。カーブやループを選んだときも同じように、線全体の中心の位置・サイズ・回転を編集できます（平らなパスで厚みが 0 の向きのサイズは変えられません）。「傾き」は、回転と同じ向きに片側の辺だけを倒して、四角をひし形にするようにパーツを歪ませます（X: 上が前へ、Y: 前が右へ、Z: 上が左へ。±75° まで）。「細かさ」でパーツごとのメッシュの細かさを % で変えられます（100% が標準、新しい三角は 50%）。右には頂点数が表示されます。</p>
     <p>パーツを2つ以上選ぶと「整列」が使えます。最後に選んだパーツが基準になり、ほかのパーツを「中心 X / Y / Z」で中心をそろえたり、「上に載せる」「下に付ける」で中心を合わせて上下にぴったり付けたりできます。「床に置く」は選んだパーツの一番下を床の高さに合わせます。</p>
     <p>四角と三角はモーフの「先細り」で上側を細くできます（テーパー）。下側を細くしたいときは回転で上下を逆にしてください。</p>
+    <p>パーツを選ぶと、左のパネルに「柔らかさ」が出ます。胸のように重力で柔らかく形が変わるものに使います。最初に動き方を「なし」「柔らかく」「付いて動く」から選びます。「柔らかく」にすると、垂れ・揺れ 30% から始まり、「垂れ」「揺れ」「起点」が出ます。「垂れ」を上げると、パーツが重力で垂れ下がります。「起点」で選んだ側（パーツ自身の向きで、後ろ・前・上・下・右・左）は体にくっついたまま動かず、反対側の先端ほど、また下側ほど大きく垂れるので、しずくのような形になります。重力はいつも画面の世界の真下に働くので、パーツやモデルを回したり傾けたりすると、垂れる向きもそれに合わせて変わります。「揺れ」を上げると、パーツや親を動かしたり回したりしたときに、先端が遅れてぷるんと揺れます。「揺れやすさ」は体の動きにどれだけ敏感に揺れるかで、100% が標準です。上げるほど小さな動きでも大きく揺れ、0% にすると揺れません。パーツごと（ひとまとめにしたパーツは中心のパーツで、かたまりごと）に変えられ、モーション再生中の揺れにも効きます。左右対称がオンなら反対側にも同じ設定がつきます（左右の起点は鏡写しになります）。「起点・重力・弾みを表示」がオンのときは、選んだ柔らかいパーツの起点が黄色の点と輪、起点から先端までが黄色の線、重力の向きが青の矢印（垂れが強いほど長くなります）、揺れているときの先端の弾みがピンクの矢印（実際の 2 倍の長さ）でビューに表示されます。乳首のように柔らかいパーツに付いている別のパーツは、そのパーツを選んで「付いて動く」にすると、いちばん近い柔らかいパーツに付き、付き先の表面と一緒に垂れたり揺れたりします。付き先は「付き先」で選び直せます（近い順に並びます）。左右のパーツをまとめて選んで付き先を選ぶと、それぞれ近い側のパーツに付きます。付いたパーツは付き先と合わせて1つのかたまりとして扱われ、起点から先端までの長さや垂れ方は全体の大きさで決まります。いくつかのパーツを組み合わせて胸などを作ったときは、それらを選んで「選択中の複数パーツ」の「ひとまとめにする」を押すと、いちばん大きいパーツを中心にほかのパーツがそこに付き、全体がつながったまま垂れたり揺れたりします（左右両方を選んだ場合は、それぞれ近い側のかたまりにまとまります）。まだ柔らかさがなければ、垂れ・揺れ 30% から始まります。中心のパーツを選ぶと、まとまっているパーツの数が表示され、垂れ・揺れ・起点はそのパーツで変えます。マスクで削った切り口の面も、パーツと一緒に垂れたり揺れたりします（どこを削るかは垂れる前の形で決まります）。柔らかさは見た目の変形で、クリックで選ぶ範囲・寸法・結合・ラスタライズには垂れる前の形が使われます。</p>
+    <p>パス（カーブ・ループ）やリンクパーツを選んだときも「柔らかさ」が出て、「なし」「柔らかく」から選べます（「付いて動く」と「ひとまとめにする」はパーツだけです）。パスを「柔らかく」にすると、「起点」で選んだ始点か終点の点は動かず、そこから離れた点ほど重力の向きへ曲がって垂れ、動かすと遅れて揺れます。点どうしの間隔は保たれるので、真下に垂れ下がったパスはそれ以上伸びません。パスに沿わせたパーツやリンクパーツ、マスク範囲も一緒に曲がるので、髪の房やしっぽ、ひもなどに使えます。点やハンドルを選んで形を直している間は、そのパスは元の形で表示されます。リンクパーツを「柔らかく」にすると、中のパーツ全体が1つのかたまりとして、起点の側（リンクパーツ自身の向きで、後ろ・前・上・下・右・左）を残して垂れたり揺れたりします。リンク先で付けた柔らかさよりこちらが優先され、左右対称のコピーも鏡写しで同じように動きます。どちらも「揺れやすさ」やモーション再生中の揺れ、「編集モードで動きを確認」が使えます。</p>
+    <p>「柔らかさ」の「編集モードで動きを確認」（パーツの右クリックや編集メニューの「柔らかさの編集」からも入れます）を押すと、柔らかさの編集モードになります。編集するパーツと、その反対側や付いているパーツだけがはっきり表示され、左のパネルで垂れ・揺れ・起点・付き先を変えると、その場ですぐ形と動きに反映されます。起点・重力・弾みの表示は、傾けたときの重力の向きや揺らしたときの弾みにも合わせて動きます。「動きの確認」の「重力」の「大きさ」では、重力の強さを 0%（無重力）〜300% で変えて、垂れ方の違いを確かめられます（青の矢印の長さも変わります）。「体の傾き」や「立ち・前かがみ・仰向け・うつ伏せ・右を下・左を下」で重力の向きを変えると、姿勢を変えたときの垂れ方を確かめられます。「上下・左右・前後」で一度だけ揺らし、「跳ね続ける」で跳ねている間の揺れを見られます。「強さ」で揺らす大きさを 10%〜300% で変えます。100% を超えると、ドラッグで揺らしたときの動きも大きくなり、より大きく揺れるようになります。ビューで左ドラッグすると、体をつかんで揺らしたように揺れ、離すと反動で揺れ戻ります。右ドラッグで視点を回し、パーツをクリックすると編集するパーツを切り替えます。傾きや揺らしは確認用で保存されません。設定は「保存」（Ctrl+S）で確定し、「破棄」で編集モードに入る前に戻します。Esc か「メインエディターに戻る」で終わります。</p>
+    <p>編集メニューの「ボーンとモーション」で、体にボーン（骨組み）を入れて、ダンスなどのモーションを再生できます。左のパネルは「モーション」「ボーンの配置」「パーツの割り当て」に分かれていて、見出しをクリックすると折りたためます。初めて開くと、モデルの大きさに合わせて腰・背骨・胸・首・頭・肩・上腕・前腕・手・太もも・すね・足のボーンが置かれます（中央は黄色、左は水色、右はピンク）。関節の点をドラッグすると位置を変えられます。「左右対称に動かす」がオンのときは、反対側の関節も鏡写しで一緒に動き、中央のボーンは左右の真ん中から外れません。オンのまま置き直すと、左右がそろった配置になります。「左 → 右に写す」「右 → 左に写す」で、片側のボーンの位置を反対側にそのまま写して左右対称にできます。「自動で置き直す」で体の大きさに合わせた最初の配置に戻せます。それぞれのパーツは、いちばん近いボーンに自動で付いて動きます。「パーツの割り当て」には、ボーンごとにそのボーンで動くパーツが並びます。各パーツの右の欄でボーンを選ぶと付け替えられ、「自動（〜）」に戻すと再びいちばん近いボーン（かっこの中）に付きます。「動かさない」にすると、その場に残ります。ビューの点やパーツをクリックしても、そのボーンで動くパーツだけがはっきり表示され、一覧の行も強調されます。ボーン名やパーツ名をクリックすると、ビューでそのボーンやパーツが強調されます。「モーションを読み込む」で、無料で配布されている MMD のモーション（.vmd）や、モーションキャプチャーの .bvh を読み込むと再生が始まります。足の動きが IK で付けられた VMD にも対応しています。「再生／一時停止」（Space キーでも切り替え）、「位置」で好きな場面へ移動、「速さ」で再生の速さ、「くり返す」で最後まで行ったら最初に戻ります。「移動もする」をオフにすると、前後左右には動かずその場で踊ります。膝立ち・四つんばい・寝そべりのように最初から低い姿勢のモーションでは、体がそのぶん床まで下がります（「移動もする」がオフでも上下には動きます）。「停止」で元の姿勢に戻り、関節を動かせるようになります。柔らかさを付けたパーツは、踊りに合わせて揺れます。再生中の揺れは体の動きの勢いで決まり、柔らかさの編集モードの「強さ」は効きません。パーツごとの揺れ方は「柔らかさ」の「揺れやすさ」で変え、すべてのパーツをまとめて大きく揺らしたいときは、モーションの「全体の揺れ」を 100% より上げてください（最大 500%）。「全体の揺れ」を 0% にすると再生中は揺れません。ボーンの配置とパーツごとのボーンの選び方はモデルと一緒に保存されますが、モーションそのものは保存されません。モデルの腕の向きや体型がモーションの元のモデルと違っても、ボーンの向きに合わせて動きを置き換えます。</p>
     <p>平面（円・三角・四角）を選ぶと、左のパネルに「盛り上がり」が出ます。「高さ」を上げると、面の中央点を頂点にして前面が盛り上がります（100% で幅の半分の高さ）。ふだん裏面は平らなままですが、「裏面にも盛り上げる」を入れると、後ろの面も同じ高さとカーブで盛り上がり、前後対称の形になります。「円形」は中央点からの距離で高さが決まり、角に向かって低くなります。「輪郭に沿う」は面の輪郭と同じ形の等高線で、辺に向かって低くなります。トーンカーブは横が中央点（左）から縁（右）、縦が高さです。空いた所をクリックすると点が増え、点をドラッグすると盛り上げ方が変わります。ダブルクリックか右クリックで点を消せます。「ドーム」「山形」「台地」で代表的な形を選べ、「リセット」でなだらかな初期のカーブに戻ります。盛り上げた平面は立体として扱われ、ほかのパーツと結合したり、ラスタライズしたりできます。</p>
     <p>「追加」の「断面」は、輪切りにした断面の形を上下につないで作る立体です（円柱から始まります）。選ぶと左のパネルに「断面」が出て、3D 表示にも断面の輪が重なります（選んでいる断面はオレンジ）。縦棒は2本あり、どちらも横から見た形で、下が根元、上が先端です。いちばん左の細い縦棒は全体図で、上下にドラッグして範囲を囲むと、その範囲が中央の縦棒に拡大表示されます。青い枠はドラッグで移動、上下の端をドラッグで伸縮でき、枠の外をクリックするとその位置へ枠が移ります。ダブルクリックか「全体を表示」で範囲指定をやめます。中央の縦棒の上でホイールを回しても、カーソルの位置を中心に拡大・縮小できます。全身のような長い形でも、範囲を絞れば胸やくびれなどの断面を細かく並べられます。中央の縦棒の空いた所をクリックすると断面が増え（最大 60 個）、目盛りをドラッグすると上下に動き、ダブルクリックか右クリックで消せます。右の図は選んだ断面を真上から見た形で、下が正面側です。前後の断面が点線で重なります。線の近くをクリックで点を追加、ドラッグで移動、ダブルクリックで削除、右クリックで角／なめらかを切り替えます。その下の「輪郭で編集」には、正面から見た輪郭（幅）と横から見た輪郭（厚み、右が正面側）が並びます。輪郭の点をドラッグすると、その高さの断面の幅や厚みと高さが変わり（反対側の輪郭は動きません。Shift を押しながらなら高さは固定）、断面の形を1枚ずつ描き直さなくても全体のシルエットを作れます。輪郭の外の空いた所をクリックすると、その高さに前後の断面から補間した断面が増え、そのままドラッグで形を決められます。点をダブルクリックか右クリックするとその断面を消せます。「左右対称に編集」が入っていると右半分だけを編集し、左半分は自動で鏡写しになります。「大きさ」「傾き」（＋で後ろ側が上がる）「左右」「前後」は選んだ断面ごとの値です。形は中心から放射状に読み取るので、中心から見て裏側に回り込む形は外側の線だけが使われます（そのときは警告が出ます）。「端の形」で先端と根元を平ら・丸く・とがるから選べ、「長さ」で丸みやとがりの長さを変えられます。「ペニス」のテンプレートは、竿・くびれ・傾いたカリ首・切れ込みのある亀頭・先端の断面を並べた形です（正面側が裏筋側。上に向いて立った向きなので、回転させて使ってください）。軸はまっすぐですが、曲げたいときは「パスに沿わせる」が使えます。モーフと盛り上がりは効きません。ほかのパーツと結合したり、ラスタライズしたりできます。</p>
     <p>パーツを右クリックして「法線編集」を選ぶと、そのパーツだけに光で浮き出て見える模様を描けます。編集中はほかのパーツが薄くなり、そのパーツの前を向いた面に左ドラッグで盛ります。右ドラッグで視点を回せます。左右のもう片方には付きません。「削る」で盛りを減らせます。「浮き出し」は凹凸の強さ、「厚み」は模様を載せた面から前後に広げる距離です。「法線マップ」の「読み込む」で、そのパーツの正面に画像を貼れます。緑チャンネルが下向きの画像は「法線の緑を上」を外してください。「裏面にも貼る」を入れると、描いた模様と法線マップがそのパーツの後ろを向いた面にも付き、後ろから見ても正面と同じ向きに読めるよう左右反転して貼られます。読み込んだ法線マップは「法線マップ」の横位置・縦位置・回転・大きさで動かせます。「法線マップを動かす」を押すと、パーツの上で左ドラッグで移動、Shift＋左ドラッグで回転、ホイールで拡大縮小できます（もう一度押すか「描く」で筆に戻ります）。「繰り返す」で画像を敷き詰め、「位置を戻す」で元に戻ります。回しても光の当たり方は正しく保たれます。模様はそのパーツに付いたまま動き、保存ファイルに含まれます。Escで編集を終えます。</p>
@@ -1768,6 +1969,7 @@
     import { Line2 } from "three/addons/lines/Line2.js";
     import { LineMaterial } from "three/addons/lines/LineMaterial.js";
     import { LineGeometry } from "three/addons/lines/LineGeometry.js";
+    import { BVHLoader } from "three/addons/loaders/BVHLoader.js";
     const manifoldKit = await import("manifold-3d")
       .then(async ({ default: Module }) => {
         const wasm = await Module();
@@ -2211,6 +2413,53 @@ ${withNormal ? "    #ifndef FLAT_SHADED\n    vNormal = normalize((viewMatrix * v
 }`);
     }
 
+    // 変形はワールド座標の場として定義し、付き先のパーツも同じ場で動かせるようにする。
+    const SAG_LIB = `
+      uniform float sagOn;
+      uniform mat4 sagFrame;
+      uniform vec3 sagAxis;
+      uniform vec3 sagCenter;
+      uniform vec3 sagCenterWorld;
+      uniform float sagHalf;
+      uniform float sagStrength;
+      uniform float sagRadius;
+      uniform float sagStep;
+      uniform vec3 sagGravity;
+      uniform vec3 sagAxisWorld;
+      uniform vec3 sagWobble;
+      // 付け根（u = 0）は動かさず、先端ほど大きく、重力で下になる側ほど多く垂らす。
+      vec3 sagOffset(vec3 world) {
+        vec3 p = (sagFrame * vec4(world, 1.0)).xyz;
+        float u = clamp((sagHalf - dot(p - sagCenter, sagAxis)) / max(2.0 * sagHalf, 0.000001), 0.0, 1.0);
+        float w = u * u;
+        float h = clamp(dot(world - sagCenterWorld, -sagGravity) / max(sagRadius, 0.000001), -1.0, 1.0);
+        vec3 along = sagAxisWorld * dot(sagGravity, sagAxisWorld);
+        vec3 across = sagGravity - along;
+        return ((across * (1.0 - 0.5 * h) + along * 0.35) * sagStrength + sagWobble) * w;
+      }
+    `;
+
+    function patchSagVertex(source, withNormal) {
+      return source
+        .replace("#include <common>", `#include <common>\n${SAG_LIB}`)
+        .replace("#include <skinning_vertex>", `#include <skinning_vertex>
+if (sagOn > 0.5) {
+  vec3 sagWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;
+  vec3 sagD = sagOffset(sagWorld);
+${withNormal ? `  vec3 sagN0 = normalize(transpose(inverse(mat3(modelMatrix))) * normal);
+  vec3 sagT1 = normalize(cross(sagN0, abs(sagN0.y) < 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0)));
+  vec3 sagT2 = cross(sagN0, sagT1);
+  vec3 sagW1 = sagT1 * sagStep + sagOffset(sagWorld + sagT1 * sagStep) - sagD;
+  vec3 sagW2 = sagT2 * sagStep + sagOffset(sagWorld + sagT2 * sagStep) - sagD;
+  vec3 sagN = normalize(cross(sagW1, sagW2));
+  if (dot(sagN, sagN0) < 0.0) sagN = -sagN;
+  #ifndef FLAT_SHADED
+  vNormal = normalize((viewMatrix * vec4(sagN, 0.0)).xyz);
+  #endif
+` : ""}  transformed = (inverse(modelMatrix) * vec4(sagWorld + sagD, 1.0)).xyz;
+}`);
+    }
+
     const CAP_LIB = `
       uniform mat4 capBodyInv;
       uniform int capBodyKind;
@@ -2239,8 +2488,8 @@ ${withNormal ? "    #ifndef FLAT_SHADED\n    vNormal = normalize((viewMatrix * v
       ...Array.from({ length: MASK_MAX }, (_, index) => `if (maskCount > ${index} && capSelf != ${index} && maskMode[${index}] == 0 && containsMask${index}(vMaskWorld)) discard;`),
     ].join("\n");
 
-    function patchCapVertex(source) {
-      return patchMaskVertex(source)
+    function patchCapVertex(source, withNormal) {
+      return patchMaskVertex(patchSagVertex(source, withNormal))
         .replace("#include <common>", "#include <common>\nuniform float capInflate;\nuniform vec3 capPivot;")
         .replace("#include <begin_vertex>", "#include <begin_vertex>\ntransformed = capPivot + (transformed - capPivot) * (1.0 + capInflate);");
     }
@@ -2480,6 +2729,47 @@ if (decalOn > 0.5) {
     let featureSession = null;
     let featureCamera = null;
     let featureDraft = null;
+    let softTarget = null;
+    let softSession = null;
+    let softCamera = null;
+    let softMouse = null;
+    let sagGuidesOn = true;
+    const softPreview = { pitch: 0, roll: 0, power: 0.5, bounce: false, time: 0, kicks: [], drag: null, held: new THREE.Vector3(), release: null };
+    let rig = null;
+    let rigEditing = false;
+    let rigBone = null;
+    let rigPart = null;
+    let rigMotion = null;
+    let rigPoseFrame = null;
+    let rigPosedJoints = null;
+    let rigLookActive = false;
+    let rigMirror = true;
+    const rigPlayer = { playing: false, showing: false, time: 0, speed: 1, loop: true, travel: true, sway: 1 };
+    const RIG_BONES = [
+      { name: "hips", label: "腰", tail: "spine", parent: null },
+      { name: "spine", label: "背骨", tail: "chest", parent: "hips", fromRoot: true },
+      { name: "chest", label: "胸", tail: "neck", parent: "spine" },
+      { name: "neck", label: "首", tail: "head", parent: "chest" },
+      { name: "head", label: "頭", tail: "headTop", parent: "neck" },
+    ];
+    for (const [side, word] of [["left", "左"], ["right", "右"]]) {
+      RIG_BONES.push(
+        { name: `${side}Shoulder`, label: `${word}肩`, tail: `${side}UpperArm`, parent: "chest", side },
+        { name: `${side}UpperArm`, label: `${word}上腕`, tail: `${side}LowerArm`, parent: `${side}Shoulder`, side },
+        { name: `${side}LowerArm`, label: `${word}前腕`, tail: `${side}Hand`, parent: `${side}UpperArm`, side },
+        { name: `${side}Hand`, label: `${word}手`, tail: `${side}HandTip`, parent: `${side}LowerArm`, side },
+        { name: `${side}UpperLeg`, label: `${word}太もも`, tail: `${side}LowerLeg`, parent: "hips", side },
+        { name: `${side}LowerLeg`, label: `${word}すね`, tail: `${side}Foot`, parent: `${side}UpperLeg`, side },
+        { name: `${side}Foot`, label: `${word}足`, tail: `${side}Toe`, parent: `${side}LowerLeg`, side },
+      );
+    }
+    const RIG_BONE_MAP = new Map(RIG_BONES.map((bone) => [bone.name, bone]));
+    const RIG_JOINTS = [...RIG_BONES.map((bone) => bone.name), "headTop", "leftHandTip", "rightHandTip", "leftToe", "rightToe"];
+    const RIG_LAYOUT = {
+      hips: [0, 0.36, 0], spine: [0, 0.45, 0], chest: [0, 0.54, 0], neck: [0, 0.665, 0], head: [0, 0.735, 0], headTop: [0, 1, 0],
+      Shoulder: [0.035, 0.65, 0], UpperArm: [0.17, 0.645, 0], LowerArm: [0.223, 0.488, 0], Hand: [0.272, 0.342, 0], HandTip: [0.295, 0.272, 0],
+      UpperLeg: [0.065, 0.36, 0], LowerLeg: [0.065, 0.19, 0], Foot: [0.065, 0.048, 0], Toe: [0.065, 0.012, 0.11],
+    };
     const featureRay = new THREE.Raycaster();
     const FEATURE_TYPES = { face: "顔", hand: "手", foot: "足" };
     const FEATURE_PRESETS = {
@@ -2776,6 +3066,23 @@ if (decalOn > 0.5) {
       if (relief) relief.uniforms.reliefBent.value = mesh.geometry?.attributes?.reliefRest ? 1 : 0;
     }
 
+    function sagUniformSet() {
+      return {
+        sagOn: { value: 0 },
+        sagFrame: { value: new THREE.Matrix4() },
+        sagAxis: { value: new THREE.Vector3(0, 0, -1) },
+        sagCenter: { value: new THREE.Vector3() },
+        sagCenterWorld: { value: new THREE.Vector3() },
+        sagHalf: { value: 0.1 },
+        sagStrength: { value: 0 },
+        sagRadius: { value: 0.1 },
+        sagStep: { value: 0.001 },
+        sagGravity: { value: new THREE.Vector3(0, -1, 0) },
+        sagAxisWorld: { value: new THREE.Vector3(0, 0, -1) },
+        sagWobble: { value: new THREE.Vector3() },
+      };
+    }
+
     function installMaskShader(material) {
       const uniforms = {
         maskCount: { value: 0 },
@@ -2800,6 +3107,7 @@ if (decalOn > 0.5) {
         peerTaper: { value: new Float32Array(PEER_MAX) },
         peerBox: { value: Array.from({ length: PEER_MAX }, () => new THREE.Vector3()) },
         peerCenter: { value: Array.from({ length: PEER_MAX }, () => new THREE.Vector3()) },
+        ...sagUniformSet(),
       };
       material.userData.maskUniforms = uniforms;
       material.userData.reliefGpu = createReliefGpu();
@@ -2807,10 +3115,10 @@ if (decalOn > 0.5) {
       decalGpus.set(material, decalGpu);
       const patch = (shader, withNormal = false) => {
         Object.assign(shader.uniforms, uniforms);
-        shader.vertexShader = patchPushVertex(patchMaskVertex(shader.vertexShader), withNormal);
+        shader.vertexShader = patchPushVertex(patchMaskVertex(patchSagVertex(shader.vertexShader, withNormal)), withNormal);
         shader.fragmentShader = patchMaskFragment(shader.fragmentShader, BODY_LIB, BODY_EXEC);
       };
-      material.customProgramCacheKey = () => "mask-discard-v13";
+      material.customProgramCacheKey = () => "mask-discard-v16";
       material.onBeforeCompile = (shader) => {
         patch(shader, true);
         Object.assign(shader.uniforms, material.userData.reliefGpu.uniforms, decalGpu.uniforms);
@@ -2818,9 +3126,385 @@ if (decalOn > 0.5) {
         shader.fragmentShader = patchDecalFragment(patchReliefFragment(shader.fragmentShader));
       };
       const depth = new THREE.MeshDepthMaterial();
-      depth.customProgramCacheKey = () => "mask-discard-depth-v9";
+      depth.customProgramCacheKey = () => "mask-discard-depth-v12";
       depth.onBeforeCompile = (shader) => patch(shader);
       material.userData.depthMaterial = depth;
+    }
+
+    const SAG_ANCHORS = {
+      back: [0, 0, -1],
+      front: [0, 0, 1],
+      top: [0, 1, 0],
+      bottom: [0, -1, 0],
+      right: [-1, 0, 0],
+      left: [1, 0, 0],
+    };
+    const SAG_DROP = 0.5;
+    const SAG_WOBBLE_HZ = 2.2;
+    const SAG_WOBBLE_DAMPING = 0.22;
+    const SAG_EASE_MAX = 5;
+    const sagMotions = new WeakMap();
+    const sagBoxes = new WeakMap();
+    const sagLocalAxis = new THREE.Vector3();
+    const sagWorldAxis = new THREE.Vector3();
+    const sagTip = new THREE.Vector3();
+    const sagHalfSize = new THREE.Vector3();
+    const sagColumn = new THREE.Vector3();
+    const sagLinear = new THREE.Matrix3();
+    const sagGravityWorld = new THREE.Vector3(0, -1, 0);
+    const sagShake = new THREE.Vector3();
+    let sagGravityScale = 1;
+    const sagGroupBoxes = new WeakMap();
+    const sagSpans = new WeakMap();
+    const sagInverse = new THREE.Matrix4();
+    const sagRelative = new THREE.Matrix4();
+    const sagMemberBox = new THREE.Box3();
+
+    function readSag(value) {
+      if (!value || typeof value !== "object") return null;
+      const within = (number) => (Number.isFinite(number) ? Math.min(1, Math.max(0, number)) : 0);
+      const sag = {
+        amount: within(value.amount),
+        wobble: within(value.wobble),
+        anchor: Object.hasOwn(SAG_ANCHORS, value.anchor) ? value.anchor : "back",
+      };
+      const ease = Number(value.ease);
+      if (Number.isFinite(ease) && ease !== 1) sag.ease = Math.min(SAG_EASE_MAX, Math.max(0, ease));
+      if (typeof value.follow === "string" && value.follow && value.follow.length <= 100) sag.follow = value.follow;
+      return sag.amount > 0 || sag.wobble > 0 || sag.anchor !== "back" || sag.follow ? sag : null;
+    }
+
+    function readPathSag(value) {
+      if (!value || typeof value !== "object") return null;
+      const sag = readSag({ ...value, anchor: "back", follow: undefined });
+      if (!sag || !(sag.amount > 0 || sag.wobble > 0)) return null;
+      sag.anchor = value.anchor === "end" ? "end" : "start";
+      return sag;
+    }
+
+    function sagActive(mesh) {
+      const sag = mesh?.userData.sag;
+      return Boolean(sag && !sag.follow && (sag.amount > 0 || sag.wobble > 0) && !mesh.userData.isMask);
+    }
+
+    function sagHost(mesh) {
+      const id = mesh.userData.sag?.follow;
+      if (!id || id === mesh.userData.id) return null;
+      const host = "linkParent" in mesh.userData
+        ? mesh.parent?.children.find((item) => item.userData.id === id) ?? null
+        : meshById(id);
+      return sagActive(host) ? host : null;
+    }
+
+    function setSag(mesh, value) {
+      if (isCurve(mesh)) {
+        const sag = readPathSag(value);
+        if (sag) mesh.userData.sag = sag;
+        else delete mesh.userData.sag;
+        return;
+      }
+      if (isLinkAnchor(mesh)) {
+        const link = linkById(mesh.userData.linkId);
+        const sag = readSag(value ? { ...value, follow: undefined } : null);
+        const active = sag && (sag.amount > 0 || sag.wobble > 0) ? sag : null;
+        if (link) {
+          if (active) link.sag = active;
+          else delete link.sag;
+        }
+        if (active) mesh.userData.sag = active;
+        else delete mesh.userData.sag;
+        return;
+      }
+      const sag = readSag(value);
+      if (sag) mesh.userData.sag = sag;
+      else delete mesh.userData.sag;
+    }
+
+    function mirroredSag(sag) {
+      if (!sag) return null;
+      const anchor = { right: "left", left: "right" }[sag.anchor] ?? sag.anchor;
+      const host = sag.follow ? meshById(sag.follow) : null;
+      const twin = host ? otherOf(recordOf(host), host) : null;
+      return { ...sag, anchor, ...(twin ? { follow: twin.userData.id } : {}) };
+    }
+
+    function sagBox(geometry) {
+      const position = geometry?.attributes?.position;
+      if (!position) return null;
+      let entry = sagBoxes.get(geometry);
+      if (!entry || entry.version !== position.version || entry.count !== position.count) {
+        entry = { version: position.version, count: position.count, box: new THREE.Box3().setFromBufferAttribute(position) };
+        sagBoxes.set(geometry, entry);
+      }
+      return entry.box;
+    }
+
+    // 重力は常にワールドの真下。揺れは先端の動きにばねで遅れてついていく量として、毎フレーム進める。
+    const SAG_UNIFORMS = ["sagFrame", "sagAxis", "sagCenter", "sagCenterWorld", "sagHalf", "sagStrength", "sagRadius", "sagStep", "sagAxisWorld", "sagWobble", "sagGravity"];
+
+    function updateSags(meshes, dt) {
+      const followers = [];
+      const members = new Map();
+      for (const mesh of meshes) {
+        if (!mesh.userData.sag?.follow) continue;
+        followers.push(mesh);
+        const host = sagHost(mesh);
+        if (!host) continue;
+        if (!members.has(host)) members.set(host, []);
+        members.get(host).push(mesh);
+      }
+      for (const mesh of meshes) {
+        if (!mesh.userData.sag?.follow) updateSag(mesh, dt, members.get(mesh));
+      }
+      for (const mesh of followers) {
+        const uniforms = mesh.material?.userData?.maskUniforms;
+        if (!uniforms?.sagOn) continue;
+        const source = sagHost(mesh)?.material?.userData?.maskUniforms;
+        if (!source?.sagOn.value) {
+          uniforms.sagOn.value = 0;
+          continue;
+        }
+        copySagUniforms(source, uniforms);
+        uniforms.sagOn.value = 1;
+      }
+      for (const anchor of [...activeAnchors(), ...linkMirrors()]) {
+        const own = anchor.userData.isLinkMirror ? anchor.userData.primary.userData.sag : anchor.userData.sag;
+        if (own) anchor.userData.sag = own;
+        else delete anchor.userData.sag;
+        if (!sagActive(anchor)) {
+          if (anchor.userData.sagUniforms) anchor.userData.sagUniforms.sagOn.value = 0;
+          sagMotions.delete(anchor);
+          continue;
+        }
+        anchor.userData.sagUniforms ??= sagUniformSet();
+        const inner = anchor.userData.inner.children.filter((mesh) => mesh.material?.userData?.maskUniforms?.sagOn);
+        updateSag(anchor, dt, inner);
+        const source = anchor.userData.sagUniforms;
+        if (!source.sagOn.value) continue;
+        for (const mesh of inner) {
+          const uniforms = mesh.material.userData.maskUniforms;
+          copySagUniforms(source, uniforms);
+          uniforms.sagOn.value = 1;
+        }
+      }
+      for (const mesh of meshes) {
+        const caps = maskCaps.get(mesh);
+        const source = mesh.material?.userData?.maskUniforms;
+        if (!caps?.length || !source?.sagOn) continue;
+        for (const cap of caps) {
+          const uniforms = cap.material.userData.capUniforms;
+          uniforms.sagOn.value = source.sagOn.value;
+          if (source.sagOn.value) copySagUniforms(source, uniforms);
+        }
+      }
+    }
+
+    function copySagUniforms(source, target) {
+      for (const name of SAG_UNIFORMS) {
+        if (typeof source[name].value === "number") target[name].value = source[name].value;
+        else target[name].value.copy(source[name].value);
+      }
+    }
+
+    function sagGroupBox(mesh, members) {
+      const own = mesh.geometry ? sagBox(mesh.geometry) : null;
+      if (mesh.geometry && (!own || own.isEmpty() || !members?.length)) return own;
+      const box = sagGroupBoxes.get(mesh) ?? new THREE.Box3();
+      sagGroupBoxes.set(mesh, box);
+      if (own) box.copy(own);
+      else box.makeEmpty();
+      sagInverse.copy(mesh.matrixWorld).invert();
+      for (const member of members) {
+        const part = sagBox(member.geometry);
+        if (!part || part.isEmpty()) continue;
+        member.updateWorldMatrix(true, false);
+        sagRelative.multiplyMatrices(sagInverse, member.matrixWorld);
+        box.union(sagMemberBox.copy(part).applyMatrix4(sagRelative));
+      }
+      return box;
+    }
+
+    function updateSag(mesh, dt, members) {
+      const uniforms = mesh.material?.userData?.maskUniforms ?? mesh.userData.sagUniforms;
+      if (!uniforms?.sagOn) return;
+      const sag = mesh.userData.sag;
+      mesh.updateWorldMatrix(true, false);
+      const box = sagActive(mesh) ? sagGroupBox(mesh, members) : null;
+      if (!box || box.isEmpty()) {
+        uniforms.sagOn.value = 0;
+        sagMotions.delete(mesh);
+        return;
+      }
+      const elements = mesh.matrixWorld.elements;
+      sagLocalAxis.fromArray(SAG_ANCHORS[sag.anchor]);
+      box.getCenter(uniforms.sagCenter.value);
+      box.getSize(sagHalfSize).multiplyScalar(0.5);
+      const half = Math.max(Math.abs(sagHalfSize.dot(sagLocalAxis)), 1e-5);
+      sagWorldAxis.copy(sagLocalAxis).transformDirection(mesh.matrixWorld);
+      const axisScale = sagColumn.copy(sagLocalAxis).applyMatrix3(sagLinear.setFromMatrix4(mesh.matrixWorld)).length();
+      const length = 2 * half * axisScale;
+      let cross = 0;
+      for (let axis = 0; axis < 3; axis += 1) {
+        if (sagLocalAxis.getComponent(axis) !== 0) continue;
+        cross += 0.5 * sagHalfSize.getComponent(axis) * Math.hypot(elements[axis * 4], elements[axis * 4 + 1], elements[axis * 4 + 2]);
+      }
+      sagSpans.set(mesh, { length, cross });
+      let vertical = 0;
+      for (let axis = 0; axis < 3; axis += 1) {
+        const along = elements[axis * 4] * sagGravityWorld.x + elements[axis * 4 + 1] * sagGravityWorld.y + elements[axis * 4 + 2] * sagGravityWorld.z;
+        vertical += Math.abs(along) * sagHalfSize.getComponent(axis);
+      }
+      uniforms.sagOn.value = 1;
+      uniforms.sagGravity.value.copy(sagGravityWorld);
+      uniforms.sagFrame.value.copy(mesh.matrixWorld).invert();
+      uniforms.sagCenterWorld.value.copy(uniforms.sagCenter.value).applyMatrix4(mesh.matrixWorld);
+      uniforms.sagAxis.value.copy(sagLocalAxis);
+      uniforms.sagHalf.value = half;
+      uniforms.sagStrength.value = sag.amount * SAG_DROP * length * sagGravityScale;
+      uniforms.sagRadius.value = Math.max(vertical, 1e-5);
+      uniforms.sagStep.value = Math.max(length * 0.01, 1e-5);
+      uniforms.sagAxisWorld.value.copy(sagWorldAxis);
+      sagTip.copy(uniforms.sagCenter.value).addScaledVector(sagLocalAxis, -half).applyMatrix4(mesh.matrixWorld).add(sagShake);
+      stepSagSpring(mesh, sagTip, length, sag, dt, uniforms.sagWobble.value);
+    }
+
+    function stepSagSpring(owner, tip, length, sag, dt, wobble) {
+      if (!(sag.wobble > 0) || !(dt > 0)) {
+        wobble.set(0, 0, 0);
+        if (!(sag.wobble > 0)) sagMotions.delete(owner);
+        return;
+      }
+      let motion = sagMotions.get(owner);
+      if (!motion || motion.tip.distanceTo(tip) > length * 3) {
+        motion = { tip: tip.clone(), velocity: new THREE.Vector3(), offset: new THREE.Vector3(), speed: new THREE.Vector3() };
+        sagMotions.set(owner, motion);
+      }
+      const elapsed = Math.min(dt, 0.1);
+      const velocity = tip.clone().sub(motion.tip).divideScalar(elapsed);
+      const accel = velocity.clone().sub(motion.velocity).divideScalar(elapsed);
+      const gain = (sag.ease ?? 1) * (!softTarget && rigPoseFrame ? rigPlayer.sway : 1);
+      const boost = Math.max(1, gain) * (softTarget ? Math.max(1, softPreview.power) : 1);
+      accel.multiplyScalar(gain);
+      const limit = length * 400 * boost;
+      if (accel.length() > limit) accel.setLength(limit);
+      motion.tip.copy(tip);
+      motion.velocity.copy(velocity);
+      const omega = 2 * Math.PI * SAG_WOBBLE_HZ * (1.4 - 0.6 * sag.wobble);
+      const steps = Math.ceil(elapsed * 120);
+      const step = elapsed / steps;
+      const force = new THREE.Vector3();
+      for (let index = 0; index < steps; index += 1) {
+        force.copy(accel).negate()
+          .addScaledVector(motion.offset, -omega * omega)
+          .addScaledVector(motion.speed, -2 * SAG_WOBBLE_DAMPING * omega);
+        motion.speed.addScaledVector(force, step);
+        motion.offset.addScaledVector(motion.speed, step);
+      }
+      if (motion.offset.length() > length * 0.6 * boost) motion.offset.setLength(length * 0.6 * boost);
+      wobble.copy(motion.offset).multiplyScalar(sag.wobble);
+    }
+
+    const SAG_PATH_DROP = 1.5;
+    const pathSagSaved = [];
+
+    // 点やハンドルを編集している間は、ずれた位置に表示されないよう元の形のままにする。
+    function pathSwaying(curve) {
+      const sag = curve?.userData.sag;
+      if (!sag || !(sag.amount > 0 || sag.wobble > 0) || curve.userData.points.length < 2) return false;
+      return !selection.some((item) => isCurvePart(item) && curveOf(item) === curve);
+    }
+
+    function applyPathSags(dt) {
+      const swayed = [];
+      for (const curve of curves) {
+        if (!pathSwaying(curve)) {
+          delete curve.userData.sagState;
+          sagMotions.delete(curve);
+          continue;
+        }
+        const sag = curve.userData.sag;
+        const points = curve.userData.points;
+        const count = points.length;
+        curve.updateWorldMatrix(true, false);
+        const matrix = curve.matrixWorld;
+        const world = points.map((point) => point.position.clone().applyMatrix4(matrix));
+        const along = [0];
+        for (let index = 1; index < count; index += 1) along.push(along[index - 1] + world[index].distanceTo(world[index - 1]));
+        const loop = curve.userData.closed ? along[count - 1] + world[count - 1].distanceTo(world[0]) : 0;
+        const root = sag.anchor === "end" ? count - 1 : 0;
+        const reach = along.map((value) => {
+          const distance = Math.abs(value - along[root]);
+          return loop ? Math.min(distance, loop - distance) : distance;
+        });
+        const length = Math.max(...reach);
+        if (length < 1e-6) {
+          delete curve.userData.sagState;
+          continue;
+        }
+        const tipIndex = reach.indexOf(length);
+        const state = curve.userData.sagState ?? { root: new THREE.Vector3(), tip: new THREE.Vector3(), wobble: new THREE.Vector3(), length: 0 };
+        curve.userData.sagState = state;
+        state.root.copy(world[root]);
+        state.tip.copy(world[tipIndex]);
+        state.length = length;
+        stepSagSpring(curve, sagTip.copy(world[tipIndex]).add(sagShake), length, sag, dt, state.wobble);
+        const strength = sag.amount * SAG_PATH_DROP * length * sagGravityScale;
+        const moved = world.map((point, index) => {
+          const weight = (reach[index] / length) ** 2;
+          const radial = point.clone().sub(world[root]);
+          const radius = radial.length();
+          if (weight === 0 || radius < 1e-9) return point.clone();
+          const direction = radial.clone().divideScalar(radius);
+          const push = sagGravityWorld.clone().addScaledVector(direction, -sagGravityWorld.dot(direction)).multiplyScalar(strength * weight)
+            .addScaledVector(state.wobble, weight);
+          return radial.add(push).setLength(radius).add(world[root]);
+        });
+        state.tip.copy(moved[tipIndex]);
+        const inverse = matrix.clone().invert();
+        const turnWorld = curve.getWorldQuaternion(new THREE.Quaternion());
+        const turnBack = turnWorld.clone().invert();
+        const neighbor = (list, index) => {
+          const ahead = curve.userData.closed ? list[(index + 1) % count] : list[Math.min(index + 1, count - 1)];
+          const behind = curve.userData.closed ? list[(index - 1 + count) % count] : list[Math.max(index - 1, 0)];
+          return ahead.clone().sub(behind);
+        };
+        points.forEach((point, index) => {
+          pathSagSaved.push({ point, position: point.position.clone(), quaternion: point.quaternion.clone(), rest: point.userData.rest.clone() });
+          const before = neighbor(world, index);
+          const after = neighbor(moved, index);
+          if (before.lengthSq() > 1e-14 && after.lengthSq() > 1e-14) {
+            const turn = new THREE.Quaternion().setFromUnitVectors(before.normalize(), after.normalize());
+            turn.premultiply(turnBack).multiply(turnWorld);
+            point.quaternion.premultiply(turn);
+            point.userData.rest.premultiply(turn);
+          }
+          point.position.copy(moved[index]).applyMatrix4(inverse);
+        });
+        if (curve.visible) updateCurveVisual(curve);
+        swayed.push(curve);
+      }
+      if (!swayed.length) return;
+      const ids = new Set(swayed.map((curve) => curve.userData.id));
+      const bound = (object) => object.userData.curveBind && ids.has(object.userData.curveBind.curveId);
+      for (const mesh of editableMeshes()) {
+        if (bound(mesh)) updateCurveBinding(mesh);
+        for (const shape of mesh.userData.masks ?? []) if (bound(shape)) updateCurveBinding(shape);
+      }
+      for (const anchor of activeAnchors()) {
+        const linkBind = linkById(anchor.userData.linkId)?.curveBind;
+        if (linkBind && ids.has(linkBind.curveId)) syncLinkCurve(anchor);
+        for (const shape of anchor.userData.masks ?? []) if (bound(shape)) updateCurveBinding(shape);
+      }
+    }
+
+    function restorePathSags() {
+      if (!pathSagSaved.length) return;
+      for (const { point, position, quaternion, rest } of pathSagSaved) {
+        point.position.copy(position);
+        point.quaternion.copy(quaternion);
+        point.userData.rest.copy(rest);
+      }
+      pathSagSaved.length = 0;
     }
 
     function effectiveMasks(mesh) {
@@ -3159,20 +3843,21 @@ if (decalOn > 0.5) {
         capSelf: { value: 0 },
         capInflate: { value: 0 },
         capPivot: { value: new THREE.Vector3() },
+        ...sagUniformSet(),
       };
-      const patch = (shader) => {
+      const patch = (shader, withNormal = false) => {
         Object.assign(shader.uniforms, uniforms);
-        shader.vertexShader = patchCapVertex(shader.vertexShader);
+        shader.vertexShader = patchCapVertex(shader.vertexShader, withNormal);
         shader.fragmentShader = patchMaskFragment(shader.fragmentShader, CAP_LIB, CAP_EXEC);
       };
       const material = skin.clone();
       material.side = THREE.BackSide;
-      material.customProgramCacheKey = () => "mask-cap-v11";
-      material.onBeforeCompile = patch;
+      material.customProgramCacheKey = () => "mask-cap-v12";
+      material.onBeforeCompile = (shader) => patch(shader, true);
       material.userData.capUniforms = uniforms;
       const depth = new THREE.MeshDepthMaterial();
-      depth.customProgramCacheKey = () => "mask-cap-depth-v11";
-      depth.onBeforeCompile = patch;
+      depth.customProgramCacheKey = () => "mask-cap-depth-v12";
+      depth.onBeforeCompile = (shader) => patch(shader);
       const cap = new THREE.Mesh(mesh.geometry, material);
       cap.customDepthMaterial = depth;
       cap.raycast = () => {};
@@ -3839,7 +4524,6 @@ if (decalOn > 0.5) {
     let holdChrome = false;
     let lastRowClick = { id: "", time: 0 };
     const collapsedFolders = new Set();
-    const collapsedCurves = new Set();
     const sideProbe = new THREE.Vector3();
     let selection = [];
     let selected = null;
@@ -7182,6 +7866,7 @@ if (decalOn > 0.5) {
       mesh.position.copy(center);
       mesh.quaternion.copy(turn);
       mesh.userData.folderId = picked[0].userData.folderId ?? null;
+      setPartColor(mesh, picked[0].userData.color ?? null);
       mesh.userData.order = Math.min(...picked.map((item) => item.userData.order ?? 0));
       mesh.userData.home = mesh.position.toArray();
       edits.add(mesh);
@@ -7239,6 +7924,7 @@ if (decalOn > 0.5) {
       target.quaternion.copy(parentQuat.invert()).multiply(mirroredQuat);
       target.scale.copy(source.scale);
       setShear(target, source.userData.shear && [source.userData.shear[0], -source.userData.shear[1], -source.userData.shear[2]]);
+      setSag(target, mirroredSag(source.userData.sag));
       if (FLAT_KINDS.has(source.userData.kind)) setDome(target, source.userData.dome);
       if (source.userData.kind === "loft") setLoft(target, mirroredLoft(source.userData.loft));
       if (detailOf(source) !== detailOf(target)) setDetail(target, detailOf(source));
@@ -7266,6 +7952,8 @@ if (decalOn > 0.5) {
         mesh.userData.label = source.userData.label;
         mesh.userData.folderId = source.userData.folderId ?? null;
         mesh.userData.order = (source.userData.order ?? 0) + 0.5;
+        setPartColor(mesh, source.userData.color ?? null);
+        setSag(mesh, mirroredSag(source.userData.sag));
         copyMeshRelief(source, mesh);
         setDecal(mesh, mirroredDecal(source.userData.decal));
         return mesh;
@@ -7288,6 +7976,8 @@ if (decalOn > 0.5) {
       if (source.userData.dome) mesh.userData.dome = readDome(source.userData.dome);
       if (source.userData.size) mesh.userData.size = [...source.userData.size];
       mesh.userData.folderId = source.userData.folderId ?? null;
+      setPartColor(mesh, source.userData.color ?? null);
+      setSag(mesh, mirroredSag(source.userData.sag));
       mesh.userData.hidden = false;
       mesh.userData.order = (source.userData.order ?? 0) + 0.5;
       mesh.visible = true;
@@ -7907,7 +8597,7 @@ if (decalOn > 0.5) {
     }
 
     function beginMaskEdit(meshOrList, name = "") {
-      if (featureTarget) return;
+      if (featureTarget || softTarget || rigEditing) return;
       finishPathDraw();
       endSketchDraw(false);
       const alive = new Set(maskHosts());
@@ -8197,7 +8887,7 @@ if (decalOn > 0.5) {
       if (event.button === 2) rightPress = { x: event.clientX, y: event.clientY };
     });
     renderer.domElement.addEventListener("pointerup", (event) => {
-      if (reliefDrawing) {
+      if (reliefDrawing || softTarget || rigEditing) {
         press = null;
         rightPress = null;
         return;
@@ -8227,7 +8917,7 @@ if (decalOn > 0.5) {
           if (link) openContextMenu({ type: "link", link }, event.clientX, event.clientY);
           return;
         }
-        openContextMenu({ type: "part", mesh: hit }, event.clientX, event.clientY);
+        openContextMenu({ type: "part", mesh: hit, x: event.clientX, y: event.clientY }, event.clientX, event.clientY);
         return;
       }
       if (event.button !== 0) return;
@@ -8360,6 +9050,8 @@ if (decalOn > 0.5) {
         mesh.userData.order ?? 0,
       ].map((value) => value.toFixed(5)).join(",")
         + `|${mesh.userData.folderId ?? "-"}|${mesh.userData.label ?? ""}`
+        + (mesh.userData.color ? `|color:${mesh.userData.color}` : "")
+        + (mesh.userData.sag ? `|sag:${JSON.stringify(mesh.userData.sag)}` : "")
         + (mesh.userData.curveBind ? `|${JSON.stringify(mesh.userData.curveBind)}` : "")
         + (mesh.userData.shear ? `|shear:${mesh.userData.shear.join(",")}` : "")
         + (mesh.userData.dome ? `|${JSON.stringify(mesh.userData.dome)}` : "")
@@ -8379,14 +9071,14 @@ if (decalOn > 0.5) {
         folder.color ?? "",
         folder.feature ? JSON.stringify(folder.feature) : "",
       ].join(",")).join(";");
-      const sideSig = (mesh) => `${mesh.uuid}:${transformSignature(mesh)}:${maskSignature(mesh)}:${reliefSigOf(mesh)}:${decalSigOf(mesh)}`;
+      const sideSig = (mesh) => `${mesh.uuid}:${transformSignature(mesh)}:${maskSignature(mesh)}:${reliefSigOf(mesh)}:${decalSigOf(mesh)}:${mesh.userData.bone ?? ""}`;
       return `${records
         .map((record) => [
           record.kind,
           record.solo ? 1 : 0,
           sideSig(record.mesh),
           record.mirror ? sideSig(record.mirror) : "-",
-        ].join("|")).join(";")}|folders:${folderSig}|links:${linkSignature()}|curves:${curveSignature()}|sketches:${sketchSignature()}`;
+        ].join("|")).join(";")}|folders:${folderSig}|links:${linkSignature()}|curves:${curveSignature()}|sketches:${sketchSignature()}|rig:${rigSignature()}`;
     }
 
     function packMesh(mesh) {
@@ -8412,6 +9104,9 @@ if (decalOn > 0.5) {
         folderId: mesh.userData.folderId ?? null,
         order: mesh.userData.order ?? 0,
         label: mesh.userData.label ?? "",
+        color: mesh.userData.color ?? null,
+        sag: mesh.userData.sag ?? null,
+        bone: mesh.userData.bone ?? null,
         linkId: mesh.userData.linkId ?? null,
         curveBind: mesh.userData.curveBind ? { ...mesh.userData.curveBind } : null,
         relief: packMeshRelief(mesh),
@@ -8459,6 +9154,7 @@ if (decalOn > 0.5) {
         links: packLinks(),
         curves: packCurves(),
         sketches: packSketches(),
+        rig: rig ? structuredClone(rig) : null,
         anchorMasks: activeAnchors().map((anchor) => ({ anchor, masks: packMaskList(anchor) })),
         records: records.map((record) => ({
           kind: record.kind,
@@ -8484,6 +9180,9 @@ if (decalOn > 0.5) {
       packed.mesh.userData.order = packed.order ?? 0;
       packed.mesh.userData.linkId = packed.linkId ?? null;
       if (packed.label) packed.mesh.userData.label = packed.label;
+      setPartColor(packed.mesh, packed.color ?? null);
+      setSag(packed.mesh, packed.sag ?? null);
+      setPartBone(packed.mesh, packed.bone ?? null);
       setCurveBind(packed.mesh, packed.curveBind ?? null);
       if (packed.relief) packed.mesh.userData.relief = packed.relief;
       else delete packed.mesh.userData.relief;
@@ -8570,6 +9269,11 @@ if (decalOn > 0.5) {
       for (const object of curveObjects()) keep.add(object);
       sketches = packSketches(state.sketches ?? []);
       if (sketchDrawing && !sketchById(sketchDrawing)) endSketchDraw();
+      rig = readRig(state.rig);
+      if (rigEditing) {
+        if (!rig) dropRigMode();
+        else if (rigPart && !keep.has(rigPart)) rigPart = null;
+      }
       if (maskTarget) {
         const alive = maskGroup.filter((mesh) => keep.has(mesh));
         if (alive.length) setMaskGroup(alive, maskGroupName);
@@ -8592,7 +9296,11 @@ if (decalOn > 0.5) {
         if (keep.has(featureTarget)) loadFeatureEditor();
         else dropFeatureMode();
       }
-      const restored = (state.selection ?? (state.selected ? [state.selected] : [])).filter((mesh) => keep.has(mesh));
+      if (softTarget) {
+        if (keep.has(softTarget)) fadeSoftOthers(true);
+        else dropSoftMode();
+      }
+      const restored = softTarget || rigEditing ? [] : (state.selection ?? (state.selected ? [state.selected] : [])).filter((mesh) => keep.has(mesh));
       setSelection(restored, keep.has(state.selected) ? state.selected : null);
       restoring = false;
       refreshChrome();
@@ -8928,6 +9636,7 @@ if (decalOn > 0.5) {
       const domeable = FLAT_KINDS.has(morphKind) && !selected.userData.isMask;
       document.getElementById("dome-section").hidden = !domeable;
       if (domeable) refreshDomeUI();
+      refreshSagUI();
       const loftable = morphKind === "loft" && (selected.userData.isMask || !maskTarget);
       document.getElementById("loft-section").hidden = !loftable;
       if (loftable) refreshLoftUI();
@@ -8985,9 +9694,11 @@ if (decalOn > 0.5) {
       }
       const masking = Boolean(maskTarget);
       document.getElementById("mask-banner").hidden = !masking;
-      document.getElementById("file-heading").textContent = masking ? "マスク" : reliefTarget ? "法線" : featureTarget ? "顔・手・足" : "ファイル";
+      document.getElementById("file-heading").textContent = masking ? "マスク" : reliefTarget ? "法線" : featureTarget ? "顔・手・足" : softTarget ? "柔らかさ" : rigEditing ? "ボーン" : "ファイル";
       updateReliefChrome();
       updateFeatureChrome();
+      updateSoftChrome();
+      updateRigChrome();
       const addHeading = document.querySelector("#add-section h2");
       if (addHeading) addHeading.textContent = masking ? "マスク範囲" : "追加";
       if (masking) {
@@ -9045,41 +9756,83 @@ if (decalOn > 0.5) {
       if (!material.color.equals(folderTint)) material.color.copy(folderTint);
     }
 
+    function readColor(value) {
+      return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : null;
+    }
+
+    function setPartColor(mesh, color) {
+      if (color) mesh.userData.color = color;
+      else delete mesh.userData.color;
+    }
+
     function syncFolderColors() {
-      for (const mesh of editableMeshes()) tintPart(mesh, folderColorIn(folders, mesh.userData.folderId));
+      for (const mesh of editableMeshes()) tintPart(mesh, mesh.userData.color ?? folderColorIn(folders, mesh.userData.folderId));
       for (const anchor of activeAnchors()) {
         const link = linkById(anchor.userData.linkId);
         const color = link ? folderColorIn(folders, link.parentId) : null;
         for (const owner of [anchor, anchor.userData.mirror].filter(Boolean)) {
           const docFolders = owner.userData.doc?.folders;
-          for (const part of owner.userData.inner.children) tintPart(part, color ?? folderColorIn(docFolders, part.userData.linkFolderId));
+          for (const part of owner.userData.inner.children) tintPart(part, color ?? part.userData.color ?? folderColorIn(docFolders, part.userData.linkFolderId));
         }
       }
+    }
+
+    function openColorPicker(x, y, initial, preview, finish) {
+      const input = document.getElementById("folder-color-input");
+      input.style.left = `${x}px`;
+      input.style.top = `${y}px`;
+      input.value = initial;
+      input.oninput = () => preview(input.value.toLowerCase());
+      input.onchange = () => finish(input.value.toLowerCase());
+      input.click();
     }
 
     function pickFolderColor(folderId, x, y) {
       const folder = folders.find((item) => item.id === folderId);
       if (!folder) return;
-      const input = document.getElementById("folder-color-input");
       const before = folder.color;
-      input.style.left = `${x}px`;
-      input.style.top = `${y}px`;
-      input.value = folder.color ?? folderColorIn(folders, folder.parentId) ?? `#${skin.color.getHexString()}`;
-      input.oninput = () => {
-        folder.color = input.value.toLowerCase();
+      openColorPicker(x, y, folder.color ?? folderColorIn(folders, folder.parentId) ?? `#${skin.color.getHexString()}`, (color) => {
+        folder.color = color;
         syncFolderColors();
-      };
-      input.onchange = () => {
-        folder.color = input.value.toLowerCase();
+      }, (color) => {
+        folder.color = color;
         if (folder.color !== before) commit();
-      };
-      input.click();
+      });
     }
 
     function clearFolderColor(folderId) {
       const folder = folders.find((item) => item.id === folderId);
       if (!folder?.color) return;
       delete folder.color;
+      commit();
+    }
+
+    function colorTargets(mesh) {
+      const parts = new Set(editableMeshes());
+      const picked = selection.includes(mesh) ? selection : [mesh];
+      return withTwins(picked.filter((item) => parts.has(item)));
+    }
+
+    function pickPartColor(mesh, x, y) {
+      const targets = colorTargets(mesh);
+      if (!targets.length) return;
+      const before = targets.map((item) => item.userData.color ?? null);
+      const paint = (color) => {
+        for (const item of targets) setPartColor(item, color);
+      };
+      openColorPicker(x, y, mesh.userData.color ?? folderColorIn(folders, mesh.userData.folderId) ?? `#${skin.color.getHexString()}`, (color) => {
+        paint(color);
+        syncFolderColors();
+      }, (color) => {
+        paint(color);
+        if (before.some((value) => value !== color)) commit();
+      });
+    }
+
+    function clearPartColor(mesh) {
+      const targets = colorTargets(mesh).filter((item) => item.userData.color);
+      if (!targets.length) return;
+      for (const item of targets) setPartColor(item, null);
       commit();
     }
 
@@ -9228,16 +9981,18 @@ if (decalOn > 0.5) {
       mesh.userData.order = order;
     }
 
-    function insertItem(type, id, parentId, ref = null) {
-      if (type === "folder" && (parentId === id || folderContains(id, parentId))) return;
-      const siblings = childrenOf(parentId).filter((item) => !(item.type === type && item.id === id));
+    function insertItems(items, parentId, ref = null) {
+      const moving = items.filter((item) => item.type !== "folder" || (parentId !== item.id && !folderContains(item.id, parentId)));
+      if (!moving.length) return;
+      const keys = new Set(moving.map((item) => `${item.type}:${item.id}`));
+      const siblings = childrenOf(parentId).filter((item) => !keys.has(`${item.type}:${item.id}`));
       let index = siblings.length;
       if (ref?.first) index = 0;
       else if (ref) {
         const found = siblings.findIndex((item) => item.type === ref.type && item.id === ref.id);
         if (found >= 0) index = found + (ref.after ? 1 : 0);
       }
-      siblings.splice(index, 0, { type, id });
+      siblings.splice(index, 0, ...moving);
       siblings.forEach((item, order) => setItemParent(item.type, item.id, parentId, order));
       if (parentId) collapsedFolders.delete(parentId);
       commit();
@@ -9276,13 +10031,6 @@ if (decalOn > 0.5) {
       return "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 3l18 18\"/><path d=\"M10.6 6.2A10.7 10.7 0 0 1 12 6c6 0 10 6 10 6a18.5 18.5 0 0 1-4.1 4.3M6.1 6.1C3.5 7.8 2 12 2 12a18.8 18.8 0 0 0 6.2 5.6\"/><path d=\"M9.9 9.9a3 3 0 0 0 4.2 4.2\"/></svg>";
     }
 
-    function boundCurveId(item) {
-      const id = item.type === "part" ? item.mesh.userData.curveBind?.curveId
-        : item.type === "link" ? item.link.curveBind?.curveId
-          : null;
-      return id && curveById(id) ? id : null;
-    }
-
     function curveMembers(curveId) {
       return [
         ...editableMeshes().filter((mesh) => mesh.userData.curveBind?.curveId === curveId)
@@ -9292,14 +10040,8 @@ if (decalOn > 0.5) {
       ];
     }
 
-    function pathGroupIds() {
-      return curves.map((curve) => curve.userData.id).filter((id) => curveMembers(id).length);
-    }
-
     function renderBranch(parentId, depth, html) {
-      for (const item of childrenOf(parentId)) {
-        if (!boundCurveId(item)) renderRow(item, depth, html);
-      }
+      for (const item of childrenOf(parentId)) renderRow(item, depth, html);
     }
 
     function renderRow(item, depth, html) {
@@ -9354,20 +10096,12 @@ if (decalOn > 0.5) {
         if (curve === selected) classes.push("active");
         if (data.hidden) classes.push("hidden-part");
         const loop = Boolean(data.closed);
-        const members = curveMembers(data.id);
-        const open = !collapsedCurves.has(data.id);
-        if (members.length) classes.push("path");
-        const toggle = members.length
-          ? `<button class="icon" type="button" data-action="collapse" aria-label="${open ? "折りたたむ" : "開く"}" style="transform:rotate(${open ? 90 : 0}deg)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>`
-          : "";
         html.push(`<div class="${classes.join(" ")}" draggable="true" data-type="curve" data-id="${escapeHtml(data.id)}" style="padding-left:${pad}px" title="${loop ? "閉じたループ（右クリックで点の追加・削除）" : "ベジエ曲線（右クリックで点の追加・削除）"}">
-          ${toggle}
           <span class="link-icon"><svg viewBox="0 0 24 24" aria-hidden="true">${loop ? `<circle cx="12" cy="12" r="6.5"/>` : `<path d="M4 18C8 4 16 20 20 6"/>`}</svg></span>
           ${name}
           <button class="icon" type="button" data-action="lock" aria-pressed="${Boolean(data.locked)}" aria-label="ロック">${iconLock(Boolean(data.locked))}</button>
           <button class="icon" type="button" data-action="hide" aria-pressed="${!data.hidden}" aria-label="${data.hidden ? "表示" : "非表示"}">${iconEye(!data.hidden)}</button>
         </div>`);
-        if (open) for (const member of members) renderRow(member, depth + 1, html);
       } else if (item.type === "sketch") {
         const sketch = item.sketch;
         const drawing = sketchDrawing === sketch.id;
@@ -9391,7 +10125,7 @@ if (decalOn > 0.5) {
         const maskMark = (mesh.userData.masks || []).length ? `<span class="mask-mark">マスク</span>` : "";
         const name = renamingPart
           ? `<input class="rename" value="${escapeHtml(mesh.userData.label ?? "")}" />`
-          : `<span class="name">${side ? `<span class="side">${side}</span>` : ""}${escapeHtml(mesh.userData.label ?? "パーツ")}${maskMark}</span>`;
+          : `<span class="name">${mesh.userData.color ? `<span class="folder-swatch" style="background:${mesh.userData.color}"></span>` : ""}${side ? `<span class="side">${side}</span>` : ""}${escapeHtml(mesh.userData.label ?? "パーツ")}${maskMark}</span>`;
         const classes = ["outliner-row", "part"];
         if (selection.includes(mesh)) classes.push("selected");
         if (mesh === selected) classes.push("active");
@@ -9412,25 +10146,77 @@ if (decalOn > 0.5) {
       const html = [];
       renderBranch(null, 0, html);
       tree.innerHTML = html.join("");
+      drawPathLinks(tree);
       const toggleAll = document.getElementById("folder-toggle-all");
-      toggleAll.disabled = !folders.length && !pathGroupIds().length;
+      toggleAll.disabled = !folders.length;
       toggleAll.textContent = anyFolderOpen() ? "すべて閉じる" : "すべて開く";
       renderSketches();
     }
 
+    function shownRow(tree, type, id) {
+      let row = tree.querySelector(`.outliner-row[data-type="${type}"][data-id="${CSS.escape(id)}"]`);
+      let parentId = itemParent(type, id);
+      const seen = new Set();
+      while (!row && parentId && !seen.has(parentId)) {
+        seen.add(parentId);
+        row = tree.querySelector(`.outliner-row[data-type="folder"][data-id="${CSS.escape(parentId)}"]`);
+        parentId = folders.find((folder) => folder.id === parentId)?.parentId ?? null;
+      }
+      return row;
+    }
+
+    function drawPathLinks(tree) {
+      const groups = [];
+      for (const curve of curves) {
+        const id = curve.userData.id;
+        const members = curveMembers(id);
+        if (!members.length) continue;
+        const head = shownRow(tree, "curve", id);
+        if (!head) continue;
+        const rows = [...new Set(members.map((member) => shownRow(tree, member.type, member.id)).filter(Boolean))].filter((row) => row !== head);
+        if (!rows.length) continue;
+        const middle = (row) => row.offsetTop + row.offsetHeight / 2;
+        const ys = [head, ...rows].map(middle);
+        const active = selection.some((item) => curveOf(item) === curve || item.userData.curveBind?.curveId === id || (isLinkAnchor(item) && linkById(item.userData.linkId)?.curveBind?.curveId === id));
+        groups.push({ head, rows, top: Math.min(...ys), bottom: Math.max(...ys), active, middle });
+      }
+      tree.style.paddingLeft = "";
+      if (!groups.length) return;
+      groups.sort((a, b) => a.top - b.top);
+      const laneEnds = [];
+      for (const group of groups) {
+        let lane = laneEnds.findIndex((end) => end < group.top);
+        if (lane < 0) lane = laneEnds.length;
+        laneEnds[lane] = group.bottom;
+        group.lane = lane;
+      }
+      tree.style.paddingLeft = `${8 + Math.max(0, laneEnds.length - 1) * 6}px`;
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.classList.add("path-links");
+      svg.setAttribute("width", String(tree.scrollWidth));
+      svg.setAttribute("height", String(tree.scrollHeight));
+      const parts = [];
+      for (const group of groups) {
+        const x = 3 + group.lane * 6;
+        const tip = (row) => row.offsetLeft + parseFloat(row.style.paddingLeft || "0");
+        parts.push(`<g class="${group.active ? "active" : ""}"><path d="M${x} ${group.top}V${group.bottom}"/>`);
+        for (const row of [group.head, ...group.rows]) parts.push(`<path d="M${x} ${group.middle(row)}H${tip(row)}"/>`);
+        parts.push(`<circle class="head" cx="${tip(group.head)}" cy="${group.middle(group.head)}" r="2.6"/>`);
+        for (const row of group.rows) parts.push(`<circle cx="${tip(row)}" cy="${group.middle(row)}" r="1.8"/>`);
+        parts.push("</g>");
+      }
+      svg.innerHTML = parts.join("");
+      tree.prepend(svg);
+    }
+
     function anyFolderOpen() {
-      return folders.some((folder) => !collapsedFolders.has(folder.id))
-        || pathGroupIds().some((id) => !collapsedCurves.has(id));
+      return folders.some((folder) => !collapsedFolders.has(folder.id));
     }
 
     function toggleAllFolders() {
       if (anyFolderOpen()) {
         for (const folder of folders) collapsedFolders.add(folder.id);
-        for (const id of pathGroupIds()) collapsedCurves.add(id);
-      } else {
-        collapsedFolders.clear();
-        collapsedCurves.clear();
-      }
+      } else collapsedFolders.clear();
       renderOutliner();
     }
 
@@ -9501,18 +10287,10 @@ if (decalOn > 0.5) {
       commit();
     }
 
-    // パスに沿わせたパーツは一覧ではパスの下に並ぶので、フォルダ内のパスに沿ったものもフォルダの中身として扱う。
     function folderHideTargets(folderId) {
       const ids = descendantFolderIds(folderId);
       const paths = curves.filter((curve) => ids.has(curve.userData.folderId));
-      const members = paths.flatMap((curve) => curveMembers(curve.userData.id));
-      const meshes = new Set(descendantMeshes(folderId));
-      const linked = new Set(descendantLinks(folderId));
-      for (const member of members) {
-        if (member.type === "part") meshes.add(member.mesh);
-        else linked.add(member.link);
-      }
-      return { meshes: [...meshes], linked: [...linked], paths };
+      return { meshes: descendantMeshes(folderId), linked: descendantLinks(folderId), paths };
     }
 
     function folderHiddenFlags(folderId) {
@@ -9790,9 +10568,10 @@ if (decalOn > 0.5) {
         return {
           title: `${sideText(mesh)}${mesh.userData.label ?? "パーツ"}`,
           items: [
-            { label: "マスク編集", disabled: Boolean(reliefTarget) || Boolean(featureTarget), run: () => beginMaskEdit(mesh) },
-            { label: "法線編集", disabled: masking || hidden || Boolean(reliefTarget) || Boolean(featureTarget), run: () => beginReliefEdit(mesh) },
+            { label: "マスク編集", disabled: Boolean(reliefTarget) || Boolean(featureTarget) || Boolean(softTarget) || rigEditing, run: () => beginMaskEdit(mesh) },
+            { label: "法線編集", disabled: masking || hidden || Boolean(reliefTarget) || Boolean(featureTarget) || Boolean(softTarget) || rigEditing, run: () => beginReliefEdit(mesh) },
             { label: "顔・手・足の編集", disabled: !canFeatureEdit(mesh), run: () => beginFeatureEdit(mesh) },
+            { label: "柔らかさの編集", disabled: !canSoftEdit(mesh), run: () => beginSoftEdit(mesh) },
             { label: "別モデル化して別タブで編集", disabled: !canLink, run: () => makeLinkedModel({ type: "part", mesh }) },
             {
               label: "選択中のパーツを結合",
@@ -9814,6 +10593,8 @@ if (decalOn > 0.5) {
             ...clipItems([mesh]),
             null,
             { label: "名前の変更", disabled: masking, run: () => beginRename("part", mesh.userData.id) },
+            { label: "色を設定…", disabled: masking, run: () => pickPartColor(mesh, subject.x ?? 0, subject.y ?? 0) },
+            ...(colorTargets(mesh).some((item) => item.userData.color) ? [{ label: "色を元に戻す", disabled: masking, run: () => clearPartColor(mesh) }] : []),
             { label: locked ? "ロック解除" : "ロック", disabled: masking, run: () => toggleMeshLock(mesh) },
             { label: hidden ? "表示" : "非表示", disabled: masking, run: () => toggleMeshHidden(mesh) },
             null,
@@ -9936,7 +10717,7 @@ if (decalOn > 0.5) {
         return;
       }
       const mesh = meshById(row.dataset.id);
-      if (mesh) openContextMenu({ type: "part", mesh }, event.clientX, event.clientY);
+      if (mesh) openContextMenu({ type: "part", mesh, x: event.clientX, y: event.clientY }, event.clientX, event.clientY);
     });
     outlinerTree.addEventListener("click", (event) => {
       if (maskTarget) return;
@@ -9950,10 +10731,9 @@ if (decalOn > 0.5) {
       const { type, id } = row.dataset;
       if (action) {
         event.stopPropagation();
-        if (action.dataset.action === "collapse" && (type === "folder" || type === "curve")) {
-          const collapsed = type === "folder" ? collapsedFolders : collapsedCurves;
-          if (collapsed.has(id)) collapsed.delete(id);
-          else collapsed.add(id);
+        if (action.dataset.action === "collapse" && type === "folder") {
+          if (collapsedFolders.has(id)) collapsedFolders.delete(id);
+          else collapsedFolders.add(id);
           renderOutliner();
         } else if (action.dataset.action === "lock") {
           if (type === "folder") toggleFolderLock(id);
@@ -10056,7 +10836,8 @@ if (decalOn > 0.5) {
         event.preventDefault();
         return;
       }
-      event.dataTransfer.setData("text/plain", `${row.dataset.type}:${row.dataset.id}`);
+      const rows = row.classList.contains("selected") ? [...outlinerTree.querySelectorAll(".outliner-row.selected")] : [row];
+      event.dataTransfer.setData("text/plain", rows.map((item) => `${item.dataset.type}:${item.dataset.id}`).join("\n"));
       event.dataTransfer.effectAllowed = "move";
     });
     function dropZone(row, event) {
@@ -10069,7 +10850,10 @@ if (decalOn > 0.5) {
     }
 
     function rowParent(row) {
-      const { type, id } = row.dataset;
+      return itemParent(row.dataset.type, row.dataset.id);
+    }
+
+    function itemParent(type, id) {
       if (type === "folder") return folders.find((folder) => folder.id === id)?.parentId ?? null;
       if (type === "link") return linkById(id)?.parentId ?? null;
       if (type === "curve") return curveById(id)?.userData.folderId ?? null;
@@ -10099,24 +10883,28 @@ if (decalOn > 0.5) {
     outlinerTree.addEventListener("drop", (event) => {
       event.preventDefault();
       clearDropMarks();
-      const payload = event.dataTransfer.getData("text/plain");
-      const split = payload.indexOf(":");
-      if (split < 1) return;
-      const type = payload.slice(0, split);
-      const id = payload.slice(split + 1);
-      if (type !== "part" && type !== "folder" && type !== "link" && type !== "curve" && type !== "sketch") return;
+      const items = [];
+      for (const line of event.dataTransfer.getData("text/plain").split("\n")) {
+        const split = line.indexOf(":");
+        if (split < 1) continue;
+        const type = line.slice(0, split);
+        const id = line.slice(split + 1);
+        if (!["part", "folder", "link", "curve", "sketch"].includes(type)) continue;
+        if (!items.some((item) => item.type === type && item.id === id)) items.push({ type, id });
+      }
+      if (!items.length) return;
       const row = event.target.closest(".outliner-row");
-      if (row?.dataset.type === type && row.dataset.id === id) return;
+      if (row && items.some((item) => item.type === row.dataset.type && item.id === row.dataset.id)) return;
       if (!row) {
-        insertItem(type, id, null);
+        insertItems(items, null);
         return;
       }
       const zone = dropZone(row, event);
       if (row.dataset.type === "folder" && (zone === "into" || zone === "first")) {
-        insertItem(type, id, row.dataset.id, zone === "first" ? { first: true } : null);
+        insertItems(items, row.dataset.id, zone === "first" ? { first: true } : null);
         return;
       }
-      insertItem(type, id, rowParent(row), { type: row.dataset.type, id: row.dataset.id, after: zone === "after" });
+      insertItems(items, rowParent(row), { type: row.dataset.type, id: row.dataset.id, after: zone === "after" });
     });
 
     document.getElementById("undo").addEventListener("click", undo);
@@ -10170,6 +10958,16 @@ if (decalOn > 0.5) {
         leaveFeatureEdit();
         return;
       }
+      if (event.key === "Escape" && softTarget) {
+        event.preventDefault();
+        leaveSoftEdit();
+        return;
+      }
+      if (event.key === "Escape" && rigEditing) {
+        event.preventDefault();
+        leaveRigEdit();
+        return;
+      }
       const typing = (event.target instanceof HTMLInputElement && event.target.type !== "file")
         || event.target instanceof HTMLTextAreaElement;
       if (typing) return;
@@ -10184,6 +10982,7 @@ if (decalOn > 0.5) {
         if (maskTarget) saveMask();
         else if (reliefTarget) saveReliefEdit();
         else if (featureTarget) saveFeatureEdit();
+        else if (softTarget) saveSoftEdit();
         else saveDocument();
         return;
       }
@@ -10195,6 +10994,13 @@ if (decalOn > 0.5) {
       if (command && (event.code === "KeyY" || (event.code === "KeyZ" && event.shiftKey))) {
         event.preventDefault();
         redo();
+        return;
+      }
+      if (rigEditing) {
+        if (event.code === "Space" && !command && !(event.target instanceof HTMLButtonElement || event.target instanceof HTMLSelectElement)) {
+          event.preventDefault();
+          toggleRigPlay();
+        }
         return;
       }
       if (command && event.code === "KeyA") {
@@ -11470,7 +12276,7 @@ if (decalOn > 0.5) {
     }
 
     function beginReliefEdit(mesh) {
-      if (!mesh || mesh.userData.isMask || maskTarget || reliefTarget || featureTarget) return;
+      if (!mesh || mesh.userData.isMask || maskTarget || reliefTarget || featureTarget || softTarget || rigEditing) return;
       if (!editableMeshes().includes(mesh) || mesh.userData.hidden) return;
       finishPathDraw();
       endSketchDraw(false);
@@ -11929,7 +12735,7 @@ if (decalOn > 0.5) {
     }
 
     function canFeatureEdit(mesh) {
-      if (!mesh || maskTarget || reliefTarget || featureTarget) return false;
+      if (!mesh || maskTarget || reliefTarget || featureTarget || softTarget || rigEditing) return false;
       if (mesh.userData.isMask || mesh.userData.hidden || !editableMeshes().includes(mesh)) return false;
       const made = new Set(folders.flatMap((folder) => folder.feature?.parts.map((part) => part.id) ?? []));
       const twin = otherOf(recordOf(mesh), mesh);
@@ -12581,6 +13387,9 @@ if (decalOn > 0.5) {
         hidden: mesh.userData.hidden || undefined,
         folderId: mesh.userData.folderId ?? undefined,
         order: mesh.userData.order ?? 0,
+        color: mesh.userData.color ?? undefined,
+        sag: mesh.userData.sag ? { ...mesh.userData.sag, amount: roundNumber(mesh.userData.sag.amount), wobble: roundNumber(mesh.userData.sag.wobble) } : undefined,
+        bone: mesh.userData.bone ?? undefined,
         home: mesh.userData.home?.map(roundNumber),
         size: mesh.userData.kind === "body" && Array.isArray(mesh.userData.size) ? mesh.userData.size.map(roundNumber) : undefined,
         merge: mesh.userData.merge ? { ...mesh.userData.merge } : undefined,
@@ -12641,6 +13450,7 @@ if (decalOn > 0.5) {
         links: links.length ? serializeLinks() : undefined,
         curves: curves.length ? packCurves() : undefined,
         sketches: sketches.length ? sketches.map(serializeSketch) : undefined,
+        rig: rig ? { joints: Object.fromEntries(Object.entries(rig.joints).map(([name, point]) => [name, point.map(roundNumber)])) } : undefined,
         name: MODEL_ID ? modelName : undefined,
         records: records.map((record) => ({
           kind: record.kind,
@@ -12904,6 +13714,9 @@ if (decalOn > 0.5) {
       mesh.visible = !mesh.userData.hidden;
       mesh.userData.folderId = typeof part.folderId === "string" ? part.folderId : null;
       mesh.userData.order = Number.isFinite(part.order) ? part.order : 0;
+      setPartColor(mesh, readColor(part.color));
+      setSag(mesh, readSag(part.sag));
+      setPartBone(mesh, part.bone);
       mesh.userData.linkId = typeof part.linkId === "string" ? part.linkId : null;
       mesh.userData.home = isVector(part.home, 3) ? [...part.home] : undefined;
       setDecal(mesh, readDecal(part.decal));
@@ -13129,6 +13942,7 @@ if (decalOn > 0.5) {
           quaternion: isVector(link.quaternion, 4) ? [...link.quaternion] : [0, 0, 0, 1],
           scale: isVector(link.scale, 3) ? [...link.scale] : [1, 1, 1],
           masks: Array.isArray(link.masks) ? link.masks : undefined,
+          sag: readSag(link.sag ? { ...link.sag, follow: undefined } : null) ?? undefined,
           curveBind: withCurveRest(readCurveBind(link.curveBind), isVector(link.quaternion, 4) ? link.quaternion : [0, 0, 0, 1]) ?? undefined,
         };
       });
@@ -13142,6 +13956,7 @@ if (decalOn > 0.5) {
       linkLoadedMasks(maskHosts());
       applyCurves(sanitizeCurves(data.curves, folderIds));
       sketches = sanitizeSketches(data.sketches, folderIds);
+      rig = readRig(data.rig);
       updateMaskView();
       for (const [mesh, packed] of reliefJobs) await restorePartRelief(mesh, packed);
       history.length = 0;
@@ -13255,7 +14070,7 @@ if (decalOn > 0.5) {
     function linkSignature() {
       return links.map((link) => {
         const anchor = linkAnchors.get(link.id);
-        return [link.id, link.name, link.parentId ?? "-", link.order ?? 0, link.hidden ? 1 : 0, link.mirror ? 1 : 0, anchor ? transformSignature(anchor) : "", anchor ? maskSignature(anchor) : "", JSON.stringify(link.curveBind ?? null)].join(",");
+        return [link.id, link.name, link.parentId ?? "-", link.order ?? 0, link.hidden ? 1 : 0, link.mirror ? 1 : 0, anchor ? transformSignature(anchor) : "", anchor ? maskSignature(anchor) : "", JSON.stringify(link.curveBind ?? null), JSON.stringify(link.sag ?? null)].join(",");
       }).join(";");
     }
 
@@ -13316,6 +14131,9 @@ if (decalOn > 0.5) {
       mesh.visible = !mesh.userData.hidden;
       mesh.userData.folderId = typeof part.folderId === "string" ? part.folderId : null;
       mesh.userData.order = Number.isFinite(part.order) ? part.order : 0;
+      setPartColor(mesh, readColor(part.color));
+      setSag(mesh, readSag(part.sag));
+      setPartBone(mesh, part.bone);
       mesh.userData.home = isVector(part.home, 3) ? [...part.home] : undefined;
       setDecal(mesh, readDecal(part.decal));
       attachLoadedMasks(mesh, part.masks);
@@ -13410,6 +14228,8 @@ if (decalOn > 0.5) {
         }
         live.add(anchor);
         anchor.userData.label = link.name;
+        if (link.sag) anchor.userData.sag = link.sag;
+        else delete anchor.userData.sag;
         anchor.visible = !link.hidden;
         let data = linkedDocs.get(linkModel(link));
         if (!data) {
@@ -13973,6 +14793,7 @@ if (decalOn > 0.5) {
         quaternion: round(curve.quaternion),
         scale: round(curve.scale),
         ...(data.closed ? { closed: true } : {}),
+        ...(data.sag ? { sag: { ...data.sag } } : {}),
         ...(Number.isFinite(data.mirrorX) ? { mirrorX: roundNumber(data.mirrorX) } : {}),
         ...(Number.isFinite(data.mirrorX) && data.closed && Number.isInteger(data.mirrorSum) ? { mirrorSum: data.mirrorSum } : {}),
         points: data.points.map((point) => {
@@ -14009,6 +14830,7 @@ if (decalOn > 0.5) {
       curve.userData.hidden = Boolean(data.hidden);
       curve.userData.locked = Boolean(data.locked);
       curve.userData.home = isVector(data.home, 3) ? [...data.home] : undefined;
+      setSag(curve, data.sag ?? null);
       curve.userData.mirrorX = Number.isFinite(data.mirrorX) ? data.mirrorX : undefined;
       curve.userData.mirrorSum = closed && Number.isInteger(data.mirrorSum) ? data.mirrorSum : undefined;
       curve.position.fromArray(data.position);
@@ -14124,6 +14946,7 @@ if (decalOn > 0.5) {
     // パスは、パス自身か、それに沿わせたパーツ・マスク範囲を選んでいるときだけ表示する。
     function curveShown(curve) {
       if (curve.userData.hidden) return false;
+      if (softTarget === curve) return true;
       const id = curve.userData.id;
       return selection.some((item) => curveOf(item) === curve || item.userData?.curveBind?.curveId === id);
     }
@@ -14471,8 +15294,8 @@ if (decalOn > 0.5) {
         finishPathDraw();
         return;
       }
-      if (maskTarget || reliefTarget || featureTarget) {
-        setFileStatus("マスク・法線・顔手足の編集中はパスを描けません。編集を終えてから使ってください");
+      if (maskTarget || reliefTarget || featureTarget || softTarget || rigEditing) {
+        setFileStatus("マスク・法線・顔手足・柔らかさ・ボーンの編集中はパスを描けません。編集を終えてから使ってください");
         return;
       }
       endSketchDraw(false);
@@ -15920,7 +16743,6 @@ if (decalOn > 0.5) {
 
     function bindToCurve(mesh, curve) {
       const bind = defaultCurveBind(curve.userData.id);
-      collapsedCurves.delete(curve.userData.id);
       if (isLinkAnchor(mesh)) {
         const link = linkById(mesh.userData.linkId);
         if (!link) return;
@@ -16206,6 +17028,9 @@ if (decalOn > 0.5) {
       else mesh = createMesh(part.kind);
       setCurveBind(mesh, null);
       if (part.label) mesh.userData.label = part.label;
+      setPartColor(mesh, readColor(part.color));
+      setSag(mesh, readSag(part.sag));
+      setPartBone(mesh, part.bone);
       const parent = parentByKey(part.parent);
       parent.add(mesh);
       mesh.position.fromArray(part.position);
@@ -16301,6 +17126,7 @@ if (decalOn > 0.5) {
           name: folder.name,
           parentId: root ? topParent(folder.parentId) : remap.get(folder.parentId),
           order: root ? topOrder(folder.order) : folder.order,
+          ...(readColor(folder.color) ? { color: readColor(folder.color) } : {}),
         });
         if (root && !pastedRoot) pastedRoot = remap.get(folder.id);
       }
@@ -16755,6 +17581,1764 @@ if (decalOn > 0.5) {
     const pushSoftRange = document.getElementById("push-soft");
     pushSoftRange.addEventListener("input", () => applySelectedMaskPush(undefined, Number(pushSoftRange.value) / 100));
     pushSoftRange.addEventListener("change", () => commit());
+
+    function sagKind(object) {
+      if (!object) return null;
+      if (isCurve(object)) return "path";
+      if (isLinkAnchor(object)) return object.userData.isLinkMirror ? null : "link";
+      return editableMeshes().includes(object) && !object.userData.isMask ? "part" : null;
+    }
+
+    function sagTargets() {
+      if (softTarget) return softTarget.userData.locked ? [] : [softTarget];
+      return selection.filter((item) => sagKind(item) && !item.userData.locked);
+    }
+
+    function sagOf(mesh) {
+      if (isCurve(mesh)) return { ease: 1, ...(readPathSag(mesh.userData.sag) ?? { amount: 0, wobble: 0, anchor: "start" }) };
+      return { ease: 1, ...(readSag(mesh?.userData.sag) ?? { amount: 0, wobble: 0, anchor: "back" }) };
+    }
+
+    function applySelectedSag(change, kinds = null) {
+      for (const mesh of sagTargets()) {
+        if (kinds && !kinds.includes(sagKind(mesh))) continue;
+        setSag(mesh, { ...sagOf(mesh), ...change });
+        mirrorSagOf(mesh);
+      }
+    }
+
+    function worldDistance(a, b) {
+      return a.getWorldPosition(sideProbe).distanceTo(b.getWorldPosition(new THREE.Vector3()));
+    }
+
+    function sagMode(mesh) {
+      const sag = isCurve(mesh) ? readPathSag(mesh.userData.sag) : readSag(mesh?.userData.sag);
+      if (sag?.follow) return "follow";
+      return sag && (sag.amount > 0 || sag.wobble > 0) ? "own" : "none";
+    }
+
+    function sagHostChoices(mesh) {
+      return editableMeshes()
+        .filter((item) => item !== mesh && sagActive(item))
+        .map((item) => ({ mesh: item, distance: worldDistance(mesh, item) }))
+        .sort((a, b) => a.distance - b.distance)
+        .map((item) => item.mesh);
+    }
+
+    function mirrorSagOf(mesh) {
+      if (!symmetric) return;
+      const other = otherOf(recordOf(mesh), mesh);
+      if (other && !other.userData.locked) setSag(other, mirroredSag(mesh.userData.sag ?? null));
+    }
+
+    function relinkSagFollowers() {
+      for (const mesh of editableMeshes()) {
+        const id = mesh.userData.sag?.follow;
+        const next = id ? meshById(id)?.userData.sag?.follow : null;
+        if (next && next !== mesh.userData.id && !mesh.userData.locked) setSag(mesh, { ...mesh.userData.sag, follow: next });
+      }
+    }
+
+    const SAG_MODE_HINTS = {
+      none: "胸など、重力で垂れたり揺れたりするパーツに使います。「柔らかく」で自分が柔らかくなり、「付いて動く」でほかの柔らかいパーツと一緒に動きます。",
+      own: "起点（黄）の側は体にくっついたまま動かず、反対側の先端ほど重力（青）の向きへ垂れます。動かすと先端が弾み（ピンク）で遅れて揺れます。",
+      follow: "付き先のパーツとひとまとめになり、一緒に垂れたり揺れたりします。垂れ・揺れ・起点は付き先のパーツで変えます。",
+    };
+    const SAG_PATH_HINTS = {
+      none: "髪やしっぽなど、パスに沿わせたパーツを重力で垂らしたり揺らしたりできます。",
+      own: "起点（黄）の点は動かず、離れた点ほど重力（青）の向きへ曲がって垂れ、動かすと弾み（ピンク）で遅れて揺れます。パスに沿わせたパーツも一緒に曲がります。点やハンドルを選んでいる間は元の形で表示されます。",
+    };
+    const SAG_LINK_HINTS = {
+      none: "リンクパーツ全体を、1つの柔らかいかたまりとして垂らしたり揺らしたりできます。",
+      own: "リンクパーツの中のパーツがひとまとめになり、起点（黄）の側は動かず、先端ほど重力（青）の向きへ垂れて弾み（ピンク）で揺れます。リンク先で付けた柔らかさより、こちらが優先されます。",
+    };
+
+    function refreshSagUI() {
+      const subject = softTarget ?? selected;
+      const kind = sagKind(subject);
+      const shown = Boolean(kind) && !maskTarget;
+      document.getElementById("sag-section").hidden = !shown;
+      document.getElementById("sag-open-edit").hidden = Boolean(softTarget);
+      document.getElementById("sag-group-block").hidden = Boolean(softTarget) || sagTargets().filter((item) => sagKind(item) === "part").length < 2;
+      if (!shown) return;
+      document.getElementById("sag-open-edit").disabled = !canSoftEdit(subject);
+      const sag = sagOf(subject);
+      const mode = sagMode(subject);
+      const locked = Boolean(subject.userData.locked);
+      const hosts = kind === "part" ? sagHostChoices(subject) : [];
+      for (const radio of document.querySelectorAll('input[name="sag-mode"]')) {
+        radio.checked = radio.value === mode;
+        radio.disabled = locked || (radio.value === "follow" && mode !== "follow" && !hosts.length);
+      }
+      document.getElementById("sag-mode-follow").hidden = kind !== "part";
+      document.getElementById("sag-mode-follow").title = hosts.length || mode === "follow"
+        ? "乳首など、柔らかいパーツに付いて一緒に動く"
+        : "付いていける柔らかいパーツがありません。先に別のパーツを「柔らかく」にしてください";
+      document.getElementById("sag-mode-hint").textContent = ({ part: SAG_MODE_HINTS, path: SAG_PATH_HINTS, link: SAG_LINK_HINTS })[kind][mode];
+      document.getElementById("sag-own").hidden = mode !== "own";
+      document.getElementById("sag-follow-row").hidden = mode !== "follow";
+      document.getElementById("sag-anchors").hidden = kind === "path";
+      document.getElementById("sag-path-anchors").hidden = kind !== "path";
+      for (const radio of document.querySelectorAll('input[name="sag-path-anchor"]')) {
+        radio.checked = radio.value === sag.anchor;
+        radio.disabled = locked;
+      }
+      const members = kind === "part" && sagActive(subject) ? editableMeshes().filter((mesh) => sagHost(mesh) === subject).length : 0;
+      const info = document.getElementById("sag-group-info");
+      info.hidden = members === 0;
+      info.textContent = members ? `このパーツを中心に、ほかの ${members} 個のパーツがひとまとめに動きます。` : "";
+      const follow = document.getElementById("sag-follow");
+      const options = [];
+      if (sag.follow && !hosts.some((mesh) => mesh.userData.id === sag.follow)) {
+        options.push(`<option value="${escapeHtml(sag.follow)}">（柔らかさのないパーツ）</option>`);
+      }
+      for (const mesh of hosts) {
+        options.push(`<option value="${escapeHtml(mesh.userData.id)}">${escapeHtml(`${sideText(mesh)}${mesh.userData.label ?? "パーツ"}`)}</option>`);
+      }
+      follow.innerHTML = options.join("");
+      follow.value = sag.follow ?? "";
+      follow.disabled = locked;
+      document.getElementById("sag-guides").checked = sagGuidesOn;
+      setSlider("sag-amount", Math.round(sag.amount * 100));
+      setSlider("sag-wobble", Math.round(sag.wobble * 100));
+      setSlider("sag-ease", Math.round(sag.ease * 100));
+      document.getElementById("sag-amount").disabled = locked;
+      document.getElementById("sag-wobble").disabled = locked;
+      document.getElementById("sag-ease").disabled = locked || !(sag.wobble > 0);
+      for (const radio of document.querySelectorAll('input[name="sag-anchor"]')) {
+        radio.checked = radio.value === sag.anchor;
+        radio.disabled = locked;
+      }
+    }
+
+    for (const [id, field] of [["sag-amount", "amount"], ["sag-wobble", "wobble"], ["sag-ease", "ease"]]) {
+      const range = document.getElementById(id);
+      range.addEventListener("input", () => applySelectedSag({ [field]: Number(range.value) / 100 }));
+      range.addEventListener("change", () => commit());
+    }
+    for (const radio of document.querySelectorAll('input[name="sag-anchor"]')) {
+      radio.addEventListener("change", () => {
+        if (!radio.checked) return;
+        applySelectedSag({ anchor: radio.value }, ["part", "link"]);
+        commit();
+      });
+    }
+    for (const radio of document.querySelectorAll('input[name="sag-path-anchor"]')) {
+      radio.addEventListener("change", () => {
+        if (!radio.checked) return;
+        applySelectedSag({ anchor: radio.value }, ["path"]);
+        commit();
+      });
+    }
+    document.getElementById("sag-follow").addEventListener("change", (event) => {
+      const host = event.target.value ? meshById(event.target.value) : null;
+      const twin = host ? otherOf(recordOf(host), host) : null;
+      for (const mesh of sagTargets()) {
+        if (sagKind(mesh) !== "part") continue;
+        const pick = twin && worldDistance(mesh, twin) < worldDistance(mesh, host) ? twin : host;
+        if (pick === mesh) continue;
+        setSag(mesh, { ...sagOf(mesh), follow: pick?.userData.id ?? "" });
+        mirrorSagOf(mesh);
+      }
+      relinkSagFollowers();
+      commit();
+    });
+    for (const radio of document.querySelectorAll('input[name="sag-mode"]')) {
+      radio.addEventListener("change", () => {
+        if (!radio.checked) return;
+        for (const mesh of sagTargets()) {
+          const sag = sagOf(mesh);
+          if (radio.value === "none") setSag(mesh, null);
+          else if (radio.value === "own") setSag(mesh, { amount: sag.amount || 0.3, wobble: sag.wobble || 0.3, anchor: sag.anchor, ease: sag.ease });
+          else {
+            const host = sagKind(mesh) === "part" ? sagHostChoices(mesh)[0] : null;
+            if (!host) continue;
+            setSag(mesh, { ...sag, follow: host.userData.id });
+          }
+          mirrorSagOf(mesh);
+        }
+        relinkSagFollowers();
+        commit();
+      });
+    }
+    document.getElementById("sag-guides").addEventListener("change", (event) => {
+      sagGuidesOn = event.target.checked;
+    });
+
+    function sagVolume(mesh) {
+      const size = new THREE.Box3().setFromObject(mesh).getSize(new THREE.Vector3());
+      return size.x * size.y * size.z;
+    }
+
+    function groupSelectedSag() {
+      const parts = sagTargets().filter((item) => sagKind(item) === "part");
+      if (parts.length < 2) return;
+      const host = parts.reduce((best, mesh) => (sagVolume(mesh) > sagVolume(best) ? mesh : best));
+      const twin = otherOf(recordOf(host), host);
+      const pairHost = twin && parts.includes(twin) ? twin : null;
+      const sources = parts.map((mesh) => readSag(mesh.userData.sag)).filter((sag) => sag && !sag.follow);
+      const base = sagOf(host);
+      const sag = {
+        amount: Math.max(base.amount, ...sources.map((item) => item.amount)) || 0.3,
+        wobble: Math.max(base.wobble, ...sources.map((item) => item.wobble)) || 0.3,
+        anchor: base.anchor,
+        ease: base.ease,
+      };
+      setSag(host, sag);
+      if (pairHost) setSag(pairHost, mirroredSag(sag));
+      for (const mesh of parts) {
+        if (mesh === host || mesh === pairHost) continue;
+        const pick = pairHost && worldDistance(mesh, pairHost) < worldDistance(mesh, host) ? pairHost : host;
+        setSag(mesh, { ...sagOf(mesh), follow: pick.userData.id });
+      }
+      const chosen = new Set(parts);
+      for (const mesh of parts) {
+        if (!chosen.has(otherOf(recordOf(mesh), mesh))) mirrorSagOf(mesh);
+      }
+      relinkSagFollowers();
+      commit();
+      setFileStatus(pairHost
+        ? `${parts.length} 個のパーツを、左右の${host.userData.label ?? "パーツ"}を中心にそれぞれひとまとめにしました`
+        : `${sideText(host)}${host.userData.label ?? "パーツ"}を中心に ${parts.length} 個のパーツをひとまとめにしました`);
+    }
+
+    document.getElementById("sag-group").addEventListener("click", groupSelectedSag);
+    function softEditable(object) {
+      if (!sagKind(object) || object.userData.hidden) return false;
+      return !isLinkAnchor(object) || !linkById(object.userData.linkId)?.hidden;
+    }
+
+    function canSoftEdit(mesh) {
+      if (!mesh || maskTarget || reliefTarget || featureTarget || softTarget || rigEditing) return false;
+      return softEditable(mesh);
+    }
+
+    function softGroup() {
+      if (!softTarget) return [];
+      if (isCurve(softTarget)) {
+        const id = softTarget.userData.id;
+        return [softTarget, ...editableMeshes().filter((mesh) => mesh.userData.curveBind?.curveId === id), ...activeAnchors().filter((anchor) => linkById(anchor.userData.linkId)?.curveBind?.curveId === id)];
+      }
+      if (isLinkAnchor(softTarget)) return [softTarget];
+      const root = sagHost(softTarget) ?? softTarget;
+      const roots = new Set([root, softTarget]);
+      for (const mesh of [...roots]) {
+        const twin = otherOf(recordOf(mesh), mesh);
+        if (twin) roots.add(twin);
+      }
+      const group = new Set(roots);
+      for (const mesh of editableMeshes()) {
+        const host = sagHost(mesh);
+        if (host && roots.has(host)) group.add(mesh);
+      }
+      return [...group];
+    }
+
+    function fadeSoftOthers(on) {
+      const keep = new Set(on ? softGroup() : []);
+      for (const mesh of editableMeshes()) setMaskLook(mesh, on && !keep.has(mesh));
+      for (const anchor of activeAnchors()) {
+        const mirrored = anchor.userData.mirror?.userData.inner.children ?? [];
+        for (const mesh of [...anchor.userData.inner.children, ...mirrored]) setMaskLook(mesh, on && !keep.has(anchor));
+      }
+    }
+
+    function softBox() {
+      const box = new THREE.Box3();
+      for (const object of softGroup()) {
+        if (!isCurve(object)) {
+          box.expandByObject(object);
+          continue;
+        }
+        object.updateWorldMatrix(true, false);
+        for (const point of object.userData.points) box.expandByPoint(point.position.clone().applyMatrix4(object.matrixWorld));
+      }
+      return box;
+    }
+
+    function softSize() {
+      const box = softBox();
+      return box.isEmpty() ? 0.3 : Math.max(box.getSize(new THREE.Vector3()).length(), 0.02);
+    }
+
+    function focusSoftCamera() {
+      const box = softBox();
+      if (box.isEmpty()) return;
+      const center = box.getCenter(new THREE.Vector3());
+      const side = Math.sign(center.x) || 1;
+      const direction = new THREE.Vector3(side * 0.9, 0.2, 1).normalize();
+      const radius = Math.max(box.getSize(new THREE.Vector3()).length() * 0.5, 0.05) * 2.2;
+      const fit = radius / Math.sin(THREE.MathUtils.degToRad(perspectiveCamera.fov * 0.5)) * 1.2;
+      controls.minDistance = 0.12;
+      controls.target.copy(center);
+      if (camera.isOrthographicCamera) {
+        camera.position.copy(center).addScaledVector(direction, Math.max(fit, 2));
+        orthoCamera.zoom = orthoHalfHeight / (fit * PERSPECTIVE_TAN);
+        orthoCamera.updateProjectionMatrix();
+      } else {
+        camera.position.copy(center).addScaledVector(direction, Math.max(fit, 0.35));
+      }
+      controls.update();
+    }
+
+    function softDirty() {
+      return Boolean(softSession) && packState().signature !== softSession.signature;
+    }
+
+    function updateSoftChrome() {
+      const editing = Boolean(softTarget);
+      document.body.classList.toggle("soft-edit", editing);
+      document.getElementById("soft-banner").hidden = !editing;
+      if (!editing) return;
+      document.getElementById("soft-banner-name").textContent = `${sideText(softTarget)}${softTarget.userData.label ?? "パーツ"}${softTarget.userData.locked ? "（ロック中のため設定は変えられません）" : ""}`;
+      const dirty = softDirty();
+      document.getElementById("soft-save").disabled = !dirty;
+      document.getElementById("soft-discard").disabled = !dirty;
+    }
+
+    function setSoftGravity(pitch, roll) {
+      softPreview.pitch = Math.max(-90, Math.min(90, pitch));
+      softPreview.roll = Math.max(-90, Math.min(90, roll));
+      const tilt = THREE.MathUtils.degToRad(softPreview.pitch);
+      const lean = THREE.MathUtils.degToRad(softPreview.roll);
+      sagGravityWorld.set(-Math.cos(tilt) * Math.sin(lean), -Math.cos(tilt) * Math.cos(lean), Math.sin(tilt)).normalize();
+      setSlider("soft-pitch", softPreview.pitch);
+      setSlider("soft-roll", softPreview.roll);
+    }
+
+    function resetSoftPreview() {
+      softPreview.bounce = false;
+      softPreview.kicks = [];
+      softPreview.drag = null;
+      softPreview.release = null;
+      softPreview.held.set(0, 0, 0);
+      sagShake.set(0, 0, 0);
+      document.getElementById("soft-bounce").checked = false;
+      document.body.classList.remove("soft-shaking");
+      setSoftGravity(0, 0);
+      setSoftGravityScale(1);
+    }
+
+    function setSoftGravityScale(scale) {
+      sagGravityScale = Math.max(0, Math.min(3, scale));
+      setSlider("soft-gravity", Math.round(sagGravityScale * 100));
+    }
+
+    function updateSoftPreview(dt) {
+      sagShake.set(0, 0, 0);
+      if (!softTarget) return;
+      const preview = softPreview;
+      preview.time += Math.min(dt, 0.1);
+      const reach = softSize() * 0.35 * preview.power;
+      if (preview.bounce) sagShake.y += Math.sin(preview.time * Math.PI * 2 * 1.6) * reach;
+      preview.kicks = preview.kicks.filter((kick) => preview.time - kick.start < 0.2);
+      for (const kick of preview.kicks) {
+        sagShake.addScaledVector(kick.direction, Math.sin(((preview.time - kick.start) / 0.2) * Math.PI) * reach * 1.5);
+      }
+      if (preview.release) {
+        const left = 1 - (preview.time - preview.release.start) / 0.06;
+        if (left <= 0) preview.release = null;
+        else sagShake.addScaledVector(preview.release.from, left);
+      }
+      sagShake.add(preview.held);
+    }
+
+    function kickSoft(direction) {
+      if (!softTarget) return;
+      softPreview.kicks.push({ start: softPreview.time, direction: direction.clone().normalize() });
+    }
+
+    function softWorldPerPixel() {
+      const height = Math.max(renderer.domElement.clientHeight, 1);
+      if (camera.isOrthographicCamera) return (camera.top - camera.bottom) / camera.zoom / height;
+      const distance = camera.position.distanceTo(controls.target);
+      return (2 * distance * Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5))) / height;
+    }
+
+    function beginSoftEdit(mesh) {
+      if (!canSoftEdit(mesh)) return;
+      finishPathDraw();
+      endSketchDraw(false);
+      softSession = packState();
+      softCamera = { camera, position: camera.position.clone(), target: controls.target.clone(), zoom: camera.zoom };
+      softMouse = { LEFT: controls.mouseButtons.LEFT, RIGHT: controls.mouseButtons.RIGHT };
+      controls.mouseButtons.LEFT = -1;
+      controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE;
+      softTarget = mesh;
+      select(null);
+      paintCurves();
+      resetSoftPreview();
+      fadeSoftOthers(true);
+      focusSoftCamera();
+      refreshChrome();
+    }
+
+    function switchSoftTarget(mesh) {
+      if (!softTarget || mesh === softTarget || !softEditable(mesh)) return;
+      softTarget = mesh;
+      fadeSoftOthers(true);
+      paintCurves();
+      refreshChrome();
+    }
+
+    function dropSoftMode() {
+      fadeSoftOthers(false);
+      softTarget = null;
+      softSession = null;
+      paintCurves();
+      resetSoftPreview();
+      if (softMouse) {
+        controls.mouseButtons.LEFT = softMouse.LEFT;
+        controls.mouseButtons.RIGHT = softMouse.RIGHT;
+        softMouse = null;
+      }
+      controls.minDistance = 0.7;
+      if (softCamera && softCamera.camera === camera) {
+        camera.position.copy(softCamera.position);
+        camera.zoom = softCamera.zoom;
+        camera.updateProjectionMatrix();
+        controls.target.copy(softCamera.target);
+        controls.update();
+      }
+      softCamera = null;
+      updateSoftChrome();
+    }
+
+    function saveSoftEdit() {
+      if (!softTarget) return;
+      commit();
+      softSession = packState();
+      setFileStatus("柔らかさの設定を保存しました");
+      refreshChrome();
+    }
+
+    function discardSoftEdit() {
+      if (!softSession || !softTarget) return;
+      applyState(softSession);
+      commit();
+      if (!softTarget) return;
+      softSession = packState();
+      setFileStatus("柔らかさの変更を破棄しました");
+      refreshChrome();
+    }
+
+    function leaveSoftEdit() {
+      if (!softTarget) return;
+      if (softDirty()) {
+        if (!window.confirm("保存していない柔らかさの変更を破棄して戻りますか？")) return;
+        applyState(softSession);
+        commit();
+      }
+      dropSoftMode();
+      select(null);
+      refreshChrome();
+    }
+
+    document.getElementById("sag-open-edit").addEventListener("click", () => beginSoftEdit(selected));
+    document.getElementById("soft-save").addEventListener("click", saveSoftEdit);
+    document.getElementById("soft-discard").addEventListener("click", discardSoftEdit);
+    document.getElementById("soft-leave").addEventListener("click", leaveSoftEdit);
+    document.getElementById("soft-pitch").addEventListener("input", (event) => setSoftGravity(Number(event.target.value), softPreview.roll));
+    document.getElementById("soft-roll").addEventListener("input", (event) => setSoftGravity(softPreview.pitch, Number(event.target.value)));
+    document.getElementById("soft-gravity").addEventListener("input", (event) => setSoftGravityScale(Number(event.target.value) / 100));
+    for (const button of document.querySelectorAll("#soft-section [data-pose]")) {
+      button.addEventListener("click", () => {
+        const [pitch, roll] = button.dataset.pose.split(",").map(Number);
+        setSoftGravity(pitch, roll);
+      });
+    }
+    for (const button of document.querySelectorAll("#soft-section [data-shake]")) {
+      button.addEventListener("click", () => kickSoft(new THREE.Vector3(...button.dataset.shake.split(",").map(Number))));
+    }
+    document.getElementById("soft-bounce").addEventListener("change", (event) => {
+      softPreview.bounce = event.target.checked;
+    });
+    document.getElementById("soft-power").addEventListener("input", (event) => {
+      softPreview.power = Number(event.target.value) / 100;
+    });
+    setSlider("soft-power", 50);
+    setSoftGravity(0, 0);
+    renderer.domElement.addEventListener("pointerdown", (event) => {
+      if (!softTarget || event.button !== 0) return;
+      event.preventDefault();
+      renderer.domElement.setPointerCapture(event.pointerId);
+      softPreview.release = null;
+      softPreview.drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
+      document.body.classList.add("soft-shaking");
+    });
+    renderer.domElement.addEventListener("pointermove", (event) => {
+      const drag = softPreview.drag;
+      if (!softTarget || !drag || event.pointerId !== drag.pointerId) return;
+      const dx = event.clientX - drag.x;
+      const dy = event.clientY - drag.y;
+      if (dx * dx + dy * dy > 16) drag.moved = true;
+      const scale = softWorldPerPixel();
+      const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+      const up = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
+      const boost = Math.max(1, softPreview.power);
+      softPreview.held.copy(right).multiplyScalar(dx * scale * boost).addScaledVector(up, -dy * scale * boost);
+      const limit = softSize() * 0.8 * boost;
+      if (softPreview.held.length() > limit) softPreview.held.setLength(limit);
+    });
+    const endSoftDrag = (event) => {
+      const drag = softPreview.drag;
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      softPreview.drag = null;
+      document.body.classList.remove("soft-shaking");
+      if (softPreview.held.lengthSq() > 0) softPreview.release = { from: softPreview.held.clone(), start: softPreview.time };
+      softPreview.held.set(0, 0, 0);
+      if (drag.moved || event.type !== "pointerup" || !softTarget) return;
+      const hit = pickScene(event);
+      if (hit) switchSoftTarget(hit);
+    };
+    renderer.domElement.addEventListener("pointerup", endSoftDrag);
+    renderer.domElement.addEventListener("pointercancel", endSoftDrag);
+
+    const SAG_GUIDE_COLORS = { root: 0xffd166, gravity: 0x4cc9f0, bounce: 0xff5fa2 };
+    const SAG_BOUNCE_SCALE = 2;
+    const sagGuides = [];
+    const sagGuideZ = new THREE.Vector3(0, 0, 1);
+    const sagGuideRoot = new THREE.Vector3();
+    const sagGuideTip = new THREE.Vector3();
+    const sagGuideDrop = new THREE.Vector3();
+    const sagGuideDirection = new THREE.Vector3();
+
+    function sagGuideLook(object) {
+      object.traverse((item) => {
+        item.renderOrder = 10;
+        if (!item.material) return;
+        Object.assign(item.material, { depthTest: false, depthWrite: false, transparent: true, toneMapped: false });
+      });
+      return object;
+    }
+
+    const sagGuideUp = new THREE.Vector3(0, 1, 0);
+    const sagShaftGeometry = new THREE.CylinderGeometry(1, 1, 1, 12);
+    const sagHeadGeometry = new THREE.ConeGeometry(1, 1, 16);
+
+    function makeSagArrow(color, opacity = 1, headless = false) {
+      const group = new THREE.Group();
+      const material = new THREE.MeshBasicMaterial({ color, opacity });
+      const shaft = new THREE.Mesh(sagShaftGeometry, material);
+      const head = new THREE.Mesh(sagHeadGeometry, material);
+      head.visible = !headless;
+      group.add(shaft, head);
+      return { group, shaft, head, headless };
+    }
+
+    function placeSagArrow(arrow, origin, direction, length, thickness) {
+      const head = arrow.headless ? 0 : Math.min(length * 0.4, thickness * 7);
+      arrow.group.position.copy(origin);
+      arrow.group.quaternion.setFromUnitVectors(sagGuideUp, direction);
+      arrow.shaft.scale.set(thickness, Math.max(length - head, 1e-6), thickness);
+      arrow.shaft.position.y = (length - head) * 0.5;
+      arrow.head.scale.set(thickness * 3, Math.max(head, 1e-6), thickness * 3);
+      arrow.head.position.y = length - head * 0.5;
+    }
+
+    function makeSagGuide() {
+      const group = new THREE.Group();
+      const root = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), new THREE.MeshBasicMaterial({ color: SAG_GUIDE_COLORS.root }));
+      const ring = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 48), new THREE.MeshBasicMaterial({ color: SAG_GUIDE_COLORS.root, opacity: 0.7, side: THREE.DoubleSide }));
+      const axis = makeSagArrow(SAG_GUIDE_COLORS.root, 0.5, true);
+      const gravity = makeSagArrow(SAG_GUIDE_COLORS.gravity);
+      const bounce = makeSagArrow(SAG_GUIDE_COLORS.bounce);
+      group.add(root, ring, axis.group, gravity.group, bounce.group);
+      group.visible = false;
+      scene.add(sagGuideLook(group));
+      return { group, root, ring, axis, gravity, bounce };
+    }
+
+    function sagGuideHosts() {
+      if (!sagGuidesOn || maskTarget || reliefTarget || featureTarget) return [];
+      const hosts = new Set();
+      for (const mesh of softTarget ? softGroup() : selection) {
+        const kind = sagKind(mesh);
+        if (kind === "path") {
+          if (mesh.userData.sagState) hosts.add(mesh);
+          continue;
+        }
+        if (kind === "link") {
+          if (sagActive(mesh) && mesh.visible) hosts.add(mesh);
+          continue;
+        }
+        if (kind !== "part") continue;
+        const host = sagActive(mesh) ? mesh : sagHost(mesh);
+        if (host && !host.userData.hidden) hosts.add(host);
+      }
+      return [...hosts];
+    }
+
+    function placePathSagGuide(guide, curve) {
+      const state = curve.userData.sagState;
+      const sag = curve.userData.sag;
+      if (!state || !sag) return false;
+      const length = state.length;
+      const thickness = Math.max(length * 0.012, 0.0015);
+      guide.root.position.copy(state.root);
+      guide.root.scale.setScalar(Math.max(length * 0.04, 0.004));
+      guide.ring.visible = false;
+      const reach = sagGuideDirection.copy(state.tip).sub(state.root);
+      const span = reach.length();
+      guide.axis.group.visible = span > 1e-6;
+      if (guide.axis.group.visible) placeSagArrow(guide.axis, state.root, reach.divideScalar(span), span, thickness * 0.5);
+      const pull = length * (0.35 + 0.65 * sag.amount) * Math.min(sagGravityScale, 2);
+      placeSagArrow(guide.gravity, sagGuideRoot.copy(state.root).lerp(state.tip, 0.5), sagGravityWorld, pull, thickness);
+      const size = state.wobble.length() * SAG_BOUNCE_SCALE;
+      guide.bounce.group.visible = size > length * 0.01;
+      if (guide.bounce.group.visible) placeSagArrow(guide.bounce, state.tip, sagGuideDirection.copy(state.wobble).normalize(), size, thickness);
+      return true;
+    }
+
+    function placeSagGuide(guide, host) {
+      if (isCurve(host)) return placePathSagGuide(guide, host);
+      guide.ring.visible = true;
+      guide.axis.group.visible = true;
+      const uniforms = host.material?.userData?.maskUniforms ?? host.userData.sagUniforms;
+      const span = sagSpans.get(host);
+      if (!uniforms?.sagOn.value || !span) return false;
+      const axis = uniforms.sagAxisWorld.value;
+      const center = uniforms.sagCenterWorld.value;
+      const sag = host.userData.sag;
+      sagGuideRoot.copy(center).addScaledVector(axis, span.length * 0.5);
+      sagGuideTip.copy(center).addScaledVector(axis, -span.length * 0.5);
+      guide.root.position.copy(sagGuideRoot);
+      guide.root.scale.setScalar(Math.max(span.length * 0.04, 0.004));
+      guide.ring.position.copy(sagGuideRoot);
+      guide.ring.quaternion.setFromUnitVectors(sagGuideZ, axis);
+      guide.ring.scale.setScalar(Math.max(span.cross, span.length * 0.1));
+      const thickness = Math.max(span.length * 0.012, 0.0015);
+      placeSagArrow(guide.axis, sagGuideRoot, sagGuideDirection.copy(axis).negate(), span.length, thickness * 0.5);
+      const pull = span.length * (0.35 + 0.65 * sag.amount) * Math.min(sagGravityScale, 2);
+      placeSagArrow(guide.gravity, center, sagGravityWorld, pull, thickness);
+      const along = sagGravityWorld.dot(axis);
+      sagGuideDrop.copy(sagGravityWorld).addScaledVector(axis, -along).addScaledVector(axis, along * 0.35).multiplyScalar(uniforms.sagStrength.value);
+      const wobble = uniforms.sagWobble.value;
+      const size = wobble.length() * SAG_BOUNCE_SCALE;
+      guide.bounce.group.visible = size > span.length * 0.01;
+      if (guide.bounce.group.visible) {
+        placeSagArrow(guide.bounce, sagGuideTip.add(sagGuideDrop), sagGuideDirection.copy(wobble).normalize(), size, thickness);
+      }
+      return true;
+    }
+
+    function updateSagGuides() {
+      const hosts = sagGuideHosts();
+      while (sagGuides.length < hosts.length) sagGuides.push(makeSagGuide());
+      sagGuides.forEach((guide, index) => {
+        guide.group.visible = index < hosts.length && placeSagGuide(guide, hosts[index]);
+      });
+    }
+
+    function readRig(value) {
+      const joints = value?.joints;
+      if (!joints || typeof joints !== "object") return null;
+      const out = {};
+      for (const name of RIG_JOINTS) {
+        if (!isVector(joints[name], 3)) return null;
+        out[name] = [...joints[name]];
+      }
+      return { joints: out };
+    }
+
+    function rigSignature() {
+      if (!rig) return "-";
+      return RIG_JOINTS.map((name) => rig.joints[name].map((value) => value.toFixed(5)).join(",")).join(";");
+    }
+
+    function readBoneName(value) {
+      return value === "none" || RIG_BONE_MAP.has(value) ? value : null;
+    }
+
+    function setPartBone(mesh, value) {
+      const bone = readBoneName(value);
+      if (bone) mesh.userData.bone = bone;
+      else delete mesh.userData.bone;
+    }
+
+    function mirroredBoneName(name) {
+      if (name?.startsWith("left")) return `right${name.slice(4)}`;
+      if (name?.startsWith("right")) return `left${name.slice(5)}`;
+      return name;
+    }
+
+    function rigBoneLabel(name) {
+      if (name === "none") return "動かさない";
+      return RIG_BONE_MAP.get(name)?.label ?? "";
+    }
+
+    function rigJoint(name, target = new THREE.Vector3()) {
+      return target.fromArray(rig.joints[name]);
+    }
+
+    function rigPartBoxes() {
+      const boxes = [];
+      for (const mesh of [...editableMeshes(), ...linkMeshes(), ...mirrorMeshes()]) {
+        if (!mesh.visible || mesh.userData.isMask || !mesh.geometry) continue;
+        mesh.updateWorldMatrix(true, false);
+        if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+        const box = mesh.geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld);
+        boxes.push({ box, center: box.getCenter(new THREE.Vector3()), soft: Boolean(mesh.userData.sag) });
+      }
+      return boxes;
+    }
+
+    function fitRig() {
+      const boxes = rigPartBoxes();
+      const box = new THREE.Box3();
+      for (const item of boxes) box.union(item.box);
+      if (box.isEmpty()) box.set(new THREE.Vector3(-0.3, 0, -0.1), new THREE.Vector3(0.3, 1.7, 0.1));
+      const height = Math.max(box.max.y - box.min.y, 0.05);
+      const cx = torsoCenter.x;
+      const pad = height * 0.01;
+      const at = (y) => boxes.filter((item) => item.box.min.y - pad <= y && item.box.max.y + pad >= y);
+      const spans = (item) => item.box.min.x <= cx && item.box.max.x >= cx;
+      const area = (item) => (item.box.max.x - item.box.min.x) * (item.box.max.z - item.box.min.z);
+      const coreZ = (y) => {
+        const hits = at(y).filter((item) => spans(item) && !item.soft).sort((a, b) => area(b) - area(a));
+        return hits[0]?.center.z ?? null;
+      };
+      const fallbackZ = (box.min.z + box.max.z) / 2;
+      const y = (layout) => box.min.y + layout[1] * height;
+      const joints = {};
+      const hipsZ = coreZ(y(RIG_LAYOUT.hips)) ?? fallbackZ;
+      const neckZ = coreZ(y(RIG_LAYOUT.neck)) ?? hipsZ;
+      const headZ = coreZ((y(RIG_LAYOUT.head) + y(RIG_LAYOUT.headTop)) / 2) ?? neckZ;
+      const spineZ = (height01) => {
+        const t = (height01 - RIG_LAYOUT.hips[1]) / (RIG_LAYOUT.neck[1] - RIG_LAYOUT.hips[1]);
+        return THREE.MathUtils.lerp(hipsZ, neckZ, t);
+      };
+      joints.hips = [cx, y(RIG_LAYOUT.hips), hipsZ];
+      joints.spine = [cx, y(RIG_LAYOUT.spine), spineZ(RIG_LAYOUT.spine[1])];
+      joints.chest = [cx, y(RIG_LAYOUT.chest), spineZ(RIG_LAYOUT.chest[1])];
+      joints.neck = [cx, y(RIG_LAYOUT.neck), neckZ];
+      joints.head = [cx, y(RIG_LAYOUT.head), headZ];
+      joints.headTop = [cx, y(RIG_LAYOUT.headTop), headZ];
+      const pick = (layout, sign) => {
+        const targetX = cx + layout[0] * sign * height;
+        const hits = at(y(layout)).filter((item) => (item.center.x - cx) * sign > height * 0.01 && !item.soft);
+        hits.sort((a, b) => Math.abs(a.center.x - targetX) - Math.abs(b.center.x - targetX));
+        return hits[0] ?? null;
+      };
+      for (const [side, sign] of [["left", 1], ["right", -1]]) {
+        const name = (part) => `${side}${part}`;
+        const place = (part, item, z) => {
+          const layout = RIG_LAYOUT[part];
+          joints[name(part)] = [item ? item.center.x : cx + layout[0] * sign * height, y(layout), item ? item.center.z : z];
+        };
+        joints[name("Shoulder")] = [cx + RIG_LAYOUT.Shoulder[0] * sign * height, y(RIG_LAYOUT.Shoulder), spineZ(RIG_LAYOUT.Shoulder[1])];
+        for (const part of ["UpperArm", "LowerArm", "Hand", "UpperLeg", "LowerLeg"]) {
+          place(part, pick(RIG_LAYOUT[part], sign), part.endsWith("Leg") ? hipsZ : spineZ(RIG_LAYOUT[part][1]));
+        }
+        const hand = new THREE.Vector3().fromArray(joints[name("Hand")]);
+        const reach = new THREE.Vector3().fromArray(joints[name("LowerArm")]).sub(hand).negate();
+        if (reach.lengthSq() < 1e-10) reach.set(0, -1, 0);
+        joints[name("HandTip")] = hand.addScaledVector(reach.normalize(), (RIG_LAYOUT.Hand[1] - RIG_LAYOUT.HandTip[1]) * height * 1.05).toArray();
+        const shin = joints[name("LowerLeg")];
+        joints[name("Foot")] = [shin[0], y(RIG_LAYOUT.Foot), shin[2]];
+        const foot = pick(RIG_LAYOUT.Toe, sign);
+        joints[name("Toe")] = foot
+          ? [foot.center.x, y(RIG_LAYOUT.Toe), Math.max(foot.box.max.z - (foot.box.max.z - foot.box.min.z) * 0.15, shin[2])]
+          : [shin[0], y(RIG_LAYOUT.Toe), shin[2] + RIG_LAYOUT.Toe[2] * height];
+      }
+      if (rigMirror) {
+        for (const name of RIG_JOINTS) {
+          if (!name.startsWith("left")) continue;
+          const left = joints[name];
+          const right = joints[mirroredBoneName(name)];
+          const x = (left[0] - cx + cx - right[0]) / 2;
+          const yz = [(left[1] + right[1]) / 2, (left[2] + right[2]) / 2];
+          joints[name] = [cx + x, ...yz];
+          joints[mirroredBoneName(name)] = [cx - x, ...yz];
+        }
+      }
+      for (const key of Object.keys(joints)) joints[key] = joints[key].map(roundNumber);
+      return { joints };
+    }
+
+    const rigSegment = new THREE.Line3();
+    const rigClosest = new THREE.Vector3();
+    const rigProbe = new THREE.Box3();
+    const rigProbePoint = new THREE.Vector3();
+    const rigCenterPoint = new THREE.Vector3();
+
+    function nearestRigBone(point) {
+      let best = "hips";
+      let bestDistance = Infinity;
+      for (const bone of RIG_BONES) {
+        rigJoint(bone.name, rigSegment.start);
+        rigJoint(bone.tail, rigSegment.end);
+        const distance = rigSegment.closestPointToPoint(point, true, rigClosest).distanceToSquared(point);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          best = bone.name;
+        }
+      }
+      return best;
+    }
+
+    function rigCenterOf(object, target) {
+      object.updateWorldMatrix(true, false);
+      if (object.isMesh && object.geometry) {
+        if (!object.geometry.boundingBox) object.geometry.computeBoundingBox();
+        return rigProbe.copy(object.geometry.boundingBox).applyMatrix4(object.matrixWorld).getCenter(target);
+      }
+      if (isCurve(object)) {
+        const points = object.userData.points;
+        if (!points.length) return target.setFromMatrixPosition(object.matrixWorld);
+        target.set(0, 0, 0);
+        for (const point of points) target.add(rigProbePoint.copy(point.position).applyMatrix4(object.matrixWorld));
+        return target.divideScalar(points.length);
+      }
+      rigProbe.setFromObject(object);
+      return rigProbe.isEmpty() ? target.setFromMatrixPosition(object.matrixWorld) : rigProbe.getCenter(target);
+    }
+
+    function rigBoneOf(object) {
+      const own = object.userData.bone;
+      if (own) return own;
+      return rig ? nearestRigBone(rigCenterOf(object, rigCenterPoint)) : "none";
+    }
+
+    function rigInside(object, ancestor) {
+      for (let cursor = object.parent; cursor; cursor = cursor.parent) {
+        if (cursor === ancestor) return true;
+      }
+      return false;
+    }
+
+    function rigPoseTargets() {
+      const targets = new Map();
+      const hosts = [...editableMeshes(), ...activeAnchors()];
+      for (const object of [...hosts, ...linkMirrors(), ...curves]) targets.set(object, rigBoneOf(object));
+      for (const host of hosts) {
+        for (const shape of host.userData.masks ?? []) {
+          if (!targets.has(shape) && !rigInside(shape, host)) targets.set(shape, targets.get(host));
+        }
+      }
+      return targets;
+    }
+
+    const rigPosed = [];
+    const rigParentInverse = new THREE.Matrix4();
+    const rigDesired = new THREE.Matrix4();
+
+    function applyRigPose() {
+      if (!rigPoseFrame) return;
+      scene.updateMatrixWorld(true);
+      const entries = [];
+      for (const [object, bone] of rigPoseTargets()) {
+        const pose = rigPoseFrame.get(bone);
+        if (!pose || !object.parent) continue;
+        let depth = 0;
+        for (let cursor = object.parent; cursor; cursor = cursor.parent) depth += 1;
+        entries.push({ object, pose, depth, rest: object.matrixWorld.clone() });
+      }
+      entries.sort((a, b) => a.depth - b.depth);
+      for (const { object, pose, rest } of entries) {
+        rigPosed.push({ object, matrix: object.matrix.clone(), auto: object.matrixAutoUpdate });
+        object.parent.updateWorldMatrix(true, false);
+        rigDesired.multiplyMatrices(pose, rest);
+        object.matrix.multiplyMatrices(rigParentInverse.copy(object.parent.matrixWorld).invert(), rigDesired);
+        object.matrixAutoUpdate = false;
+        object.matrixWorld.copy(rigDesired);
+      }
+      scene.updateMatrixWorld(true);
+    }
+
+    function restoreRigPose() {
+      if (!rigPosed.length) return;
+      for (const { object, matrix, auto } of rigPosed) {
+        object.matrix.copy(matrix);
+        object.matrixAutoUpdate = auto;
+      }
+      rigPosed.length = 0;
+      scene.updateMatrixWorld(true);
+    }
+
+    function computeRigPose(sample) {
+      const rest = new Map(RIG_JOINTS.map((name) => [name, rigJoint(name)]));
+      const ourLeg = rest.get("leftUpperLeg").distanceTo(rest.get("leftLowerLeg")) + rest.get("leftLowerLeg").distanceTo(rest.get("leftFoot"));
+      const scale = ourLeg / Math.max(sample.legLength, 1e-6);
+      const rotations = new Map();
+      const joints = new Map();
+      const matrices = new Map();
+      const correction = new THREE.Quaternion();
+      const ours = new THREE.Vector3();
+      const turn = new THREE.Matrix4();
+      for (const bone of RIG_BONES) {
+        const rotation = (sample.rotations.get(bone.name) ?? rotations.get(bone.parent) ?? new THREE.Quaternion()).clone();
+        const source = sample.directions.get(bone.name);
+        if (bone.side && source && sample.rotations.has(bone.name)) {
+          ours.subVectors(rest.get(bone.tail), rest.get(bone.name));
+          if (ours.lengthSq() > 1e-12) rotation.multiply(correction.setFromUnitVectors(ours.normalize(), source));
+        }
+        rotations.set(bone.name, rotation);
+        const head = new THREE.Vector3();
+        if (!bone.parent) {
+          const offset = sample.offset.clone().multiplyScalar(scale);
+          if (!rigPlayer.travel) offset.setX(0).setZ(0);
+          head.copy(rest.get(bone.name)).add(offset);
+        } else {
+          const frame = bone.fromRoot ? sample.rootRotation : rotations.get(bone.parent);
+          head.subVectors(rest.get(bone.name), rest.get(bone.parent)).applyQuaternion(frame).add(joints.get(bone.parent));
+        }
+        joints.set(bone.name, head);
+        const origin = rest.get(bone.name);
+        matrices.set(bone.name, new THREE.Matrix4().makeTranslation(head.x, head.y, head.z)
+          .multiply(turn.makeRotationFromQuaternion(rotation))
+          .multiply(new THREE.Matrix4().makeTranslation(-origin.x, -origin.y, -origin.z)));
+      }
+      for (const bone of RIG_BONES) {
+        if (RIG_BONE_MAP.has(bone.tail)) continue;
+        joints.set(bone.tail, ours.subVectors(rest.get(bone.tail), rest.get(bone.name)).applyQuaternion(rotations.get(bone.name)).add(joints.get(bone.name)).clone());
+      }
+      return { matrices, joints };
+    }
+
+    const rigFrameX = new THREE.Vector3();
+    const rigFrameY = new THREE.Vector3();
+    const rigFrameZ = new THREE.Vector3();
+    const rigFrameBasis = new THREE.Matrix4();
+
+    function rigFrame(direction, pole, target = new THREE.Quaternion()) {
+      rigFrameX.copy(direction).normalize();
+      rigFrameY.copy(pole).addScaledVector(rigFrameX, -pole.dot(rigFrameX));
+      if (rigFrameY.lengthSq() < 1e-10) rigFrameY.set(0, 0, 1).addScaledVector(rigFrameX, -rigFrameX.z);
+      if (rigFrameY.lengthSq() < 1e-10) rigFrameY.set(0, 1, 0).addScaledVector(rigFrameX, -rigFrameX.y);
+      rigFrameY.normalize();
+      rigFrameZ.crossVectors(rigFrameX, rigFrameY);
+      rigFrameBasis.makeBasis(rigFrameX, rigFrameY, rigFrameZ);
+      return target.setFromRotationMatrix(rigFrameBasis);
+    }
+
+    function solveRigLeg(hip, target, upper, lower, pole, knee, ankle) {
+      const direction = new THREE.Vector3().subVectors(target, hip);
+      let reach = direction.length();
+      if (reach < 1e-6) direction.set(0, -1, 0);
+      else direction.divideScalar(reach);
+      reach = Math.min(Math.max(reach, Math.abs(upper - lower) + 1e-4), upper + lower - 1e-4);
+      const along = (upper * upper - lower * lower + reach * reach) / (2 * reach);
+      const height = Math.sqrt(Math.max(upper * upper - along * along, 0));
+      const bend = pole.clone().addScaledVector(direction, -pole.dot(direction));
+      if (bend.lengthSq() < 1e-10) bend.set(0, 0, 1).addScaledVector(direction, -direction.z);
+      bend.normalize();
+      knee.copy(hip).addScaledVector(direction, along).addScaledVector(bend, height);
+      ankle.copy(hip).addScaledVector(direction, reach);
+    }
+
+    const MMD_REST_CENTER = {
+      "全ての親": [0, 0, 0], "センター": [0, 8, 0], "グルーブ": [0, 8.2, 0], "腰": [0, 11.6, 0],
+      "上半身": [0, 11.8, 0], "上半身2": [0, 13.1, 0], "首": [0, 15.4, 0], "頭": [0, 16.4, 0], "下半身": [0, 11.8, 0],
+    };
+    const MMD_REST_SIDE = {
+      "肩": [0.35, 15, 0], "腕": [1.45, 14.8, 0], "腕捩": [2.47, 14.08, 0], "ひじ": [3.5, 13.37, 0], "手捩": [4.44, 12.71, 0],
+      "手首": [5.38, 12.05, 0], "手先": [6.2, 11.48, 0], "足": [0.95, 10.4, 0], "ひざ": [0.95, 5.85, 0.1], "足首": [0.95, 1.2, 0],
+      "つま先": [0.95, 0.15, 1.3], "足IK": [0.95, 1.2, 0], "足IK親": [0.95, 0, 0],
+    };
+    const MMD_BONES = [
+      ["全ての親", null], ["センター", "全ての親"], ["グルーブ", "センター"], ["腰", "グルーブ"], ["上半身", "腰"],
+      ["上半身2", "上半身"], ["首", "上半身2"], ["頭", "首"], ["下半身", "腰"],
+    ];
+    for (const word of ["左", "右"]) {
+      MMD_BONES.push(
+        [`${word}肩`, "上半身2"], [`${word}腕`, `${word}肩`], [`${word}腕捩`, `${word}腕`], [`${word}ひじ`, `${word}腕捩`],
+        [`${word}手捩`, `${word}ひじ`], [`${word}手首`, `${word}手捩`], [`${word}足`, "下半身"], [`${word}ひざ`, `${word}足`],
+        [`${word}足首`, `${word}ひざ`], [`${word}足IK親`, "全ての親"], [`${word}足IK`, `${word}足IK親`],
+      );
+    }
+    const RIG_SIDES = [["left", "左"], ["right", "右"]];
+
+    function mmdRest(name) {
+      if (MMD_REST_CENTER[name]) return new THREE.Vector3().fromArray(MMD_REST_CENTER[name]);
+      const point = new THREE.Vector3().fromArray(MMD_REST_SIDE[name.slice(1)]);
+      if (name[0] === "右") point.x = -point.x;
+      return point;
+    }
+
+    function parseVmd(buffer) {
+      const bytes = new Uint8Array(buffer);
+      const view = new DataView(buffer);
+      const header = new TextDecoder("ascii").decode(bytes.subarray(0, 30));
+      if (!header.startsWith("Vocaloid Motion Data")) throw new Error("VMD ファイルではありません");
+      let offset = header.startsWith("Vocaloid Motion Data 0002") ? 50 : 40;
+      if (buffer.byteLength < offset + 4) throw new Error("VMD ファイルが壊れています");
+      const count = view.getUint32(offset, true);
+      offset += 4;
+      if (offset + count * 111 > buffer.byteLength) throw new Error("VMD ファイルが壊れています");
+      const decoder = new TextDecoder("shift_jis");
+      const tracks = new Map();
+      for (let index = 0; index < count; index += 1) {
+        const base = offset + index * 111;
+        const raw = bytes.subarray(base, base + 15);
+        const end = raw.indexOf(0);
+        const name = decoder.decode(end >= 0 ? raw.subarray(0, end) : raw).normalize("NFKC");
+        const read = (at) => view.getFloat32(base + at, true);
+        let list = tracks.get(name);
+        if (!list) tracks.set(name, (list = []));
+        list.push({
+          frame: view.getUint32(base + 15, true),
+          position: [read(19), read(23), -read(27)],
+          rotation: [-read(31), -read(35), read(39), read(43)],
+          interp: bytes.slice(base + 47, base + 111),
+        });
+      }
+      for (const list of tracks.values()) list.sort((a, b) => a.frame - b.frame);
+      return tracks;
+    }
+
+    function vmdCurve(interp, channel, progress) {
+      const x1 = interp[channel] / 127;
+      const y1 = interp[channel + 4] / 127;
+      const x2 = interp[channel + 8] / 127;
+      const y2 = interp[channel + 12] / 127;
+      if (x1 === y1 && x2 === y2) return progress;
+      let low = 0;
+      let high = 1;
+      let s = progress;
+      for (let step = 0; step < 16; step += 1) {
+        s = (low + high) / 2;
+        const x = 3 * (1 - s) * (1 - s) * s * x1 + 3 * (1 - s) * s * s * x2 + s * s * s;
+        if (x < progress) low = s;
+        else high = s;
+      }
+      return 3 * (1 - s) * (1 - s) * s * y1 + 3 * (1 - s) * s * s * y2 + s * s * s;
+    }
+
+    const vmdNext = new THREE.Quaternion();
+
+    function sampleVmdTrack(list, frame, position, rotation) {
+      const last = list.length - 1;
+      if (frame <= list[0].frame || last === 0) {
+        position.fromArray(list[0].position);
+        rotation.fromArray(list[0].rotation).normalize();
+        return;
+      }
+      if (frame >= list[last].frame) {
+        position.fromArray(list[last].position);
+        rotation.fromArray(list[last].rotation).normalize();
+        return;
+      }
+      let low = 0;
+      let high = last;
+      while (high - low > 1) {
+        const middle = (low + high) >> 1;
+        if (list[middle].frame <= frame) low = middle;
+        else high = middle;
+      }
+      const a = list[low];
+      const b = list[high];
+      const progress = (frame - a.frame) / Math.max(b.frame - a.frame, 1);
+      position.set(
+        THREE.MathUtils.lerp(a.position[0], b.position[0], vmdCurve(b.interp, 0, progress)),
+        THREE.MathUtils.lerp(a.position[1], b.position[1], vmdCurve(b.interp, 1, progress)),
+        THREE.MathUtils.lerp(a.position[2], b.position[2], vmdCurve(b.interp, 2, progress)),
+      );
+      rotation.fromArray(a.rotation).normalize().slerp(vmdNext.fromArray(b.rotation).normalize(), vmdCurve(b.interp, 3, progress));
+    }
+
+    function vmdMotion(tracks, name) {
+      if (!MMD_BONES.some(([bone]) => tracks.has(bone))) throw new Error("体の動きが入っていない VMD です（カメラや表情だけのモーションは使えません）");
+      let frames = 0;
+      for (const list of tracks.values()) frames = Math.max(frames, list[list.length - 1].frame);
+      const useIk = tracks.has("左足IK") || tracks.has("右足IK");
+      const directions = new Map();
+      const between = (from, to) => mmdRest(to).sub(mmdRest(from)).normalize();
+      for (const [side, word] of RIG_SIDES) {
+        directions.set(`${side}Shoulder`, between(`${word}肩`, `${word}腕`));
+        directions.set(`${side}UpperArm`, between(`${word}腕`, `${word}ひじ`));
+        directions.set(`${side}LowerArm`, between(`${word}ひじ`, `${word}手首`));
+        directions.set(`${side}Hand`, between(`${word}手首`, `${word}手先`));
+        directions.set(`${side}UpperLeg`, between(`${word}足`, `${word}ひざ`));
+        directions.set(`${side}LowerLeg`, between(`${word}ひざ`, `${word}足首`));
+        directions.set(`${side}Foot`, between(`${word}足首`, `${word}つま先`));
+      }
+      const forward = new THREE.Vector3(0, 0, 1);
+      const upper = mmdRest("左足").distanceTo(mmdRest("左ひざ"));
+      const lower = mmdRest("左ひざ").distanceTo(mmdRest("左足首"));
+      const thighRest = rigFrame(mmdRest("左ひざ").sub(mmdRest("左足")), forward).invert();
+      const shinRest = rigFrame(mmdRest("左足首").sub(mmdRest("左ひざ")), forward).invert();
+      return {
+        name,
+        duration: frames / 30,
+        sample(time) {
+          const frame = time * 30;
+          const world = new Map();
+          for (const [bone, parent] of MMD_BONES) {
+            const local = new THREE.Quaternion();
+            const move = new THREE.Vector3();
+            const list = tracks.get(bone);
+            if (list) sampleVmdTrack(list, frame, move, local);
+            const rest = mmdRest(bone);
+            if (!parent) {
+              world.set(bone, { rotation: local, position: rest.add(move) });
+              continue;
+            }
+            const up = world.get(parent);
+            world.set(bone, {
+              rotation: up.rotation.clone().multiply(local),
+              position: rest.sub(mmdRest(parent)).add(move).applyQuaternion(up.rotation).add(up.position),
+            });
+          }
+          const rotations = new Map([
+            ["hips", world.get("下半身").rotation],
+            ["spine", world.get("上半身").rotation],
+            ["chest", world.get("上半身2").rotation],
+            ["neck", world.get("首").rotation],
+            ["head", world.get("頭").rotation],
+          ]);
+          const knee = new THREE.Vector3();
+          const ankle = new THREE.Vector3();
+          for (const [side, word] of RIG_SIDES) {
+            rotations.set(`${side}Shoulder`, world.get(`${word}肩`).rotation);
+            rotations.set(`${side}UpperArm`, world.get(`${word}腕捩`).rotation);
+            rotations.set(`${side}LowerArm`, world.get(`${word}手捩`).rotation);
+            rotations.set(`${side}Hand`, world.get(`${word}手首`).rotation);
+            if (useIk) {
+              const hip = world.get(`${word}足`).position;
+              const pole = forward.clone().applyQuaternion(world.get("下半身").rotation);
+              solveRigLeg(hip, world.get(`${word}足IK`).position, upper, lower, pole, knee, ankle);
+              rotations.set(`${side}UpperLeg`, rigFrame(knee.clone().sub(hip), pole).multiply(thighRest));
+              rotations.set(`${side}LowerLeg`, rigFrame(ankle.clone().sub(knee), pole).multiply(shinRest));
+              rotations.set(`${side}Foot`, world.get(`${word}足IK`).rotation);
+            } else {
+              rotations.set(`${side}UpperLeg`, world.get(`${word}足`).rotation);
+              rotations.set(`${side}LowerLeg`, world.get(`${word}ひざ`).rotation);
+              rotations.set(`${side}Foot`, world.get(`${word}足首`).rotation);
+            }
+          }
+          return {
+            rotations,
+            directions,
+            rootRotation: world.get("腰").rotation,
+            offset: world.get("下半身").position.clone().sub(mmdRest("下半身")),
+            legLength: upper + lower,
+          };
+        },
+      };
+    }
+
+    function bvhRole(rawName) {
+      const words = rawName.replace(/^.*:/, "")
+        .replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")
+        .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter(Boolean);
+      let side = null;
+      const rest = [];
+      for (const word of words) {
+        if (word === "left" || word === "l") side = "left";
+        else if (word === "right" || word === "r") side = "right";
+        else if (!["j", "bip", "bip01", "bip001", "mixamorig", "c", "def", "jnt", "joint", "bone"].includes(word)) rest.push(word);
+      }
+      const base = rest.join("");
+      if (side) {
+        const part = {
+          shoulder: "Shoulder", collar: "Shoulder", clavicle: "Shoulder",
+          arm: "UpperArm", upperarm: "UpperArm", uparm: "UpperArm", shldr: "UpperArm",
+          forearm: "LowerArm", lowerarm: "LowerArm", elbow: "LowerArm",
+          hand: "Hand", wrist: "Hand",
+          upleg: "UpperLeg", upperleg: "UpperLeg", thigh: "UpperLeg", hip: "UpperLeg",
+          leg: "LowerLeg", lowerleg: "LowerLeg", shin: "LowerLeg", knee: "LowerLeg", calf: "LowerLeg",
+          foot: "Foot", ankle: "Foot",
+        }[base];
+        return part ? { role: `${side}${part}`, rank: base === "hip" ? 0 : 1 } : null;
+      }
+      const role = { hips: "hips", hip: "hips", pelvis: "hips", neck: "neck", head: "head" }[base];
+      return role ? { role, rank: 1 } : null;
+    }
+
+    function bvhMotion(result, name) {
+      const bones = result.skeleton.bones;
+      const order = new Map(bones.map((bone, index) => [bone, index]));
+      const parents = bones.map((bone) => order.get(bone.parent) ?? -1);
+      const restWorld = [];
+      bones.forEach((bone, index) => {
+        restWorld[index] = bone.position.clone();
+        if (parents[index] >= 0) restWorld[index].add(restWorld[parents[index]]);
+      });
+      const tracks = new Map();
+      for (const track of result.clip.tracks) {
+        const dot = track.name.lastIndexOf(".");
+        const boneName = track.name.slice(0, dot);
+        if (!tracks.has(boneName)) tracks.set(boneName, {});
+        tracks.get(boneName)[track.name.slice(dot + 1)] = track.createInterpolant();
+      }
+      const roles = new Map();
+      const ranks = new Map();
+      bones.forEach((bone, index) => {
+        if (bone.name === "ENDSITE") return;
+        const found = bvhRole(bone.name);
+        if (!found || (ranks.get(found.role) ?? -1) >= found.rank) return;
+        roles.set(found.role, index);
+        ranks.set(found.role, found.rank);
+      });
+      if (!roles.has("hips")) roles.set("hips", 0);
+      const hips = roles.get("hips");
+      const top = roles.get("neck") ?? roles.get("head");
+      if (top != null) {
+        const chain = [];
+        let cursor = parents[top];
+        while (cursor >= 0 && cursor !== hips) {
+          chain.unshift(cursor);
+          cursor = parents[cursor];
+        }
+        if (cursor === hips && chain.length) {
+          roles.set("spine", chain[0]);
+          roles.set("chest", chain[chain.length - 1]);
+        }
+      }
+      if (![...roles.keys()].some((role) => role.endsWith("UpperArm") || role.endsWith("UpperLeg"))) {
+        throw new Error("BVH の骨の名前から腕や脚を見つけられませんでした");
+      }
+      const childOf = (index) => bones.findIndex((bone, child) => parents[child] === index && bone.position.lengthSq() > 1e-10);
+      const direction = (from, to) => (from == null || to == null || to < 0 ? null : restWorld[to].clone().sub(restWorld[from]).normalize());
+      const up = new THREE.Vector3(0, 1, 0);
+      const leftHip = roles.get("leftUpperLeg") ?? roles.get("leftUpperArm");
+      const rightHip = roles.get("rightUpperLeg") ?? roles.get("rightUpperArm");
+      const align = new THREE.Quaternion();
+      if (leftHip != null && rightHip != null) {
+        const across = restWorld[leftHip].clone().sub(restWorld[rightHip]).setY(0);
+        const facing = across.cross(up);
+        if (facing.lengthSq() > 1e-10) align.setFromAxisAngle(up, -Math.atan2(facing.x, facing.z));
+      }
+      const alignInverse = align.clone().invert();
+      const directions = new Map();
+      for (const [side] of RIG_SIDES) {
+        const role = (part) => roles.get(`${side}${part}`);
+        const pairs = {
+          Shoulder: direction(role("Shoulder"), role("UpperArm")),
+          UpperArm: direction(role("UpperArm"), role("LowerArm")),
+          LowerArm: direction(role("LowerArm"), role("Hand")),
+          Hand: direction(role("Hand"), role("Hand") == null ? null : childOf(role("Hand"))),
+          UpperLeg: direction(role("UpperLeg"), role("LowerLeg")),
+          LowerLeg: direction(role("LowerLeg"), role("Foot")),
+          Foot: direction(role("Foot"), role("Foot") == null ? null : childOf(role("Foot"))),
+        };
+        pairs.Hand ??= pairs.LowerArm;
+        pairs.Foot ??= new THREE.Vector3(0, -0.3, 1).normalize().applyQuaternion(alignInverse);
+        for (const [part, value] of Object.entries(pairs)) {
+          if (value) directions.set(`${side}${part}`, value.applyQuaternion(align));
+        }
+      }
+      const legRole = (part) => roles.get(`left${part}`) ?? roles.get(`right${part}`);
+      let legLength = 0;
+      if (legRole("UpperLeg") != null && legRole("LowerLeg") != null && legRole("Foot") != null) {
+        legLength = restWorld[legRole("UpperLeg")].distanceTo(restWorld[legRole("LowerLeg")]) + restWorld[legRole("LowerLeg")].distanceTo(restWorld[legRole("Foot")]);
+      }
+      if (!(legLength > 0)) legLength = Math.max(...restWorld.map((point) => restWorld[hips].y - point.y), 1);
+      const duration = Math.max(0, ...result.clip.tracks.map((track) => track.times[track.times.length - 1] ?? 0));
+      const evaluate = (time) => {
+        const world = [];
+        const positions = [];
+        bones.forEach((bone, index) => {
+          const entry = tracks.get(bone.name);
+          const local = entry?.quaternion ? new THREE.Quaternion().fromArray(entry.quaternion.evaluate(time)) : new THREE.Quaternion();
+          const move = entry?.position ? new THREE.Vector3().fromArray(entry.position.evaluate(time)) : bone.position.clone();
+          const parent = parents[index];
+          if (parent < 0) {
+            world[index] = local;
+            positions[index] = move;
+          } else {
+            world[index] = world[parent].clone().multiply(local);
+            positions[index] = move.applyQuaternion(world[parent]).add(positions[parent]);
+          }
+        });
+        return { world, positions };
+      };
+      const first = evaluate(0).positions;
+      const start = first[hips].clone();
+      const standing = restWorld[hips].y - Math.min(...restWorld.map((point) => point.y));
+      start.y = Math.min(...first.map((point) => point.y)) + standing;
+      return {
+        name,
+        duration,
+        sample(time) {
+          const { world, positions } = evaluate(Math.min(Math.max(time, 0), duration));
+          const rotations = new Map();
+          for (const [role, index] of roles) {
+            rotations.set(role, align.clone().multiply(world[index]).multiply(alignInverse));
+          }
+          return {
+            rotations,
+            directions,
+            rootRotation: rotations.get("hips"),
+            offset: positions[hips].clone().sub(start).applyQuaternion(align),
+            legLength,
+          };
+        },
+      };
+    }
+
+    async function loadRigMotion(file) {
+      try {
+        const motion = file.name.toLowerCase().endsWith(".bvh")
+          ? bvhMotion(new BVHLoader().parse(await file.text()), file.name)
+          : vmdMotion(parseVmd(await file.arrayBuffer()), file.name);
+        if (!(motion.duration > 0)) throw new Error("動きの長さが 0 のモーションです");
+        motion.sample(0);
+        rigMotion = motion;
+        rigPlayer.time = 0;
+        rigPlayer.playing = true;
+        rigPlayer.showing = true;
+        setFileStatus(`モーション「${file.name}」を読み込みました`);
+      } catch (error) {
+        setFileStatus(`モーションを読み込めませんでした：${/[ぁ-んァ-ヶ一-龠]/.test(error?.message ?? "") ? error.message : ".vmd か .bvh のファイルを選んでください"}`);
+      }
+      refreshChrome();
+    }
+
+    function toggleRigPlay() {
+      if (!rigEditing || !rigMotion) return;
+      if (rigPlayer.playing) rigPlayer.playing = false;
+      else {
+        if (rigPlayer.time >= rigMotion.duration) rigPlayer.time = 0;
+        rigPlayer.playing = true;
+        rigPlayer.showing = true;
+        rigPart = null;
+      }
+      updateRigChrome();
+    }
+
+    function stopRig() {
+      rigPlayer.playing = false;
+      rigPlayer.showing = false;
+      rigPlayer.time = 0;
+      rigPoseFrame = null;
+      rigPosedJoints = null;
+      updateRigChrome();
+    }
+
+    function showRigTime() {
+      const duration = rigMotion?.duration ?? 0;
+      const slider = document.getElementById("rig-time");
+      if (document.activeElement !== slider || rigPlayer.playing) slider.value = String(duration > 0 ? Math.round((rigPlayer.time / duration) * 1000) : 0);
+      document.getElementById("rig-time-label").textContent = `${rigPlayer.time.toFixed(1)} / ${duration.toFixed(1)} 秒`;
+    }
+
+    function updateRigMotion(dt) {
+      if (!rigEditing || !rig || !rigMotion || !rigPlayer.showing) {
+        rigPoseFrame = null;
+        rigPosedJoints = null;
+        return;
+      }
+      if (rigPlayer.playing) {
+        rigPlayer.time += Math.min(dt, 0.1) * rigPlayer.speed;
+        if (rigPlayer.time >= rigMotion.duration) {
+          if (rigPlayer.loop) rigPlayer.time %= rigMotion.duration;
+          else {
+            rigPlayer.time = rigMotion.duration;
+            rigPlayer.playing = false;
+            updateRigChrome();
+          }
+        }
+        showRigTime();
+      }
+      const pose = computeRigPose(rigMotion.sample(rigPlayer.time));
+      rigPoseFrame = pose.matrices;
+      rigPosedJoints = pose.joints;
+    }
+
+    const RIG_COLORS = { center: 0xffd166, left: 0x4cc9f0, right: 0xff5fa2, focus: 0xffffff };
+    const rigGuide = new THREE.Group();
+    rigGuide.visible = false;
+    scene.add(rigGuide);
+    const rigJointGeometry = new THREE.SphereGeometry(1, 14, 10);
+    const rigJointMarks = new Map();
+    const rigBoneMarks = new Map();
+    const rigGuideA = new THREE.Vector3();
+    const rigGuideB = new THREE.Vector3();
+    const rigGuideDirection = new THREE.Vector3();
+
+    function rigColor(name) {
+      if (name.startsWith("left")) return RIG_COLORS.left;
+      if (name.startsWith("right")) return RIG_COLORS.right;
+      return RIG_COLORS.center;
+    }
+
+    for (const name of RIG_JOINTS) {
+      const mark = new THREE.Mesh(rigJointGeometry, new THREE.MeshBasicMaterial({ color: rigColor(name) }));
+      rigGuide.add(sagGuideLook(mark));
+      rigJointMarks.set(name, mark);
+    }
+    for (const bone of RIG_BONES) {
+      const arrow = makeSagArrow(rigColor(bone.name), 0.85, true);
+      rigGuide.add(sagGuideLook(arrow.group));
+      rigBoneMarks.set(bone.name, arrow);
+    }
+
+    function rigShownJoint(name, target) {
+      const posed = rigPosedJoints?.get(name);
+      return posed ? target.copy(posed) : rigJoint(name, target);
+    }
+
+    function rigSize() {
+      return Math.max(rigJoint("headTop", rigGuideA).distanceTo(rigJoint("leftToe", rigGuideB)), 0.05);
+    }
+
+    function updateRigGuide() {
+      rigGuide.visible = rigEditing && Boolean(rig);
+      if (!rigGuide.visible) return;
+      const size = rigSize();
+      const radius = size * 0.011;
+      const thickness = size * 0.0035;
+      for (const [name, mark] of rigJointMarks) {
+        rigShownJoint(name, mark.position);
+        mark.scale.setScalar(name === rigDrag?.name ? radius * 1.5 : radius);
+      }
+      for (const bone of RIG_BONES) {
+        const arrow = rigBoneMarks.get(bone.name);
+        rigShownJoint(bone.name, rigGuideA);
+        rigShownJoint(bone.tail, rigGuideB);
+        const length = rigGuideA.distanceTo(rigGuideB);
+        if (length > 1e-6) rigGuideDirection.subVectors(rigGuideB, rigGuideA).divideScalar(length);
+        else rigGuideDirection.set(0, 1, 0);
+        const focus = bone.name === rigBone;
+        placeSagArrow(arrow, rigGuideA, rigGuideDirection, Math.max(length, 1e-6), thickness * (focus ? 2 : 1));
+        arrow.shaft.material.color.setHex(focus ? RIG_COLORS.focus : rigColor(bone.name));
+      }
+    }
+
+    function rigJointBone(name) {
+      if (RIG_BONE_MAP.has(name)) return name;
+      return RIG_BONES.find((bone) => bone.tail === name)?.name ?? null;
+    }
+
+    function pickRigJoint(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      let best = null;
+      let bestDistance = 14 * 14;
+      for (const name of RIG_JOINTS) {
+        rigJoint(name, rigGuideA).project(camera);
+        if (rigGuideA.z > 1) continue;
+        const x = ((rigGuideA.x + 1) / 2) * rect.width + rect.left;
+        const y = ((1 - rigGuideA.y) / 2) * rect.height + rect.top;
+        const distance = (x - event.clientX) ** 2 + (y - event.clientY) ** 2;
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          best = name;
+        }
+      }
+      return best;
+    }
+
+    function moveRigJoint(name, point) {
+      const sided = /^(left|right)/.test(name);
+      const value = point.clone();
+      if (rigMirror && !sided) value.x = torsoCenter.x;
+      rig.joints[name] = value.toArray();
+      if (rigMirror && sided) rig.joints[mirroredBoneName(name)] = [2 * torsoCenter.x - value.x, value.y, value.z];
+    }
+
+    function mirrorRigSide(from) {
+      for (const name of RIG_JOINTS) {
+        if (!name.startsWith(from)) {
+          if (!/^(left|right)/.test(name)) rig.joints[name][0] = torsoCenter.x;
+          continue;
+        }
+        const [x, y, z] = rig.joints[name];
+        rig.joints[mirroredBoneName(name)] = [2 * torsoCenter.x - x, y, z];
+      }
+    }
+
+    function updateRigLook() {
+      const focus = rigEditing ? rigBone : null;
+      if (!focus && !rigLookActive) return;
+      rigLookActive = Boolean(focus);
+      for (const mesh of editableMeshes()) setMaskLook(mesh, Boolean(focus) && rigBoneOf(mesh) !== focus);
+      for (const holder of [...activeAnchors(), ...linkMirrors()]) {
+        const faded = Boolean(focus) && rigBoneOf(holder) !== focus;
+        for (const mesh of holder.userData.inner.children) setMaskLook(mesh, faded);
+      }
+    }
+
+    function canRigEdit() {
+      return !maskTarget && !reliefTarget && !featureTarget && !softTarget && !rigEditing && loadingView.hidden;
+    }
+
+    function updateRigChrome() {
+      document.body.classList.toggle("rig-edit", rigEditing);
+      document.getElementById("rig-banner").hidden = !rigEditing;
+      updateRigLook();
+      if (!rigEditing) return;
+      const focusText = document.getElementById("rig-focus");
+      if (rigPart) {
+        const label = `${sideText(rigPart)}${rigPart.userData.label ?? "パーツ"}`;
+        const bone = rigBoneOf(rigPart);
+        focusText.textContent = bone === "none"
+          ? `「${label}」はボーンで動かさず、その場に残します。`
+          : `「${label}」は「${rigBoneLabel(bone)}」で動きます${rigPart.userData.bone ? "" : "（自動）"}。下の一覧で変えられます。`;
+      } else if (rigBone) {
+        focusText.textContent = `「${rigBoneLabel(rigBone)}」で動くパーツをはっきり表示しています。`;
+      } else {
+        focusText.textContent = "パーツごとに動かすボーンを右の欄で選べます。名前やビューのパーツをクリックすると強調されます。";
+      }
+      updateRigAssign();
+      document.getElementById("rig-motion-name").textContent = rigMotion
+        ? `${rigMotion.name}（${rigMotion.duration.toFixed(1)} 秒）`
+        : ".vmd か .bvh を読み込むと再生が始まります。";
+      const boneHint = document.getElementById("rig-bone-hint");
+      boneHint.textContent = rigPlayer.showing
+        ? "再生中は配置を変えられません。「停止」で元の姿勢に戻すと動かせます。"
+        : "ビューの点（関節）をドラッグして、体の関節に合わせます。";
+      boneHint.classList.toggle("busy", rigPlayer.showing);
+      const play = document.getElementById("rig-play");
+      play.textContent = rigPlayer.playing ? "一時停止" : "再生";
+      play.disabled = !rigMotion;
+      document.getElementById("rig-stop").disabled = !rigPlayer.showing;
+      document.getElementById("rig-time").disabled = !rigMotion;
+      document.getElementById("rig-fit").disabled = rigPlayer.showing;
+      document.getElementById("rig-copy-left").disabled = rigPlayer.showing;
+      document.getElementById("rig-copy-right").disabled = rigPlayer.showing;
+      showRigTime();
+    }
+
+    function beginRigEdit() {
+      if (!canRigEdit()) return;
+      finishPathDraw();
+      endSketchDraw(false);
+      closeContextMenu();
+      rigEditing = true;
+      rigBone = null;
+      rigPart = null;
+      select(null);
+      if (!rig) {
+        rig = fitRig();
+        commit();
+        setFileStatus("ボーンを体の大きさに合わせて置きました。関節の点をドラッグして調整できます");
+      }
+      refreshChrome();
+    }
+
+    function dropRigMode() {
+      rigEditing = false;
+      rigBone = null;
+      rigPart = null;
+      rigDrag = null;
+      rigPlayer.playing = false;
+      rigPlayer.showing = false;
+      rigPlayer.time = 0;
+      rigPoseFrame = null;
+      rigPosedJoints = null;
+      document.body.classList.remove("rig-dragging", "rig-hover");
+      updateRigChrome();
+    }
+
+    function leaveRigEdit() {
+      if (!rigEditing) return;
+      dropRigMode();
+      refreshChrome();
+    }
+
+    let rigDrag = null;
+    let rigPress = null;
+    const rigPlane = new THREE.Plane();
+    const rigRay = new THREE.Raycaster();
+    const rigPointer = new THREE.Vector2();
+    const rigHit = new THREE.Vector3();
+
+    function rigCastPointer(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      rigPointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
+      rigRay.setFromCamera(rigPointer, camera);
+      return rigRay.ray.intersectPlane(rigPlane, rigHit);
+    }
+
+    renderer.domElement.parentElement.addEventListener("pointerdown", (event) => {
+      if (!rigEditing || !rig || event.button !== 0 || event.target !== renderer.domElement || rigPlayer.showing) return;
+      const name = pickRigJoint(event);
+      if (!name) return;
+      event.stopPropagation();
+      event.preventDefault();
+      camera.getWorldDirection(rigHit);
+      rigPlane.setFromNormalAndCoplanarPoint(rigHit, rigJoint(name, rigGuideA));
+      rigDrag = { name, pointerId: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
+      document.body.classList.add("rig-dragging");
+    }, true);
+    window.addEventListener("pointermove", (event) => {
+      if (!rigEditing) return;
+      if (!rigDrag) {
+        if (event.target === renderer.domElement && event.buttons === 0) {
+          document.body.classList.toggle("rig-hover", !rigPlayer.showing && Boolean(pickRigJoint(event)));
+        }
+        return;
+      }
+      if (event.pointerId !== rigDrag.pointerId) return;
+      if ((event.clientX - rigDrag.x) ** 2 + (event.clientY - rigDrag.y) ** 2 > 16) rigDrag.moved = true;
+      if (!rigDrag.moved || !rigCastPointer(event)) return;
+      moveRigJoint(rigDrag.name, rigHit);
+    });
+    const endRigDrag = (event) => {
+      if (!rigDrag || event.pointerId !== rigDrag.pointerId) return;
+      const drag = rigDrag;
+      rigDrag = null;
+      document.body.classList.remove("rig-dragging");
+      if (drag.moved) {
+        commit();
+        return;
+      }
+      rigBone = rigJointBone(drag.name);
+      rigPart = null;
+      updateRigChrome();
+    };
+    window.addEventListener("pointerup", endRigDrag);
+    window.addEventListener("pointercancel", endRigDrag);
+    renderer.domElement.addEventListener("pointerdown", (event) => {
+      rigPress = rigEditing && event.button === 0 ? { x: event.clientX, y: event.clientY } : null;
+    });
+    renderer.domElement.addEventListener("pointerup", (event) => {
+      const start = rigPress;
+      rigPress = null;
+      if (!rigEditing || event.button !== 0 || !start || rigPlayer.showing) return;
+      if ((event.clientX - start.x) ** 2 + (event.clientY - start.y) ** 2 > 16) return;
+      const hit = pickScene(event);
+      rigPart = hit && editableMeshes().includes(hit) ? hit : null;
+      rigBone = hit && !hit.userData.isMask ? rigBoneOf(hit) : null;
+      updateRigChrome();
+    });
+
+    const rigBoneOptions = [
+      `<option value="">自動</option>`,
+      ...RIG_BONES.map((bone) => `<option value="${bone.name}">${bone.label}</option>`),
+      `<option value="none">動かさない</option>`,
+    ].join("");
+
+    function assignRigBone(mesh, value) {
+      if (!mesh || mesh.userData.locked) return;
+      setPartBone(mesh, value);
+      const record = recordOf(mesh);
+      const twin = symmetric && !record?.solo ? otherOf(record, mesh) : null;
+      if (twin && !twin.userData.locked) setPartBone(twin, mirroredBoneName(value));
+      rigPart = mesh;
+      rigBone = rigBoneOf(mesh);
+      commit();
+      updateRigChrome();
+    }
+
+    const rigAssign = document.getElementById("rig-assign");
+    let rigAssignMeshes = [];
+    let rigAssignKey = "";
+
+    function rigBoneColor(name) {
+      if (name === "none") return "#9c948b";
+      const side = name.startsWith("left") ? "left" : name.startsWith("right") ? "right" : "center";
+      return `#${RIG_COLORS[side].toString(16).padStart(6, "0")}`;
+    }
+
+    function updateRigAssign() {
+      const meshes = editableMeshes();
+      const rows = meshes.map((mesh, index) => ({
+        index,
+        bone: rigBoneOf(mesh),
+        auto: !mesh.userData.bone,
+        label: `${sideText(mesh)}${mesh.userData.label ?? "パーツ"}`,
+        locked: Boolean(mesh.userData.locked),
+      }));
+      const key = [
+        rigPart ? meshes.indexOf(rigPart) : -1,
+        rigBone ?? "",
+        ...rows.map((row) => `${row.bone}:${row.auto}:${row.locked}:${row.label}`),
+      ].join("|");
+      if (key === rigAssignKey && rigAssignMeshes.length === meshes.length && rigAssignMeshes.every((mesh, index) => mesh === meshes[index])) return;
+      rigAssignKey = key;
+      rigAssignMeshes = meshes;
+      if (!rows.length) {
+        rigAssign.innerHTML = `<p class="rig-empty">パーツがありません。</p>`;
+        return;
+      }
+      const html = [];
+      for (const bone of [...RIG_BONES.map((item) => item.name), "none"]) {
+        const items = rows.filter((row) => row.bone === bone);
+        if (!items.length) continue;
+        html.push(`<div class="rig-group${rigBone === bone && !rigPart ? " active" : ""}" role="listitem">`);
+        html.push(`<button type="button" class="rig-group-head" data-bone="${bone}"><span class="rig-dot" style="background:${rigBoneColor(bone)}"></span>${escapeHtml(rigBoneLabel(bone))}<span class="rig-count">${items.length}</span></button>`);
+        for (const row of items) {
+          const active = rigPart === meshes[row.index] ? " active" : "";
+          const note = row.locked ? "ロック" : "";
+          html.push(`<div class="rig-item${active}"><button type="button" class="rig-item-name" data-index="${row.index}" title="${escapeHtml(row.label)}">${escapeHtml(row.label)}${note ? `<small>${note}</small>` : ""}</button>`);
+          html.push(`<select data-index="${row.index}" aria-label="${escapeHtml(row.label)}を動かすボーン"${row.locked ? " disabled" : ""}>${rigBoneOptions}</select></div>`);
+        }
+        html.push(`</div>`);
+      }
+      rigAssign.innerHTML = html.join("");
+      for (const field of rigAssign.querySelectorAll("select")) {
+        const row = rows[Number(field.dataset.index)];
+        field.options[0].textContent = `自動（${rigBoneLabel(row.bone)}）`;
+        field.value = row.auto ? "" : row.bone;
+      }
+      rigAssign.querySelector(".rig-item.active")?.scrollIntoView({ block: "nearest" });
+    }
+
+    rigAssign.addEventListener("click", (event) => {
+      if (!rigEditing) return;
+      const head = event.target.closest(".rig-group-head");
+      const name = event.target.closest(".rig-item-name");
+      if (head) {
+        rigBone = rigBone === head.dataset.bone && !rigPart ? null : head.dataset.bone;
+        rigPart = null;
+      } else if (name) {
+        const mesh = rigAssignMeshes[Number(name.dataset.index)];
+        if (!mesh) return;
+        rigPart = rigPart === mesh ? null : mesh;
+        rigBone = rigPart ? rigBoneOf(mesh) : null;
+      } else {
+        return;
+      }
+      updateRigChrome();
+    });
+    rigAssign.addEventListener("change", (event) => {
+      const field = event.target.closest("select");
+      if (!rigEditing || !field) return;
+      assignRigBone(rigAssignMeshes[Number(field.dataset.index)], field.value || null);
+    });
+    document.getElementById("rig-leave").addEventListener("click", leaveRigEdit);
+    document.getElementById("rig-fit").addEventListener("click", () => {
+      if (!rigEditing || rigPlayer.showing) return;
+      rig = fitRig();
+      commit();
+      setFileStatus("ボーンを体の大きさに合わせて置き直しました");
+    });
+    document.getElementById("rig-mirror").addEventListener("change", (event) => {
+      rigMirror = event.target.checked;
+    });
+    for (const [id, from, text] of [["rig-copy-left", "left", "左のボーンを右に写しました"], ["rig-copy-right", "right", "右のボーンを左に写しました"]]) {
+      document.getElementById(id).addEventListener("click", () => {
+        if (!rigEditing || !rig || rigPlayer.showing) return;
+        mirrorRigSide(from);
+        commit();
+        setFileStatus(text);
+      });
+    }
+    document.getElementById("rig-load").addEventListener("click", () => document.getElementById("rig-input").click());
+    document.getElementById("rig-input").addEventListener("change", (event) => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (file && rigEditing) loadRigMotion(file);
+    });
+    document.getElementById("rig-play").addEventListener("click", toggleRigPlay);
+    document.getElementById("rig-stop").addEventListener("click", stopRig);
+    document.getElementById("rig-time").addEventListener("input", (event) => {
+      if (!rigMotion) return;
+      rigPlayer.time = (Number(event.target.value) / 1000) * rigMotion.duration;
+      rigPlayer.showing = true;
+      rigPart = null;
+      updateRigChrome();
+    });
+    document.getElementById("rig-speed").addEventListener("input", (event) => {
+      rigPlayer.speed = Number(event.target.value) / 100;
+    });
+    document.getElementById("rig-loop").addEventListener("change", (event) => {
+      rigPlayer.loop = event.target.checked;
+    });
+    document.getElementById("rig-travel").addEventListener("change", (event) => {
+      rigPlayer.travel = event.target.checked;
+    });
+    setSlider("rig-speed", 100);
+    document.getElementById("rig-sway").addEventListener("input", (event) => {
+      rigPlayer.sway = Number(event.target.value) / 100;
+    });
+    setSlider("rig-sway", 100);
 
     function domeOf(mesh) {
       return readDome(mesh?.userData.dome) ?? { height: 0, contour: "round", curve: DOME_DEFAULT_CURVE.map((knot) => [...knot]) };
@@ -17890,7 +20474,6 @@ if (decalOn > 0.5) {
       focusedFolder = null;
       folderPick = null;
       collapsedFolders.clear();
-      collapsedCurves.clear();
       select(null);
       commit();
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(serialize())); } catch { /* 新しい状態の保存に失敗しても画面は空のまま */ }
@@ -18105,9 +20688,11 @@ if (decalOn > 0.5) {
         if (item.dataset.action === "rasterize") item.disabled = !canRasterize(rasterizeTarget());
         if (item.dataset.action === "relief") {
           const only = selection.length === 1 ? selection[0] : null;
-          item.disabled = masking || Boolean(reliefTarget) || Boolean(featureTarget) || !only || only.userData.isMask || only.userData.hidden || !editableMeshes().includes(only);
+          item.disabled = masking || Boolean(reliefTarget) || Boolean(featureTarget) || Boolean(softTarget) || rigEditing || !only || only.userData.isMask || only.userData.hidden || !editableMeshes().includes(only);
         }
         if (item.dataset.action === "feature") item.disabled = !(selection.length === 1 && canFeatureEdit(selection[0]));
+        if (item.dataset.action === "soft") item.disabled = !(selection.length === 1 && canSoftEdit(selection[0]));
+        if (item.dataset.action === "rig") item.disabled = !canRigEdit();
       }
     }
 
@@ -18138,6 +20723,8 @@ if (decalOn > 0.5) {
         else if (item.dataset.action === "rasterize") rasterizePart(rasterizeTarget());
         else if (item.dataset.action === "relief") beginReliefEdit(selection[0]);
         else if (item.dataset.action === "feature") beginFeatureEdit(selection[0]);
+        else if (item.dataset.action === "soft") beginSoftEdit(selection[0]);
+        else if (item.dataset.action === "rig") beginRigEdit();
         else if (item.dataset.action === "help") document.getElementById("help-modal").showModal();
         else if (item.dataset.action === "scale-all") openOverallScale();
       });
@@ -18186,33 +20773,49 @@ if (decalOn > 0.5) {
       if (MODEL_ID) showModelTitle();
     })();
 
-    renderer.setAnimationLoop(() => {
+    let lastFrameTime = 0;
+    renderer.setAnimationLoop((time) => {
+      const frameDt = lastFrameTime ? (time - lastFrameTime) / 1000 : 0;
+      lastFrameTime = time;
+      restoreRigPose();
+      restorePathSags();
       stepPivot();
       controls.update();
       for (const anchor of activeAnchors()) updateLinkMirror(anchor);
-      for (const curve of curves) if (curve.visible) updateCurveVisual(curve);
+      const swaying = new Set(curves.filter(pathSwaying).map((curve) => curve.userData.id));
+      for (const curve of curves) if (curve.visible && !swaying.has(curve.userData.id)) updateCurveVisual(curve);
       sizeCurveMarkers();
       sizePathDrawMarkers();
-      for (const mesh of editableMeshes()) if (mesh.userData.curveBind) updateCurveBinding(mesh);
-      for (const anchor of activeAnchors()) syncLinkCurve(anchor);
+      const settled = (object) => object.userData.curveBind && !swaying.has(object.userData.curveBind.curveId);
+      for (const mesh of editableMeshes()) if (settled(mesh)) updateCurveBinding(mesh);
+      for (const anchor of activeAnchors()) if (!swaying.has(linkById(anchor.userData.linkId)?.curveBind?.curveId)) syncLinkCurve(anchor);
       updateCurveGhosts();
       const maskMeshes = [...editableMeshes(), ...linkMeshes(), ...mirrorMeshes()];
       const boundMasks = new Set();
       for (const mesh of [...maskMeshes, ...activeAnchors()]) {
-        for (const shape of mesh.userData.masks ?? []) if (shape.userData.curveBind) boundMasks.add(shape);
+        for (const shape of mesh.userData.masks ?? []) if (settled(shape)) boundMasks.add(shape);
       }
       for (const shape of boundMasks) updateCurveBinding(shape);
+      updateRigMotion(frameDt);
+      applyRigPose();
+      applyPathSags(frameDt);
       refreshMaskPeers(maskMeshes);
       for (const mesh of maskMeshes) {
         updateMaskUniforms(mesh);
         updateMaskCaps(mesh);
         updatePushProxy(mesh);
       }
+      updateSoftPreview(frameDt);
+      updateSags(maskMeshes, frameDt);
+      updateSagGuides();
       syncFolderColors();
       updateReliefFrame();
       for (const mesh of maskMeshes) updateDecal(mesh);
       updateLoftOverlay();
+      updateRigGuide();
       renderer.render(scene, camera);
+      restoreRigPose();
+      restorePathSags();
       drawRulers();
       refreshDims();
     });
