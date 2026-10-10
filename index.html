@@ -8145,26 +8145,8 @@ if (decalOn > 0.5) {
       if (!symmetric && !force) return;
       const record = records.find((item) => item.mesh === source || item.mirror === source);
       if (!record || record.solo) return;
-      source.updateWorldMatrix(true, false);
-      source.getWorldPosition(worldPos);
-      const offset = worldPos.x - torsoCenter.x;
       let other = otherOf(record, source);
       if (other?.userData.locked) return;
-      if (Math.abs(offset) < 0.04) {
-        if (other) {
-          const keep = source;
-          discard(other);
-          if (record.mesh === other) record.mesh = keep;
-          record.mirror = null;
-          selection = selection.filter((mesh) => mesh !== other);
-          if (selected === other) {
-            selected = keep;
-            if (!selection.includes(keep)) selection.push(keep);
-          }
-          setSelection(selection, selected);
-        }
-        return;
-      }
       if (!other) {
         other = duplicate(source);
         (source.userData.kind === "body" ? figure : edits).add(other);
@@ -10031,6 +10013,22 @@ if (decalOn > 0.5) {
       return "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 3l18 18\"/><path d=\"M10.6 6.2A10.7 10.7 0 0 1 12 6c6 0 10 6 10 6a18.5 18.5 0 0 1-4.1 4.3M6.1 6.1C3.5 7.8 2 12 2 12a18.8 18.8 0 0 0 6.2 5.6\"/><path d=\"M9.9 9.9a3 3 0 0 0 4.2 4.2\"/></svg>";
     }
 
+    function iconKind(kind, isMask) {
+      if (isMask) return "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"3\" y=\"7\" width=\"18\" height=\"12\" rx=\"2\"/><circle cx=\"9\" cy=\"13\" r=\"2.5\"/><circle cx=\"15\" cy=\"13\" r=\"2.5\"/></svg>";
+      switch (kind) {
+        case "body": return "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"5.5\" r=\"2.5\"/><path d=\"M9 10h6l1 6h-2l-.5 4h-3L10 16H8z\"/></svg>";
+        case "box": return "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 8l8-4 8 4v8l-8 4-8-4z\"/><path d=\"M4 8l8 4 8-4M12 12v8\"/></svg>";
+        case "triangle": return "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 4L3 20h18z\"/></svg>";
+        case "sphere": return "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"8\"/><ellipse cx=\"12\" cy=\"12\" rx=\"8\" ry=\"3\"/></svg>";
+        case "merged": return "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"9.5\" cy=\"12\" r=\"5.5\"/><circle cx=\"14.5\" cy=\"12\" r=\"5.5\"/></svg>";
+        case "loft": return "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 18C8 6 16 18 20 6\"/></svg>";
+        case "circle": return "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><ellipse cx=\"12\" cy=\"13\" rx=\"9\" ry=\"5\"/></svg>";
+        case "flatTriangle": return "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 7L3 19h18z\"/></svg>";
+        case "flatSquare": return "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"4\" y=\"9\" width=\"16\" height=\"9\" rx=\"1\"/></svg>";
+        default: return "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"5\" y=\"5\" width=\"14\" height=\"14\" rx=\"2\"/></svg>";
+      }
+    }
+
     function curveMembers(curveId) {
       return [
         ...editableMeshes().filter((mesh) => mesh.userData.curveBind?.curveId === curveId)
@@ -10134,7 +10132,7 @@ if (decalOn > 0.5) {
         const tools = `<button class="icon" type="button" data-action="lock" aria-pressed="${Boolean(mesh.userData.locked)}" aria-label="ロック">${iconLock(Boolean(mesh.userData.locked))}</button>
           <button class="icon" type="button" data-action="hide" aria-pressed="${!mesh.userData.hidden}" aria-label="${mesh.userData.hidden ? "表示" : "非表示"}">${iconEye(!mesh.userData.hidden)}</button>`;
         html.push(`<div class="${classes.join(" ")}" draggable="true" data-type="part" data-id="${escapeHtml(mesh.userData.id)}" style="padding-left:${pad}px">
-          <span></span>
+          <span class="link-icon">${iconKind(mesh.userData.kind, mesh.userData.isMask)}</span>
           ${name}
           ${tools}
         </div>`);
