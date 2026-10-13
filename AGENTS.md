@@ -5,13 +5,12 @@
 Browser-based 3D figure editor built from simple shapes (parts, masks, Bezier paths, link parts, sketches, normal-map relief, face/hand/foot generator).
 
 - Everything lives in `index.html` (HTML, CSS, and one `<script type="module">`). There is no build step and no bundler.
-- Three.js r180 and `manifold-3d` are loaded from `node_modules` through the import map, so run `npm install` first.
+- Three.js 0.180.0 and `manifold-3d` 3.5.4 are loaded from the jsDelivr CDN through the import map, so `npm install` is not required (keep the CDN versions in sync with `package.json`).
 - `samples/` holds model files (`.json`) that can be loaded or imported from the editor's File menu. `references/` holds reference images.
 
 ## Running
 
 ```bash
-npm install
 npm start   # serves the repo at http://localhost:8765/
 ```
 
