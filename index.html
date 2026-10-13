@@ -2053,6 +2053,16 @@
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
+    let renderUntil = 0;
+    let lastFullFrame = 0;
+    let sagMoving = false;
+    function requestRender(ms = 400) {
+      renderUntil = Math.max(renderUntil, performance.now() + ms);
+    }
+    controls.addEventListener("change", () => requestRender());
+    for (const type of ["pointerdown", "pointermove", "pointerup", "wheel", "keydown", "keyup", "input", "change", "click", "dragover", "drop", "focus", "storage", "resize", "visibilitychange"]) {
+      window.addEventListener(type, () => requestRender(), { capture: true, passive: true });
+    }
     const requestedView = new URLSearchParams(location.search).get("view");
     const initialView = VIEWS[requestedView] ? requestedView : "three";
     controls.target.set(...VIEWS[initialView].target);
@@ -4547,6 +4557,7 @@ if (decalOn > 0.5) {
       const control = new TransformControls(camera, renderer.domElement);
       control.setMode(mode);
       scene.add(control.getHelper());
+      control.addEventListener("change", () => requestRender());
       return control;
     });
     const toolByMode = { translate: toolList[0], rotate: toolList[1], scale: toolList[2] };
@@ -9289,6 +9300,7 @@ if (decalOn > 0.5) {
     }
 
     function commit() {
+      requestRender();
       if (restoring) return;
       const next = packState();
       if (historyIndex >= 0 && history[historyIndex].signature === next.signature) {
@@ -13791,6 +13803,7 @@ if (decalOn > 0.5) {
     }
 
     function setFileStatus(message) {
+      requestRender();
       document.getElementById("file-state").textContent = message;
     }
 
@@ -20772,7 +20785,17 @@ if (decalOn > 0.5) {
     })();
 
     let lastFrameTime = 0;
+    function animating() {
+      return controls.autoRotate || pivotPan || softTarget || (rigEditing && rigPlayer.showing && rigPlayer.playing) || sagMoving;
+    }
+
     renderer.setAnimationLoop((time) => {
+      const now = performance.now();
+      if (!animating() && now > renderUntil && now - lastFullFrame < 1000) {
+        lastFrameTime = 0;
+        return;
+      }
+      lastFullFrame = now;
       const frameDt = lastFrameTime ? (time - lastFrameTime) / 1000 : 0;
       lastFrameTime = time;
       restoreRigPose();
@@ -20805,6 +20828,7 @@ if (decalOn > 0.5) {
       }
       updateSoftPreview(frameDt);
       updateSags(maskMeshes, frameDt);
+      sagMoving = swaying.size > 0 || maskMeshes.some((mesh) => mesh.material?.userData?.maskUniforms?.sagOn?.value);
       updateSagGuides();
       syncFolderColors();
       updateReliefFrame();
