@@ -14406,7 +14406,6 @@ if (decalOn > 0.5) {
       const movedSketches = folder ? sketches.filter((sketch) => folderIds.has(sketch.folderId)) : [];
       doc.sketches = movedSketches.length
         ? (full.sketches ?? []).filter((item) => movedSketches.some((sketch) => sketch.id === item.id))
-          .map((item) => (item.folderId === folder.id ? { ...item, folderId: null } : item))
         : undefined;
       try {
         assertDocument(doc);
@@ -14472,6 +14471,16 @@ if (decalOn > 0.5) {
           name: item.name,
           parentId: nested ? remap.get(item.parentId) : link.parentId ?? null,
           order: nested ? item.order ?? 0 : link.order ?? 0,
+          ...(/^#[0-9a-f]{6}$/i.test(item.color ?? "") ? { color: item.color.toLowerCase() } : {}),
+        });
+      }
+      // リンク先の下書きも、新しい ID で元のモデルに戻す
+      for (const sketch of sanitizeSketches(data?.sketches, new Set(remap.keys()))) {
+        sketches.push({
+          ...sketch,
+          id: `sketch-${nextSketchId++}`,
+          folderId: sketch.folderId ? remap.get(sketch.folderId) : link.parentId ?? null,
+          order: sketch.folderId ? sketch.order : (link.order ?? 0) + sketch.order * 0.001,
         });
       }
       const released = [];
