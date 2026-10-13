@@ -14402,6 +14402,12 @@ if (decalOn > 0.5) {
       const carried = (full.curves ?? []).filter((item) => inside.has(item.id) || used.has(item.id))
         .map((item) => (folder && inside.has(item.id) ? item : { ...item, folderId: null }));
       if (carried.length) doc.curves = carried;
+      // 下書きは、別モデル化するフォルダの中にあるものだけを持っていく（ほかの下書きは元のモデルに残す）
+      const movedSketches = folder ? sketches.filter((sketch) => folderIds.has(sketch.folderId)) : [];
+      doc.sketches = movedSketches.length
+        ? (full.sketches ?? []).filter((item) => movedSketches.some((sketch) => sketch.id === item.id))
+          .map((item) => (item.folderId === folder.id ? { ...item, folderId: null } : item))
+        : undefined;
       try {
         assertDocument(doc);
         localStorage.setItem(modelKey(id), JSON.stringify(doc));
@@ -14435,6 +14441,10 @@ if (decalOn > 0.5) {
       }
       for (const curve of curves) {
         if (folderIds.has(curve.userData.folderId)) curve.userData.folderId = folder?.parentId ?? null;
+      }
+      if (movedSketches.length) {
+        sketches = sketches.filter((sketch) => !movedSketches.includes(sketch));
+        if (sketchDrawing && !sketchById(sketchDrawing)) endSketchDraw();
       }
       if (folder) {
         folders = folders.filter((item) => !folderIds.has(item.id));
