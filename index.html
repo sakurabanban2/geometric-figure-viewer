@@ -21294,6 +21294,19 @@ if (decalOn > 0.5) {
     let frameSignature = null;
     const MOTION_SHADOW_EVERY = 3;
     let motionShadowSkip = 0;
+    let motionShadowLow = false;
+    function setMotionShadowLow(low) {
+      // 再生中だけ影マップの解像度を半分にする（停止で元に戻す）。map を破棄すると次の描画で新しいサイズで作り直される。
+      if (motionShadowLow === low) return;
+      motionShadowLow = low;
+      for (const [light, size] of [[key, 2048], [drop, 1024]]) {
+        const next = low ? size / 2 : size;
+        light.shadow.mapSize.set(next, next);
+        light.shadow.map?.dispose();
+        light.shadow.map = null;
+      }
+      renderer.shadowMap.needsUpdate = true;
+    }
 
     let lastFrameTime = 0;
     function animating() {
@@ -21358,6 +21371,7 @@ if (decalOn > 0.5) {
         // 署名ハッシュも省略し、停止後の最初のフレームで必ず影を描き直す。
         shadowSignature = null;
         frameSignature = null;
+        setMotionShadowLow(true);
         if (++motionShadowSkip >= MOTION_SHADOW_EVERY) {
           motionShadowSkip = 0;
           renderer.shadowMap.needsUpdate = true;
@@ -21365,6 +21379,10 @@ if (decalOn > 0.5) {
         renderer.render(scene, camera);
       } else {
         motionShadowSkip = MOTION_SHADOW_EVERY;
+        if (motionShadowLow) {
+          setMotionShadowLow(false);
+          shadowSignature = null;
+        }
         const shadowKey = sceneSignature(true);
         if (shadowKey !== shadowSignature) {
           shadowSignature = shadowKey;
