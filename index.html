@@ -17707,6 +17707,10 @@ if (decalOn > 0.5) {
       guide.position.multiplyScalar(factor);
       guide.scale.multiplyScalar(factor);
       torsoCenter.multiplyScalar(factor);
+      // ボーンの関節はワールド座標なので、体と一緒に拡縮しないとずれる
+      if (rig) {
+        rig = { ...rig, joints: Object.fromEntries(Object.entries(rig.joints).map(([name, point]) => [name, point.map((value) => value * factor)])) };
+      }
     }
 
     function previewOverallScale() {
