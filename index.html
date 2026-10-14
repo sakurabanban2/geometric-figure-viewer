@@ -21334,6 +21334,7 @@ if (decalOn > 0.5) {
       applyPathSags(frameDt);
       refreshMaskPeers(maskMeshes);
       for (const mesh of maskMeshes) {
+        if (!shownInScene(mesh)) continue; // 非表示パーツはマスク・押し出しの毎フレーム更新を省く（再表示した次のフレームで更新される）
         updateMaskUniforms(mesh);
         updateMaskCaps(mesh);
         updatePushProxy(mesh);
@@ -21343,7 +21344,7 @@ if (decalOn > 0.5) {
       updateSagGuides();
       syncFolderColors();
       updateReliefFrame();
-      for (const mesh of maskMeshes) updateDecal(mesh);
+      for (const mesh of maskMeshes) if (shownInScene(mesh)) updateDecal(mesh);
       updateLoftOverlay();
       updateRigGuide();
       sagMoving = sagSettling;
