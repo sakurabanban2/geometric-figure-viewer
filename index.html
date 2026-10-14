@@ -4202,7 +4202,9 @@ if (decalOn > 0.5) {
       const now = performance.now();
       const stale = proxy.userData.pushKey !== key;
       // マスクをドラッグ中は作り直しを間引き、そのあいだは前の分割のまま押し込む。
-      if (stale && (proxy.userData.pushCount !== shapes.length || now - proxy.userData.pushBuilt > 250)) {
+      // モーション再生中は骨ごとに相対位置が毎フレーム変わり、作り直しが重い（1 回数十〜百 ms 超）ため止め、停止後に作り直す。
+      const motionBusy = rigPlayer.playing && Boolean(rigPoseFrame);
+      if (stale && (proxy.userData.pushCount !== shapes.length || (!motionBusy && now - proxy.userData.pushBuilt > 250))) {
         proxy.geometry.dispose();
         proxy.geometry = refinePushGeometry(source, boxes, probes, target);
         proxy.userData.pushKey = key;
@@ -19303,7 +19305,7 @@ if (decalOn > 0.5) {
         return;
       }
       if (rigPlayer.playing) {
-        rigPlayer.time += Math.min(dt, 0.1) * rigPlayer.speed;
+        rigPlayer.time += Math.min(dt, 0.5) * rigPlayer.speed; // 重いフレームでも実時間で進める（コマ落ち）
         if (rigPlayer.time >= rigMotion.duration) {
           if (rigPlayer.loop) rigPlayer.time %= rigMotion.duration;
           else {
@@ -21292,6 +21294,21 @@ if (decalOn > 0.5) {
     let shadowSignature = null;
     const drawingSize = new THREE.Vector2();
     let frameSignature = null;
+    const MOTION_SHADOW_EVERY = 3;
+    let motionShadowSkip = 0;
+    let motionShadowLow = false;
+    function setMotionShadowLow(low) {
+      // 再生中だけ影マップの解像度を半分にする（停止で元に戻す）。map を破棄すると次の描画で新しいサイズで作り直される。
+      if (motionShadowLow === low) return;
+      motionShadowLow = low;
+      for (const [light, size] of [[key, 2048], [drop, 1024]]) {
+        const next = low ? size / 2 : size;
+        light.shadow.mapSize.set(next, next);
+        light.shadow.map?.dispose();
+        light.shadow.map = null;
+      }
+      renderer.shadowMap.needsUpdate = true;
+    }
 
     let lastFrameTime = 0;
     function animating() {
@@ -21332,6 +21349,7 @@ if (decalOn > 0.5) {
       applyPathSags(frameDt);
       refreshMaskPeers(maskMeshes);
       for (const mesh of maskMeshes) {
+        if (!shownInScene(mesh)) continue; // 非表示パーツはマスク・押し出しの毎フレーム更新を省く（再表示した次のフレームで更新される）
         updateMaskUniforms(mesh);
         updateMaskCaps(mesh);
         updatePushProxy(mesh);
@@ -21341,7 +21359,7 @@ if (decalOn > 0.5) {
       updateSagGuides();
       syncFolderColors();
       updateReliefFrame();
-      for (const mesh of maskMeshes) updateDecal(mesh);
+      for (const mesh of maskMeshes) if (shownInScene(mesh)) updateDecal(mesh);
       updateLoftOverlay();
       updateRigGuide();
       sagMoving = sagSettling;
@@ -21349,15 +21367,34 @@ if (decalOn > 0.5) {
       scene.updateMatrixWorld();
       camera.updateMatrixWorld();
       const drawSize = renderer.getDrawingBufferSize(drawingSize);
-      const shadowKey = sceneSignature(true);
-      const frameKey = [sceneSignature(false), drawSize.x, drawSize.y, ...camera.matrixWorld.elements, ...camera.projectionMatrix.elements, scene.background?.id, scene.environment?.id].join();
-      if (shadowKey !== shadowSignature) {
-        shadowSignature = shadowKey;
-        renderer.shadowMap.needsUpdate = true;
-      }
-      if (!safetyTick || frameKey !== frameSignature) {
-        frameSignature = frameKey;
+      const motionPlaying = rigPlayer.playing && !!rigPoseFrame;
+      if (motionPlaying) {
+        // モーション再生中は毎フレーム骨が動くため、影の再描画を数フレームに 1 回に間引く。
+        // 署名ハッシュも省略し、停止後の最初のフレームで必ず影を描き直す。
+        shadowSignature = null;
+        frameSignature = null;
+        setMotionShadowLow(true);
+        if (++motionShadowSkip >= MOTION_SHADOW_EVERY) {
+          motionShadowSkip = 0;
+          renderer.shadowMap.needsUpdate = true;
+        }
         renderer.render(scene, camera);
+      } else {
+        motionShadowSkip = MOTION_SHADOW_EVERY;
+        if (motionShadowLow) {
+          setMotionShadowLow(false);
+          shadowSignature = null;
+        }
+        const shadowKey = sceneSignature(true);
+        if (shadowKey !== shadowSignature) {
+          shadowSignature = shadowKey;
+          renderer.shadowMap.needsUpdate = true;
+        }
+        const frameKey = safetyTick ? [sceneSignature(false), drawSize.x, drawSize.y, ...camera.matrixWorld.elements, ...camera.projectionMatrix.elements, scene.background?.id, scene.environment?.id].join() : null;
+        if (!safetyTick || frameKey !== frameSignature) {
+          frameSignature = frameKey;
+          renderer.render(scene, camera);
+        }
       }
       restoreRigPose();
       restorePathSags();
