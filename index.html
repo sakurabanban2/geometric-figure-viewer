@@ -9216,6 +9216,15 @@ if (decalOn > 0.5) {
     }
 
     function applyState(state) {
+      try {
+        restoreState(state);
+      } finally {
+        restoring = false;
+      }
+      refreshChrome();
+    }
+
+    function restoreState(state) {
       endPathDraw();
       restoring = true;
       const keep = new Set();
@@ -9298,8 +9307,6 @@ if (decalOn > 0.5) {
       }
       const restored = softTarget || rigEditing ? [] : (state.selection ?? (state.selected ? [state.selected] : [])).filter((mesh) => keep.has(mesh));
       setSelection(restored, keep.has(state.selected) ? state.selected : null);
-      restoring = false;
-      refreshChrome();
     }
 
     function commit() {
@@ -13890,6 +13897,16 @@ if (decalOn > 0.5) {
       assertDocument(data);
       applyState(baseline);
       restoring = true;
+      try {
+        await restoreDocument(data);
+      } finally {
+        restoring = false;
+      }
+      select(null);
+      commit();
+    }
+
+    async function restoreDocument(data) {
       const keep = new Set();
       const nextRecords = [];
       const reliefJobs = [];
@@ -13911,7 +13928,6 @@ if (decalOn > 0.5) {
           if (mirror && record.mirror?.relief) reliefJobs.push([mirror, record.mirror.relief]);
         }
       } catch (error) {
-        restoring = false;
         applyState(baseline);
         throw error;
       }
@@ -13975,9 +13991,6 @@ if (decalOn > 0.5) {
       for (const [mesh, packed] of reliefJobs) await restorePartRelief(mesh, packed);
       history.length = 0;
       historyIndex = -1;
-      restoring = false;
-      select(null);
-      commit();
     }
 
     function readLinkedDoc(id) {
@@ -13988,6 +14001,7 @@ if (decalOn > 0.5) {
         assertDocument(data);
         return data;
       } catch {
+        setFileStatus("リンクモデルのデータが壊れていて読み込めませんでした");
         return null;
       }
     }
@@ -17213,6 +17227,7 @@ if (decalOn > 0.5) {
         data = JSON.parse(event.newValue);
         assertDocument(data);
       } catch {
+        setFileStatus(`リンク「${link.name}」の更新を読み込めませんでした（データが不正です）`);
         return;
       }
       linkedDocs.set(linkModel(link), data);
@@ -17311,7 +17326,13 @@ if (decalOn > 0.5) {
       } catch {
         stored = false;
       }
-      const json = JSON.stringify({ ...data, models: linkedModelDocs() });
+      let models;
+      try {
+        models = linkedModelDocs();
+      } catch {
+        models = undefined;
+      }
+      const json = JSON.stringify({ ...data, models });
       const link = document.createElement("a");
       const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
       link.href = url;
@@ -17320,7 +17341,11 @@ if (decalOn > 0.5) {
       link.click();
       link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setFileStatus(stored ? "保存しました" : "ファイルはダウンロードしましたが、ブラウザ内には保存しきれませんでした");
+      if (stored) setFileStatus("保存しました");
+      else {
+        setFileStatus("ファイルはダウンロードしましたが、ブラウザ内には保存しきれませんでした");
+        alert("ブラウザの保存容量が足りないなどの理由で、ブラウザ内への保存に失敗しました。\nダウンロードした figure.json を保管し、次回は「読み込み」から開いてください。");
+      }
     }
 
     function applyOverallFactor(factor) {
