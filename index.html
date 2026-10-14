@@ -1416,8 +1416,13 @@
       <div class="slider-row" title="模様を載せた面から、前後にどれだけ広げるか"><span>厚み</span><input id="relief-band" type="range" min="2" max="80" step="1" value="6" aria-label="厚み" /><span class="num-field"><input id="relief-band-num" class="num" type="number" aria-label="厚み（cm）" /><span class="unit">cm</span></span></div>
       <div class="check-row">
         <label class="relief-check"><input id="relief-green-up" type="checkbox" checked /> 法線の緑を上</label>
-        <label class="relief-check" title="後ろを向いた面にも、左右反転して後ろから正しい向きに見えるように貼る"><input id="relief-back" type="checkbox" /> 裏面にも貼る</label>
+        <label class="relief-check" title="後ろを向いた面にも、左右反転して後ろから正しい向きに見えるように貼る（巻き付けでは使いません）"><input id="relief-back" type="checkbox" /> 裏面にも貼る</label>
       </div>
+      <div class="curve-modes" role="radiogroup" aria-label="投影" title="平面＝正面からまっすぐ貼る　巻き付け＝缶のラベルのように、パーツの縦軸のまわりに巻いて貼る">
+        <label><input id="relief-project-flat" type="radio" name="relief-project" value="flat" checked /> 平面</label>
+        <label><input id="relief-project-wrap" type="radio" name="relief-project" value="wrap" /> 巻き付け</label>
+      </div>
+      <div class="slider-row" title="正面を中心に、パーツの縦軸のまわりへ何度ぶん回り込ませるか（360°で一周）"><span>巻く角度</span><input id="relief-wrap-angle" type="range" min="30" max="360" step="5" value="360" disabled aria-label="巻く角度" /><span class="num-field"><input id="relief-wrap-angle-num" class="num" type="number" aria-label="巻く角度（度）" /><span class="unit">°</span></span></div>
       <h3 class="sub-heading">法線マップ</h3>
       <canvas id="relief-preview" width="512" height="512" aria-label="法線プレビュー"></canvas>
       <div class="wide pair">
@@ -1947,7 +1952,7 @@
     <p>編集メニューの「ボーンとモーション」で、体にボーン（骨組み）を入れて、ダンスなどのモーションを再生できます。左のパネルは「モーション」「ボーンの配置」「パーツの割り当て」に分かれていて、見出しをクリックすると折りたためます。初めて開くと、モデルの大きさに合わせて腰・背骨・胸・首・頭・肩・上腕・前腕・手・太もも・すね・足のボーンが置かれます（中央は黄色、左は水色、右はピンク）。関節の点をドラッグすると位置を変えられます。「左右対称に動かす」がオンのときは、反対側の関節も鏡写しで一緒に動き、中央のボーンは左右の真ん中から外れません。オンのまま置き直すと、左右がそろった配置になります。「左 → 右に写す」「右 → 左に写す」で、片側のボーンの位置を反対側にそのまま写して左右対称にできます。「自動で置き直す」で体の大きさに合わせた最初の配置に戻せます。それぞれのパーツは、いちばん近いボーンに自動で付いて動きます。「パーツの割り当て」には、ボーンごとにそのボーンで動くパーツが並びます。各パーツの右の欄でボーンを選ぶと付け替えられ、「自動（〜）」に戻すと再びいちばん近いボーン（かっこの中）に付きます。「動かさない」にすると、その場に残ります。ビューの点やパーツをクリックしても、そのボーンで動くパーツだけがはっきり表示され、一覧の行も強調されます。ボーン名やパーツ名をクリックすると、ビューでそのボーンやパーツが強調されます。「モーションを読み込む」で、無料で配布されている MMD のモーション（.vmd）や、モーションキャプチャーの .bvh を読み込むと再生が始まります。足の動きが IK で付けられた VMD にも対応しています。「再生／一時停止」（Space キーでも切り替え）、「位置」で好きな場面へ移動、「速さ」で再生の速さ、「くり返す」で最後まで行ったら最初に戻ります。「移動もする」をオフにすると、前後左右には動かずその場で踊ります。膝立ち・四つんばい・寝そべりのように最初から低い姿勢のモーションでは、体がそのぶん床まで下がります（「移動もする」がオフでも上下には動きます）。「停止」で元の姿勢に戻り、関節を動かせるようになります。柔らかさを付けたパーツは、踊りに合わせて揺れます。再生中の揺れは体の動きの勢いで決まり、柔らかさの編集モードの「強さ」は効きません。パーツごとの揺れ方は「柔らかさ」の「揺れやすさ」で変え、すべてのパーツをまとめて大きく揺らしたいときは、モーションの「全体の揺れ」を 100% より上げてください（最大 500%）。「全体の揺れ」を 0% にすると再生中は揺れません。ボーンの配置とパーツごとのボーンの選び方はモデルと一緒に保存されますが、モーションそのものは保存されません。モデルの腕の向きや体型がモーションの元のモデルと違っても、ボーンの向きに合わせて動きを置き換えます。</p>
     <p>平面（円・三角・四角）を選ぶと、左のパネルに「盛り上がり」が出ます。「高さ」を上げると、面の中央点を頂点にして前面が盛り上がります（100% で幅の半分の高さ）。ふだん裏面は平らなままですが、「裏面にも盛り上げる」を入れると、後ろの面も同じ高さとカーブで盛り上がり、前後対称の形になります。「円形」は中央点からの距離で高さが決まり、角に向かって低くなります。「輪郭に沿う」は面の輪郭と同じ形の等高線で、辺に向かって低くなります。トーンカーブは横が中央点（左）から縁（右）、縦が高さです。空いた所をクリックすると点が増え、点をドラッグすると盛り上げ方が変わります。ダブルクリックか右クリックで点を消せます。「ドーム」「山形」「台地」で代表的な形を選べ、「リセット」でなだらかな初期のカーブに戻ります。盛り上げた平面は立体として扱われ、ほかのパーツと結合したり、ラスタライズしたりできます。</p>
     <p>「追加」の「断面」は、輪切りにした断面の形を上下につないで作る立体です（円柱から始まります）。選ぶと左のパネルに「断面」が出て、3D 表示にも断面の輪が重なります（選んでいる断面はオレンジ）。縦棒は2本あり、どちらも横から見た形で、下が根元、上が先端です。いちばん左の細い縦棒は全体図で、上下にドラッグして範囲を囲むと、その範囲が中央の縦棒に拡大表示されます。青い枠はドラッグで移動、上下の端をドラッグで伸縮でき、枠の外をクリックするとその位置へ枠が移ります。ダブルクリックか「全体を表示」で範囲指定をやめます。中央の縦棒の上でホイールを回しても、カーソルの位置を中心に拡大・縮小できます。全身のような長い形でも、範囲を絞れば胸やくびれなどの断面を細かく並べられます。中央の縦棒の空いた所をクリックすると断面が増え（最大 60 個）、目盛りをドラッグすると上下に動き、ダブルクリックか右クリックで消せます。右の図は選んだ断面を真上から見た形で、下が正面側です。前後の断面が点線で重なります。線の近くをクリックで点を追加、ドラッグで移動、ダブルクリックで削除、右クリックで角／なめらかを切り替えます。その下の「輪郭で編集」には、正面から見た輪郭（幅）と横から見た輪郭（厚み、右が正面側）が並びます。輪郭の点をドラッグすると、その高さの断面の幅や厚みと高さが変わり（反対側の輪郭は動きません。Shift を押しながらなら高さは固定）、断面の形を1枚ずつ描き直さなくても全体のシルエットを作れます。輪郭の外の空いた所をクリックすると、その高さに前後の断面から補間した断面が増え、そのままドラッグで形を決められます。点をダブルクリックか右クリックするとその断面を消せます。「左右対称に編集」が入っていると右半分だけを編集し、左半分は自動で鏡写しになります。「大きさ」「傾き」（＋で後ろ側が上がる）「左右」「前後」は選んだ断面ごとの値です。形は中心から放射状に読み取るので、中心から見て裏側に回り込む形は外側の線だけが使われます（そのときは警告が出ます）。「端の形」で先端と根元を平ら・丸く・とがるから選べ、「長さ」で丸みやとがりの長さを変えられます。「ペニス」のテンプレートは、竿・くびれ・傾いたカリ首・切れ込みのある亀頭・先端の断面を並べた形です（正面側が裏筋側。上に向いて立った向きなので、回転させて使ってください）。軸はまっすぐですが、曲げたいときは「パスに沿わせる」が使えます。モーフと盛り上がりは効きません。ほかのパーツと結合したり、ラスタライズしたりできます。</p>
-    <p>パーツを右クリックして「法線編集」を選ぶと、そのパーツだけに光で浮き出て見える模様を描けます。編集中はほかのパーツが薄くなり、そのパーツの前を向いた面に左ドラッグで盛ります。右ドラッグで視点を回せます。左右のもう片方には付きません。「削る」で盛りを減らせます。「浮き出し」は凹凸の強さ、「厚み」は模様を載せた面から前後に広げる距離です。「法線マップ」の「読み込む」で、そのパーツの正面に画像を貼れます。緑チャンネルが下向きの画像は「法線の緑を上」を外してください。「裏面にも貼る」を入れると、描いた模様と法線マップがそのパーツの後ろを向いた面にも付き、後ろから見ても正面と同じ向きに読めるよう左右反転して貼られます。読み込んだ法線マップは「法線マップ」の横位置・縦位置・回転・大きさで動かせます。「法線マップを動かす」を押すと、パーツの上で左ドラッグで移動、Shift＋左ドラッグで回転、ホイールで拡大縮小できます（もう一度押すか「描く」で筆に戻ります）。「繰り返す」で画像を敷き詰め、「位置を戻す」で元に戻ります。回しても光の当たり方は正しく保たれます。模様はそのパーツに付いたまま動き、保存ファイルに含まれます。Escで編集を終えます。</p>
+    <p>パーツを右クリックして「法線編集」を選ぶと、そのパーツだけに光で浮き出て見える模様を描けます。編集中はほかのパーツが薄くなり、そのパーツの前を向いた面に左ドラッグで盛ります。右ドラッグで視点を回せます。左右のもう片方には付きません。「削る」で盛りを減らせます。「浮き出し」は凹凸の強さ、「厚み」は模様を載せた面から前後に広げる距離です。「法線マップ」の「読み込む」で、そのパーツの正面に画像を貼れます。緑チャンネルが下向きの画像は「法線の緑を上」を外してください。「裏面にも貼る」を入れると、描いた模様と法線マップがそのパーツの後ろを向いた面にも付き、後ろから見ても正面と同じ向きに読めるよう左右反転して貼られます。読み込んだ法線マップは「法線マップ」の横位置・縦位置・回転・大きさで動かせます。「法線マップを動かす」を押すと、パーツの上で左ドラッグで移動、Shift＋左ドラッグで回転、ホイールで拡大縮小できます（もう一度押すか「描く」で筆に戻ります）。「繰り返す」で画像を敷き詰め、「位置を戻す」で元に戻ります。回しても光の当たり方は正しく保たれます。「投影」を「巻き付け」にすると、缶のラベルのようにパーツの縦軸のまわりへ画像を巻いて貼ります。画像の横は正面を中心に軸のまわりの角度（弧の長さ）に、縦は高さに対応し、横へ行っても引き伸ばされず、後ろ側にも回り込みます。「巻く角度」で何度ぶん巻くかを決め、画像の横幅はいつもその角度ぶんに合わせ、高さは画像の縦横比で決まります（範囲より高い部分は上下が切れるので、大きさで縮めてください）。360°では継ぎ目なく一周し、横にずらすと反対側へ回り込みます。四角柱など円柱でない形にも、軸から放射状に投影して貼れます。模様はそのパーツに付いたまま動き、保存ファイルに含まれます。Escで編集を終えます。</p>
     <p>頭・手・足のパーツを右クリックして「顔・手・足の編集」を選ぶと、そのパーツの大きさと向きに合わせて部品を作れます。部位（顔・手・足）はパーツ名から自動で選ばれ、切り替えもできます。顔は目・眉・鼻・口・耳をそれぞれオン・オフでき、大きさや位置をスライダーで変えられます（部品は頭の表面に沿って置かれます）。手はミトン・指そろえ・パー・グー、足は素足・靴・ブーツから形を選び、指の長さや靴底の厚みなどを変えられます。左右対になっているパーツなら、反対側にも同じ部品が鏡写しで付きます。作った部品は元のパーツと同じ場所の「顔パーツ」などのフォルダに入り、設定はそのフォルダに保存されるので、もう一度開くと続きから調整できます（スライダーを動かすと部品は作り直されるので、手で動かした分は戻ります）。「保存」で確定、「破棄」で開いたときの状態に戻し、Escで編集を終えます。</p>
     <p>パーツを選ぶと左のパネルに「画像の投影」が出ます。「画像を選ぶ」で PNG・JPEG・WebP などの画像を読み込むと、そのパーツに画像が投影されます（透明な部分は元の色のまま）。「投影の向き」でパーツ自身の正面・背面・右・左・上・下のどこから当てるかを選び、横位置・縦位置・回転・大きさ・不透明度で調整します。大きさ 100% でパーツに収まる大きさになります。「繰り返す」で画像を敷き詰め、「裏面にも貼る」で反対側を向いた面にも、反対側から見て同じ向きに読めるように貼ります。画像はパーツと一緒に動き、カーブに沿わせて曲げても追従します。左右対称オンでは反対側のパーツにも鏡写しで投影されます。画像は保存ファイルに含まれます（長辺 1024px までに縮めて保存します）。「外す」で投影をやめます。</p>
     <div class="modal-actions">
@@ -2520,6 +2525,9 @@ ${withNormal ? `  vec3 sagN0 = normalize(transpose(inverse(mat3(modelMatrix))) *
     const RELIEF_MOVE_OFFSET = 2;
     const RELIEF_MOVE_SCALE_MIN = 0.1;
     const RELIEF_MOVE_SCALE_MAX = 5;
+    const RELIEF_WRAP_ANGLE = 360;
+    const RELIEF_WRAP_MIN = 30;
+    const RELIEF_WRAP_MAX = 360;
     const RELIEF_GLSL = `
 uniform sampler2D reliefMap;
 uniform sampler2D reliefZMap;
@@ -2533,6 +2541,7 @@ uniform float reliefStrength;
 uniform float reliefOn;
 uniform sampler2D reliefBackZMap;
 uniform float reliefBack;
+uniform vec4 reliefWrap;
 varying vec3 vReliefWorld;
 varying vec3 vReliefBend0;
 varying vec3 vReliefBend1;
@@ -2547,13 +2556,24 @@ float reliefDecodeZ(float encoded) {
 if (reliefOn > 0.5 && reliefStrength > 0.001) {
   vec3 reliefLocal = (reliefInv * vec4(vReliefWorld, 1.0)).xyz;
   vec2 reliefUv = (reliefLocal.xy - reliefRect.xy) / max(reliefRect.zw, vec2(0.0001));
+  // 巻き付けは円筒に貼るラベルと同じで、縦軸まわりの角度を横、高さを縦に使い、軸からの距離で一番外側の面だけに載せる。
+  bool reliefWrapped = reliefWrap.w > 0.5;
+  vec3 reliefOut = vec3(0.0, 0.0, 1.0);
+  float reliefDepthAt = reliefLocal.z;
+  if (reliefWrapped) {
+    vec2 reliefRadial = reliefLocal.xz - reliefWrap.xy;
+    reliefDepthAt = length(reliefRadial);
+    if (reliefDepthAt > 0.00001) reliefOut = vec3(reliefRadial.x, 0.0, reliefRadial.y) / reliefDepthAt;
+    reliefUv.x = atan(reliefRadial.x, reliefRadial.y) / max(reliefWrap.z, 0.0001) + 0.5;
+  }
+  vec3 reliefAcross = vec3(reliefOut.z, 0.0, -reliefOut.x);
   if (all(greaterThanEqual(reliefUv, vec2(0.0))) && all(lessThanEqual(reliefUv, vec2(1.0)))) {
     // カーブで曲げたパーツは、曲げる前の向きに戻して模様を当ててから曲げた向きへ返す。
     mat3 reliefBend = mat3(vReliefBend0, vReliefBend1, vReliefBend2);
     vec3 reliefWorld = normalize(reliefBend * (inverse(mat3(viewMatrix)) * normal));
     vec3 reliefLocalN = normalize(reliefFromWorld * reliefWorld);
     // 裏面は左右反転して引き、後ろから見ても正面と同じ向きに読めるようにする。
-    bool reliefBackSide = reliefBack > 0.5 && reliefLocalN.z < 0.0;
+    bool reliefBackSide = reliefBack > 0.5 && !reliefWrapped && reliefLocalN.z < 0.0;
     vec2 reliefLookup = reliefBackSide ? vec2(1.0 - reliefUv.x, reliefUv.y) : reliefUv;
     vec3 reliefTangent = texture2D(reliefMap, reliefLookup).xyz * 2.0 - 1.0;
     float reliefStampZ = reliefBackSide
@@ -2561,11 +2581,21 @@ if (reliefOn > 0.5 && reliefStrength > 0.001) {
       : reliefDecodeZ(texture2D(reliefZMap, reliefUv).r);
     if (reliefStampZ > -500.0 && dot(reliefTangent.xy, reliefTangent.xy) > 0.00002) {
       if (reliefBackSide) reliefTangent.x = -reliefTangent.x;
-      float reliefFacing = smoothstep(0.0, 0.5, reliefBackSide ? -reliefLocalN.z : reliefLocalN.z);
-      float reliefDepth = 1.0 - smoothstep(reliefBand * 0.35, reliefBand, abs(reliefLocal.z - reliefStampZ) * max(reliefZScale, 0.0001));
+      float reliefFacingN = reliefWrapped ? dot(reliefLocalN, reliefOut) : reliefLocalN.z;
+      float reliefFacing = smoothstep(0.0, 0.5, reliefBackSide ? -reliefFacingN : reliefFacingN);
+      float reliefDepth = 1.0 - smoothstep(reliefBand * 0.35, reliefBand, abs(reliefDepthAt - reliefStampZ) * max(reliefZScale, 0.0001));
       float reliefWeight = reliefFacing * reliefDepth;
       if (reliefWeight > 0.001) {
-        reliefLocalN = normalize(reliefLocalN + vec3(reliefTangent.xy * reliefStrength, 0.0) * reliefWeight);
+        if (reliefWrapped) {
+          // 円筒の向き（角度の進む向きと縦軸）を面に沿わせて傾ける。角の立った形でも面から浮かない。
+          vec3 reliefU = reliefAcross - reliefLocalN * dot(reliefLocalN, reliefAcross);
+          vec3 reliefV = vec3(0.0, 1.0, 0.0) - reliefLocalN * reliefLocalN.y;
+          reliefU = dot(reliefU, reliefU) > 0.000001 ? normalize(reliefU) : reliefAcross;
+          reliefV = dot(reliefV, reliefV) > 0.000001 ? normalize(reliefV) : vec3(0.0, 1.0, 0.0);
+          reliefLocalN = normalize(reliefLocalN + (reliefU * reliefTangent.x + reliefV * reliefTangent.y) * reliefStrength * reliefWeight);
+        } else {
+          reliefLocalN = normalize(reliefLocalN + vec3(reliefTangent.xy * reliefStrength, 0.0) * reliefWeight);
+        }
         reliefWorld = normalize(transpose(reliefBend) * (reliefToWorld * reliefLocalN));
         normal = normalize(mat3(viewMatrix) * reliefWorld);
       }
@@ -2711,6 +2741,7 @@ if (decalOn > 0.5) {
           reliefOn: { value: 0 },
           reliefBackZMap: { value: reliefBlankZ },
           reliefBack: { value: 0 },
+          reliefWrap: { value: new THREE.Vector4() },
           reliefBent: { value: 0 },
         },
       };
@@ -2731,6 +2762,8 @@ if (decalOn > 0.5) {
     let reliefStrength = RELIEF_STRENGTH;
     let reliefFlipGreen = true;
     let reliefBackSide = false;
+    let reliefWrap = null;
+    let reliefImageAspect = null;
     let reliefRevision = 0;
     let reliefDrawing = false;
     let reliefTarget = null;
@@ -11339,6 +11372,52 @@ if (decalOn > 0.5) {
       if (!box.isEmpty()) reliefBounds = boundsFromBox(box);
     }
 
+    function wrapFromBox(box, angle = RELIEF_WRAP_ANGLE) {
+      const sizeX = box.max.x - box.min.x;
+      const sizeZ = box.max.z - box.min.z;
+      return {
+        angle,
+        x: (box.min.x + box.max.x) / 2,
+        z: (box.min.z + box.max.z) / 2,
+        radius: Math.max(0.01, (sizeX + sizeZ) / 4),
+      };
+    }
+
+    function normalizeReliefWrap(wrap) {
+      if (!wrap || typeof wrap !== "object") return null;
+      const { angle, x, z, radius } = wrap;
+      if (![angle, x, z, radius].every(Number.isFinite) || radius <= 0) return null;
+      return { angle: Math.min(RELIEF_WRAP_MAX, Math.max(RELIEF_WRAP_MIN, angle)), x, z, radius };
+    }
+
+    function validReliefWrap(wrap) {
+      if (!wrap || typeof wrap !== "object" || Array.isArray(wrap)) return false;
+      const finite = (value, limit) => typeof value === "number" && Number.isFinite(value) && Math.abs(value) <= limit;
+      return finite(wrap.angle, 360) && wrap.angle >= RELIEF_WRAP_MIN
+        && finite(wrap.x, 80) && finite(wrap.z, 80)
+        && finite(wrap.radius, 80) && wrap.radius > 0;
+    }
+
+    // 模様の画素が並ぶ範囲。巻き付けでは横方向を、正面を中心にした弧の長さで測る。
+    function reliefRectOf(bounds, wrap) {
+      if (!bounds || !wrap) return bounds;
+      const width = wrap.radius * THREE.MathUtils.degToRad(wrap.angle);
+      return { minX: -width / 2, minY: bounds.minY, width, height: bounds.height };
+    }
+
+    // 形の上の点を、模様の画素の位置（u, v）と、重なった面を見分ける深さに直す。
+    function reliefProject(point, bounds, wrap) {
+      const v = (point.y - bounds.minY) / bounds.height;
+      if (!wrap) return { u: (point.x - bounds.minX) / bounds.width, v, depth: point.z };
+      const dx = point.x - wrap.x;
+      const dz = point.z - wrap.z;
+      return { u: Math.atan2(dx, dz) / THREE.MathUtils.degToRad(wrap.angle) + 0.5, v, depth: Math.hypot(dx, dz) };
+    }
+
+    function wrapAngleDelta(angle) {
+      return angle - Math.PI * 2 * Math.round(angle / (Math.PI * 2));
+    }
+
     const reliefDepthA = new THREE.Vector3();
     const reliefDepthB = new THREE.Vector3();
     const reliefDepthC = new THREE.Vector3();
@@ -11346,13 +11425,84 @@ if (decalOn > 0.5) {
     const reliefDepthAC = new THREE.Vector3();
     const reliefDepthN = new THREE.Vector3();
 
-    function rasterFrontDepth(target, mesh = reliefTarget, bounds = reliefBounds, back = false) {
+    function rasterDepthTriangle(best, steps, x0, y0, z0, x1, y1, z1, x2, y2, z2, depthAt = null) {
+      let minGX = Math.floor(Math.min(x0, x1, x2));
+      let maxGX = Math.ceil(Math.max(x0, x1, x2));
+      let minGY = Math.floor(Math.min(y0, y1, y2));
+      let maxGY = Math.ceil(Math.max(y0, y1, y2));
+      if (maxGX < 0 || maxGY < 0 || minGX >= steps || minGY >= steps) return;
+      minGX = Math.max(0, minGX);
+      minGY = Math.max(0, minGY);
+      maxGX = Math.min(steps - 1, maxGX);
+      maxGY = Math.min(steps - 1, maxGY);
+      const denom = (y1 - y2) * (x0 - x2) + (x2 - x1) * (y0 - y2);
+      if (Math.abs(denom) < 1e-8) return;
+      for (let gy = minGY; gy <= maxGY; gy += 1) {
+        for (let gx = minGX; gx <= maxGX; gx += 1) {
+          const px = gx + 0.5;
+          const py = gy + 0.5;
+          const w0 = ((y1 - y2) * (px - x2) + (x2 - x1) * (py - y2)) / denom;
+          const w1 = ((y2 - y0) * (px - x2) + (x0 - x2) * (py - y2)) / denom;
+          const w2 = 1 - w0 - w1;
+          if (w0 < -0.001 || w1 < -0.001 || w2 < -0.001) continue;
+          const linear = z0 * w0 + z1 * w1 + z2 * w2;
+          const z = depthAt ? depthAt(px, py, linear) : linear;
+          const cell = gy * steps + gx;
+          if (z > best[cell]) best[cell] = z;
+        }
+      }
+    }
+
+    // 巻き付けでは、軸から一番遠い外向きの面までの距離を、角度と高さの格子に記録する。
+    function rasterWrapTriangle(best, steps, bounds, wrap) {
+      const { minY, height } = bounds;
+      const cx = (reliefDepthA.x + reliefDepthB.x + reliefDepthC.x) / 3 - wrap.x;
+      const cz = (reliefDepthA.z + reliefDepthB.z + reliefDepthC.z) / 3 - wrap.z;
+      if (reliefDepthN.x * cx + reliefDepthN.z * cz <= 1e-8 * Math.hypot(cx, cz)) return;
+      const angle = THREE.MathUtils.degToRad(wrap.angle);
+      const t0 = Math.atan2(reliefDepthA.x - wrap.x, reliefDepthA.z - wrap.z);
+      const t1 = t0 + wrapAngleDelta(Math.atan2(reliefDepthB.x - wrap.x, reliefDepthB.z - wrap.z) - t0);
+      const t2 = t0 + wrapAngleDelta(Math.atan2(reliefDepthC.x - wrap.x, reliefDepthC.z - wrap.z) - t0);
+      if (Math.max(t0, t1, t2) - Math.min(t0, t1, t2) > 2) return;
+      const r0 = Math.hypot(reliefDepthA.x - wrap.x, reliefDepthA.z - wrap.z);
+      const r1 = Math.hypot(reliefDepthB.x - wrap.x, reliefDepthB.z - wrap.z);
+      const r2 = Math.hypot(reliefDepthC.x - wrap.x, reliefDepthC.z - wrap.z);
+      const y0 = (1 - (reliefDepthA.y - minY) / height) * steps;
+      const y1 = (1 - (reliefDepthB.y - minY) / height) * steps;
+      const y2 = (1 - (reliefDepthC.y - minY) / height) * steps;
+      // 平らな面では軸からの距離が角度に比例しないので、各升目の向きに伸ばした線と面の交点で測る。
+      const nx = reliefDepthN.x;
+      const ny = reliefDepthN.y;
+      const nz = reliefDepthN.z;
+      const lowest = Math.min(r0, r1, r2) * 0.5;
+      const highest = Math.max(r0, r1, r2) * 1.5 + 0.001;
+      const turn = Math.PI * 2 / angle * steps;
+      for (const shift of [0, -turn, turn]) {
+        const depthAt = (px, py, linear) => {
+          const theta = ((px - shift) / steps - 0.5) * angle;
+          const y = minY + (1 - py / steps) * height;
+          const facing = nx * Math.sin(theta) + nz * Math.cos(theta);
+          if (facing <= 1e-9) return linear;
+          const r = (nx * (reliefDepthA.x - wrap.x) + ny * (reliefDepthA.y - y) + nz * (reliefDepthA.z - wrap.z)) / facing;
+          return r > lowest && r < highest ? r : linear;
+        };
+        rasterDepthTriangle(
+          best, steps,
+          (t0 / angle + 0.5) * steps + shift, y0, r0,
+          (t1 / angle + 0.5) * steps + shift, y1, r1,
+          (t2 / angle + 0.5) * steps + shift, y2, r2,
+          depthAt,
+        );
+      }
+    }
+
+    function rasterFrontDepth(target, mesh = reliefTarget, bounds = reliefBounds, back = false, wrap = reliefWrap) {
       if (!bounds) return;
       const steps = 256;
       const best = new Float32Array(steps * steps);
       best.fill(-1e9);
       const { minX, minY, width, height } = bounds;
-      const facing = back ? -1 : 1;
+      const facing = back && !wrap ? -1 : 1;
       const shape = reliefShape(mesh);
       if (shape?.attributes?.position) {
         const pos = shape.attributes.position;
@@ -11366,37 +11516,17 @@ if (decalOn > 0.5) {
           reliefDepthAB.subVectors(reliefDepthB, reliefDepthA);
           reliefDepthAC.subVectors(reliefDepthC, reliefDepthA);
           reliefDepthN.crossVectors(reliefDepthAB, reliefDepthAC);
-          if (reliefDepthN.z * facing <= 1e-8) continue;
-          const x0 = (reliefDepthA.x - minX) / width * steps;
-          const y0 = (1 - (reliefDepthA.y - minY) / height) * steps;
-          const x1 = (reliefDepthB.x - minX) / width * steps;
-          const y1 = (1 - (reliefDepthB.y - minY) / height) * steps;
-          const x2 = (reliefDepthC.x - minX) / width * steps;
-          const y2 = (1 - (reliefDepthC.y - minY) / height) * steps;
-          let minGX = Math.floor(Math.min(x0, x1, x2));
-          let maxGX = Math.ceil(Math.max(x0, x1, x2));
-          let minGY = Math.floor(Math.min(y0, y1, y2));
-          let maxGY = Math.ceil(Math.max(y0, y1, y2));
-          if (maxGX < 0 || maxGY < 0 || minGX >= steps || minGY >= steps) continue;
-          minGX = Math.max(0, minGX);
-          minGY = Math.max(0, minGY);
-          maxGX = Math.min(steps - 1, maxGX);
-          maxGY = Math.min(steps - 1, maxGY);
-          const denom = (y1 - y2) * (x0 - x2) + (x2 - x1) * (y0 - y2);
-          if (Math.abs(denom) < 1e-8) continue;
-          for (let gy = minGY; gy <= maxGY; gy += 1) {
-            for (let gx = minGX; gx <= maxGX; gx += 1) {
-              const px = gx + 0.5;
-              const py = gy + 0.5;
-              const w0 = ((y1 - y2) * (px - x2) + (x2 - x1) * (py - y2)) / denom;
-              const w1 = ((y2 - y0) * (px - x2) + (x0 - x2) * (py - y2)) / denom;
-              const w2 = 1 - w0 - w1;
-              if (w0 < -0.001 || w1 < -0.001 || w2 < -0.001) continue;
-              const z = (reliefDepthA.z * w0 + reliefDepthB.z * w1 + reliefDepthC.z * w2) * facing;
-              const cell = gy * steps + gx;
-              if (z > best[cell]) best[cell] = z;
-            }
+          if (wrap) {
+            rasterWrapTriangle(best, steps, bounds, wrap);
+            continue;
           }
+          if (reliefDepthN.z * facing <= 1e-8) continue;
+          rasterDepthTriangle(
+            best, steps,
+            (reliefDepthA.x - minX) / width * steps, (1 - (reliefDepthA.y - minY) / height) * steps, reliefDepthA.z * facing,
+            (reliefDepthB.x - minX) / width * steps, (1 - (reliefDepthB.y - minY) / height) * steps, reliefDepthB.z * facing,
+            (reliefDepthC.x - minX) / width * steps, (1 - (reliefDepthC.y - minY) / height) * steps, reliefDepthC.z * facing,
+          );
         }
       }
       for (let gy = 0; gy < steps; gy += 1) {
@@ -11434,10 +11564,15 @@ if (decalOn > 0.5) {
       if (relief.z && zHasData(relief.z)) return true;
       if (relief.flipGreen === false) return true;
       if (relief.backSide === true) return true;
+      if (relief.wrap) return true;
       if (Number.isFinite(relief.band) && Math.abs(relief.band - RELIEF_BAND) > 1e-4) return true;
       if (Number.isFinite(relief.strength) && Math.abs(relief.strength - RELIEF_STRENGTH) > 1e-4) return true;
       if (relief.bounds) return true;
       return false;
+    }
+
+    function reliefWrapKey(wrap) {
+      return wrap ? [wrap.angle, wrap.x, wrap.z, wrap.radius].map((value) => value.toFixed(4)).join(",") : "-";
     }
 
     function reliefSigOf(mesh) {
@@ -11446,7 +11581,7 @@ if (decalOn > 0.5) {
       const bounds = relief.bounds
         ? [relief.bounds.minX, relief.bounds.minY, relief.bounds.width, relief.bounds.height].map((value) => value.toFixed(4)).join(",")
         : "-";
-      return `${relief.revision ?? 0}|${Number(relief.band).toFixed(4)}|${Number(relief.strength).toFixed(3)}|${relief.flipGreen === false ? 0 : 1}|${relief.backSide === true ? 1 : 0}|${relief.imageId ?? 0}|${bounds}|${imageMoveKey(relief.image ? relief.imageMove ?? null : null)}`;
+      return `${relief.revision ?? 0}|${Number(relief.band).toFixed(4)}|${Number(relief.strength).toFixed(3)}|${relief.flipGreen === false ? 0 : 1}|${relief.backSide === true ? 1 : 0}|${relief.imageId ?? 0}|${bounds}|${imageMoveKey(relief.image ? relief.imageMove ?? null : null)}|${reliefWrapKey(relief.wrap)}|${relief.image && relief.imageAspect ? relief.imageAspect.toFixed(4) : "-"}`;
     }
 
     function packMeshRelief(mesh) {
@@ -11458,7 +11593,9 @@ if (decalOn > 0.5) {
         image: relief.image,
         imageId: relief.imageId ?? 0,
         imageMove: relief.image && relief.imageMove ? { ...relief.imageMove } : null,
+        imageAspect: relief.image && relief.imageAspect ? relief.imageAspect : null,
         bounds: relief.bounds ? { ...relief.bounds } : null,
+        wrap: relief.wrap ? { ...relief.wrap } : null,
         band: relief.band,
         strength: relief.strength,
         flipGreen: relief.flipGreen !== false,
@@ -11476,6 +11613,7 @@ if (decalOn > 0.5) {
         z: new Uint8Array(packed.z),
         image: packed.image ? new Uint8Array(packed.image) : null,
         bounds: packed.bounds ? { ...packed.bounds } : null,
+        wrap: packed.wrap ? { ...packed.wrap } : null,
       };
       mesh.userData.reliefGpuDirty = true;
     }
@@ -11493,7 +11631,9 @@ if (decalOn > 0.5) {
         image: reliefImage,
         imageId: reliefImageId,
         imageMove: reliefImage && reliefImageMove ? { ...reliefImageMove } : null,
+        imageAspect: reliefImage ? reliefImageAspect : null,
         bounds: reliefBounds ? { ...reliefBounds } : null,
+        wrap: reliefWrap ? { ...reliefWrap } : null,
         band: reliefBand,
         strength: reliefStrength,
         flipGreen: reliefFlipGreen,
@@ -11510,7 +11650,9 @@ if (decalOn > 0.5) {
         reliefImage = relief.image ?? null;
         reliefImageId = relief.imageId ?? 0;
         reliefImageMove = reliefImage ? normalizeImageMove(relief.imageMove) : null;
+        reliefImageAspect = reliefImage && relief.imageAspect > 0 ? relief.imageAspect : null;
         reliefBounds = relief.bounds ? { ...relief.bounds } : null;
+        reliefWrap = normalizeReliefWrap(relief.wrap);
         reliefBand = Number.isFinite(relief.band) ? relief.band : RELIEF_BAND;
         reliefStrength = Number.isFinite(relief.strength) ? relief.strength : RELIEF_STRENGTH;
         reliefFlipGreen = relief.flipGreen !== false;
@@ -11522,7 +11664,9 @@ if (decalOn > 0.5) {
         reliefImage = null;
         reliefImageId = 0;
         reliefImageMove = null;
+        reliefImageAspect = null;
         reliefBounds = null;
+        reliefWrap = null;
         reliefBand = RELIEF_BAND;
         reliefStrength = RELIEF_STRENGTH;
         reliefFlipGreen = true;
@@ -11545,7 +11689,9 @@ if (decalOn > 0.5) {
         z: reliefZ,
         image: reliefImage,
         imageMove: reliefImageMove,
+        imageAspect: reliefImageAspect,
         bounds: reliefBounds,
+        wrap: reliefWrap,
         band: reliefBand,
         strength: reliefStrength,
         flipGreen: reliefFlipGreen,
@@ -11557,7 +11703,7 @@ if (decalOn > 0.5) {
       const bounds = reliefBounds
         ? [reliefBounds.minX, reliefBounds.minY, reliefBounds.width, reliefBounds.height].map((value) => value.toFixed(5)).join(",")
         : "-";
-      return `${reliefRevision}|${reliefBand.toFixed(5)}|${reliefStrength.toFixed(4)}|${reliefFlipGreen ? 1 : 0}|${reliefBackSide ? 1 : 0}|${reliefImageId}|${bounds}`;
+      return `${reliefRevision}|${reliefBand.toFixed(5)}|${reliefStrength.toFixed(4)}|${reliefFlipGreen ? 1 : 0}|${reliefBackSide ? 1 : 0}|${reliefImageId}|${bounds}|${reliefWrapKey(reliefWrap)}`;
     }
 
     function packRelief() {
@@ -11568,7 +11714,9 @@ if (decalOn > 0.5) {
         flipGreen: reliefFlipGreen,
         backSide: reliefBackSide,
         imageId: reliefImageId,
+        imageAspect: reliefImageAspect,
         bounds: reliefBounds ? { ...reliefBounds } : null,
+        wrap: reliefWrap ? { ...reliefWrap } : null,
         height: reliefHeightFrozen,
         normal: reliefImageFrozen,
         z: reliefZFrozen,
@@ -11583,6 +11731,13 @@ if (decalOn > 0.5) {
       setSlider("relief-band", Math.round(reliefBand * 100));
       document.getElementById("relief-green-up").checked = reliefFlipGreen;
       document.getElementById("relief-back").checked = reliefBackSide;
+      document.getElementById("relief-back").disabled = Boolean(reliefWrap);
+      document.getElementById("relief-project-flat").checked = !reliefWrap;
+      document.getElementById("relief-project-wrap").checked = Boolean(reliefWrap);
+      const wrapAngle = Math.round(reliefWrap?.angle ?? RELIEF_WRAP_ANGLE);
+      setSlider("relief-wrap-angle", wrapAngle);
+      document.getElementById("relief-wrap-angle").disabled = !reliefWrap;
+      document.getElementById("relief-fit").textContent = reliefWrap ? "範囲をパーツに" : "範囲を正面に";
       document.getElementById("relief-clear-normal").disabled = !reliefImage;
       syncReliefMoveSliders();
     }
@@ -11624,7 +11779,9 @@ if (decalOn > 0.5) {
       reliefFlipGreen = next.flipGreen !== false;
       reliefBackSide = next.backSide === true;
       reliefImageId = next.imageId ?? 0;
+      reliefImageAspect = next.imageAspect > 0 ? next.imageAspect : null;
       reliefBounds = next.bounds ? { ...next.bounds } : null;
+      reliefWrap = normalizeReliefWrap(next.wrap);
       reliefHeightFrozen = next.height || reliefEmpty;
       reliefHeight = reliefHeightFrozen;
       reliefImageFrozen = next.normal || null;
@@ -11656,6 +11813,10 @@ if (decalOn > 0.5) {
       const now = performance.now();
       if (!force && now - reliefPreviewAt < 120) return;
       reliefPreviewAt = now;
+      const rect = reliefRectOf(reliefBounds, reliefWrap);
+      const aspect = rect ? rect.width / rect.height : 1;
+      reliefPreview.style.width = `${Math.round(aspect >= 1 ? 140 : 140 * aspect)}px`;
+      reliefPreview.style.height = `${Math.round(aspect >= 1 ? 140 / aspect : 140)}px`;
       if (!reliefPreviewImage) reliefPreviewImage = reliefPreviewCtx.createImageData(RELIEF_SIZE, RELIEF_SIZE);
       reliefPreviewImage.data.set(reliefData);
       reliefPreviewCtx.putImageData(reliefPreviewImage, 0, 0);
@@ -11684,10 +11845,24 @@ if (decalOn > 0.5) {
 
     // 画像の元画素はそのままにして、位置・回転・大きさを掛けた法線マップを返す。
     // 回転した分だけ各法線の接線成分（XY）も回さないと、光の向きがずれる。
-    function transformedReliefImage(image, move, flip, bounds) {
-      if (!image || !move) return image;
-      const aspect = bounds ? bounds.width / bounds.height : 1;
-      const key = `${imageMoveKey(move)}|${flip ? 1 : 0}|${aspect.toFixed(5)}`;
+    // 縦横比を持つ画像は範囲の中に収まる最大の大きさで縦横比を保つ。縦横比のない古いデータは範囲いっぱいに伸ばす。
+    // 巻き付けでは、画像の横幅をいつも巻く角度ぶんの弧に合わせ、高さは縦横比で決める（範囲からはみ出た上下は切れる）。
+    // 一周巻くときは、ずらした画像が継ぎ目をまたいで反対側へ回り込む。
+    function transformedReliefImage(image, move, flip, rect, imageAspect = null, wrap = null) {
+      if (!image) return image;
+      const aspect = rect ? rect.width / rect.height : 1;
+      let imageWidth = aspect;
+      let imageHeight = 1;
+      if (imageAspect > 0) {
+        if (wrap) imageHeight = aspect / imageAspect;
+        else if (aspect > imageAspect) imageWidth = imageAspect;
+        else imageHeight = aspect / imageAspect;
+      }
+      const around = Boolean(wrap) && wrap.angle >= RELIEF_WRAP_MAX - 1e-3;
+      const fills = Math.abs(imageWidth - aspect) < 1e-6 && Math.abs(imageHeight - 1) < 1e-6;
+      if (!move && fills) return image;
+      move = move ?? RELIEF_MOVE_IDENTITY;
+      const key = `${imageMoveKey(move)}|${flip ? 1 : 0}|${aspect.toFixed(5)}|${imageWidth.toFixed(5)}|${imageHeight.toFixed(5)}|${around ? 1 : 0}`;
       const cached = reliefMovedCache.get(image);
       if (cached?.key === key) return cached.data;
       const size = RELIEF_SIZE;
@@ -11704,9 +11879,10 @@ if (decalOn > 0.5) {
         const dy = (0.5 - (py + 0.5) / size) - centerY;
         for (let px = 0; px < size; px += 1) {
           const o = (py * size + px) * 4;
-          const dx = ((px + 0.5) / size - 0.5) * aspect - centerX;
-          let u = (cos * dx + sin * dy) * inv / aspect + 0.5;
-          let v = (-sin * dx + cos * dy) * inv + 0.5;
+          let dx = ((px + 0.5) / size - 0.5) * aspect - centerX;
+          if (around) dx -= aspect * Math.round(dx / aspect);
+          let u = (cos * dx + sin * dy) * inv / imageWidth + 0.5;
+          let v = (-sin * dx + cos * dy) * inv / imageHeight + 0.5;
           if (move.tile) {
             u -= Math.floor(u);
             v -= Math.floor(v);
@@ -11764,7 +11940,7 @@ if (decalOn > 0.5) {
 
     function movedReliefImage(relief) {
       if (!relief?.image) return null;
-      return transformedReliefImage(relief.image, relief.imageMove ?? null, relief.flipGreen !== false, relief.bounds);
+      return transformedReliefImage(relief.image, relief.imageMove ?? null, relief.flipGreen !== false, reliefRectOf(relief.bounds, relief.wrap), relief.imageAspect, relief.wrap);
     }
 
     function fillReliefNormals(data, height, image, flip, rect) {
@@ -11838,7 +12014,14 @@ if (decalOn > 0.5) {
       gpu.uniforms.reliefToWorld.value.copy(reliefNormalMatrix);
       gpu.uniforms.reliefFromWorld.value.copy(reliefNormalMatrix).invert();
       reliefZAxis.setFromMatrixColumn(mesh.matrixWorld, 2);
-      gpu.uniforms.reliefZScale.value = reliefZAxis.length() || 1;
+      let depthScale = reliefZAxis.length();
+      const wrap = relief?.bounds ? relief.wrap : null;
+      if (wrap) {
+        reliefZAxis.setFromMatrixColumn(mesh.matrixWorld, 0);
+        depthScale = (depthScale + reliefZAxis.length()) / 2;
+        gpu.uniforms.reliefWrap.value.set(wrap.x, wrap.z, THREE.MathUtils.degToRad(wrap.angle), 1);
+      } else gpu.uniforms.reliefWrap.value.set(0, 0, 0, 0);
+      gpu.uniforms.reliefZScale.value = depthScale || 1;
       if (relief?.bounds) gpu.uniforms.reliefRect.value.set(relief.bounds.minX, relief.bounds.minY, relief.bounds.width, relief.bounds.height);
       gpu.uniforms.reliefBand.value = relief?.band ?? RELIEF_BAND;
       gpu.uniforms.reliefStrength.value = relief?.strength ?? RELIEF_STRENGTH;
@@ -11857,7 +12040,11 @@ if (decalOn > 0.5) {
       const rest = hit.object.geometry?.attributes?.reliefRest;
       target.copy(hit.point);
       hit.object.worldToLocal(target);
-      if (!rest || !hit.face) return { point: target, facing: hit.face?.normal.z ?? 0 };
+      if (!rest || !hit.face) {
+        const normal = hit.face ? hit.face.normal.clone() : new THREE.Vector3(0, 0, 1);
+        if (hit.face && hit.object.geometry?.userData?.mirror) normal.negate();
+        return { point: target, facing: normal.z, normal };
+      }
       const pos = hit.object.geometry.attributes.position;
       reliefDepthA.fromBufferAttribute(pos, hit.face.a);
       reliefDepthB.fromBufferAttribute(pos, hit.face.b);
@@ -11874,7 +12061,17 @@ if (decalOn > 0.5) {
       reliefDepthAB.subVectors(reliefDepthB, reliefDepthA);
       reliefDepthAC.subVectors(reliefDepthC, reliefDepthA);
       reliefDepthN.crossVectors(reliefDepthAB, reliefDepthAC).normalize();
-      return { point: target, facing: hit.object.geometry.userData.mirror ? -reliefDepthN.z : reliefDepthN.z };
+      if (hit.object.geometry.userData.mirror) reliefDepthN.negate();
+      return { point: target, normal: reliefDepthN.clone() };
+    }
+
+    // 模様を載せる向き（平面なら正面、巻き付けなら軸から外向き）にどれだけ面が向いているか。
+    function reliefFacing(point, normal, wrap) {
+      if (!wrap) return normal.z;
+      const dx = point.x - wrap.x;
+      const dz = point.z - wrap.z;
+      const length = Math.hypot(dx, dz);
+      return length > 1e-6 ? (normal.x * dx + normal.z * dz) / length : 0;
     }
 
     // 裏面の深さは形から毎回求め直すので、変形しても保存データは要らない。
@@ -11882,7 +12079,7 @@ if (decalOn > 0.5) {
       const shape = reliefShape(mesh);
       const pos = shape?.attributes?.position;
       const bounds = relief?.bounds;
-      if (relief?.backSide !== true || !bounds || !pos) {
+      if (relief?.backSide !== true || relief.wrap || !bounds || !pos) {
         gpu.uniforms.reliefBack.value = 0;
         return;
       }
@@ -11947,8 +12144,9 @@ if (decalOn > 0.5) {
     function stampRelief(u, v, hitZ) {
       const cx = u * (RELIEF_SIZE - 1);
       const cy = (1 - v) * (RELIEF_SIZE - 1);
-      const radiusX = Math.max(1.25, (reliefBrushCm / 100) / reliefBounds.width * (RELIEF_SIZE - 1));
-      const radiusY = Math.max(1.25, (reliefBrushCm / 100) / reliefBounds.height * (RELIEF_SIZE - 1));
+      const rect = reliefRectOf(reliefBounds, reliefWrap);
+      const radiusX = Math.max(1.25, (reliefBrushCm / 100) / rect.width * (RELIEF_SIZE - 1));
+      const radiusY = Math.max(1.25, (reliefBrushCm / 100) / rect.height * (RELIEF_SIZE - 1));
       const x0 = Math.max(0, Math.floor(cx - radiusX));
       const y0 = Math.max(0, Math.floor(cy - radiusY));
       const x1 = Math.min(RELIEF_SIZE - 1, Math.ceil(cx + radiusX));
@@ -11983,10 +12181,16 @@ if (decalOn > 0.5) {
     }
 
     function paintReliefPoint(x, y, z) {
-      const u = (x - reliefBounds.minX) / reliefBounds.width;
-      const v = (y - reliefBounds.minY) / reliefBounds.height;
+      const { u, v, depth } = reliefProject({ x, y, z }, reliefBounds, reliefWrap);
       if (u < 0 || v < 0 || u > 1 || v > 1) return false;
-      return stampRelief(u, v, z);
+      let wrote = stampRelief(u, v, depth);
+      // 一周巻き付けでは継ぎ目をまたぐ筆を反対側の端にも描く。
+      if (reliefWrap && reliefWrap.angle >= RELIEF_WRAP_MAX - 1e-3) {
+        const reach = (reliefBrushCm / 100) / reliefRectOf(reliefBounds, reliefWrap).width;
+        if (u < reach) wrote = stampRelief(u + 1, v, depth) || wrote;
+        if (u > 1 - reach) wrote = stampRelief(u - 1, v, depth) || wrote;
+      }
+      return wrote;
     }
 
     function paintReliefSegment(from, to) {
@@ -12023,7 +12227,7 @@ if (decalOn > 0.5) {
       for (const hit of hits) {
         if (!hit.face) continue;
         const rest = reliefRestHit(hit, new THREE.Vector3());
-        if (rest.facing <= 0.12) continue;
+        if (reliefFacing(rest.point, rest.normal, reliefWrap) <= 0.12) continue;
         hit.restPoint = rest.point;
         return hit;
       }
@@ -12159,11 +12363,27 @@ if (decalOn > 0.5) {
       reliefTarget.updateWorldMatrix(true, false);
       reliefMoveInverse.copy(reliefTarget.matrixWorld).invert();
       reliefMoveRay.copy(raycaster.ray).applyMatrix4(reliefMoveInverse);
-      const dz = reliefMoveRay.direction.z;
+      const { origin, direction } = reliefMoveRay;
+      if (reliefWrap) {
+        // 巻き付けでは、つかんだ点を通る円筒の上で動かし、横は弧の長さで測る。
+        const ox = origin.x - reliefWrap.x;
+        const oz = origin.z - reliefWrap.z;
+        const a = direction.x * direction.x + direction.z * direction.z;
+        const b = 2 * (ox * direction.x + oz * direction.z);
+        const c = ox * ox + oz * oz - planeZ * planeZ;
+        const disc = b * b - 4 * a * c;
+        if (a < 1e-9 || disc < 0) return null;
+        let t = (-b - Math.sqrt(disc)) / (2 * a);
+        if (t < 0) t = (-b + Math.sqrt(disc)) / (2 * a);
+        if (t < 0) return null;
+        const theta = Math.atan2(ox + direction.x * t, oz + direction.z * t);
+        return { x: theta * reliefWrap.radius, y: origin.y + direction.y * t };
+      }
+      const dz = direction.z;
       if (Math.abs(dz) < 1e-6) return null;
-      const t = (planeZ - reliefMoveRay.origin.z) / dz;
+      const t = (planeZ - origin.z) / dz;
       if (t < 0) return null;
-      return { x: reliefMoveRay.origin.x + reliefMoveRay.direction.x * t, y: reliefMoveRay.origin.y + reliefMoveRay.direction.y * t };
+      return { x: origin.x + direction.x * t, y: origin.y + direction.y * t };
     }
 
     function beginReliefMoveDrag(event) {
@@ -12173,7 +12393,9 @@ if (decalOn > 0.5) {
       const hit = reliefHit(event);
       let planeZ;
       if (hit) {
-        planeZ = hit.restPoint.z;
+        planeZ = reliefWrap ? reliefProject(hit.restPoint, reliefBounds, reliefWrap).depth : hit.restPoint.z;
+      } else if (reliefWrap) {
+        planeZ = reliefWrap.radius;
       } else {
         const shape = reliefShape(reliefTarget);
         if (!shape.boundingBox) shape.computeBoundingBox();
@@ -12198,7 +12420,8 @@ if (decalOn > 0.5) {
       const point = reliefMovePoint(event, drag.planeZ);
       if (!point) return;
       const { from, start } = drag;
-      const bounds = reliefBounds;
+      const bounds = reliefRectOf(reliefBounds, reliefWrap);
+      if (reliefWrap) point.x = start.x + wrapAngleDelta((point.x - start.x) / reliefWrap.radius) * reliefWrap.radius;
       if (drag.rotate) {
         const cx = bounds.minX + (0.5 + from.x) * bounds.width;
         const cy = bounds.minY + (0.5 + from.y) * bounds.height;
@@ -12398,6 +12621,7 @@ if (decalOn > 0.5) {
       reliefImageFrozen = null;
       reliefImageId += 1;
       reliefImageMove = null;
+      reliefImageAspect = null;
       if (!heightHasInk()) {
         reliefZ = new Uint8Array(RELIEF_SIZE * RELIEF_SIZE);
         reliefZFrozen = reliefZ;
@@ -12417,12 +12641,47 @@ if (decalOn > 0.5) {
       if (box.isEmpty()) return;
       const next = boundsFromBox(box);
       const hasPixels = Boolean(reliefImage) || heightHasInk();
-      if (hasPixels && reliefBounds && !window.confirm("模様の範囲を、このパーツの正面に合わせ直します。すでに描いた模様は、新しい範囲の中で伸び縮みします。")) return;
+      const where = reliefWrap ? "このパーツのまわり" : "このパーツの正面";
+      if (hasPixels && reliefBounds && !window.confirm(`模様の範囲を、${where}に合わせ直します。すでに描いた模様は、新しい範囲の中で伸び縮みします。`)) return;
       reliefBounds = next;
+      if (reliefWrap) {
+        reliefWrap = wrapFromBox(box, reliefWrap.angle);
+        rebuildReliefDepth();
+      }
       reliefRevision += 1;
       publishRelief();
       commit();
-      setFileStatus("模様の範囲を正面に合わせました");
+      setFileStatus(reliefWrap ? "模様の範囲をパーツに合わせました" : "模様の範囲を正面に合わせました");
+    }
+
+    // 投影を変えたときは、模様を載せる面の深さを新しい投影で測り直す。
+    function rebuildReliefDepth() {
+      reliefZ = new Uint8Array(RELIEF_SIZE * RELIEF_SIZE);
+      if (reliefImage || heightHasInk()) rasterFrontDepth(reliefZ);
+      reliefZFrozen = reliefZ;
+      reliefZNeedsUpload = true;
+      reliefEncodedRevision = -1;
+      reliefDirtyFull = true;
+    }
+
+    function setReliefProjection(wrapOn) {
+      if (!reliefTarget || Boolean(reliefWrap) === wrapOn) return;
+      if (heightHasInk() && !window.confirm("投影を切り替えると、描いた模様は新しい投影の範囲の中で位置や大きさが変わります。切り替えますか？")) {
+        syncReliefSliders();
+        return;
+      }
+      lockReliefBounds();
+      if (!reliefBounds) {
+        syncReliefSliders();
+        return;
+      }
+      reliefWrap = wrapOn ? wrapFromBox(measureFrontBox()) : null;
+      rebuildReliefDepth();
+      reliefRevision += 1;
+      syncReliefSliders();
+      publishRelief();
+      commit();
+      setFileStatus(wrapOn ? "法線をパーツに巻き付けて貼ります" : "法線を正面から平面に貼ります");
     }
 
     function encodeReliefPNG(height = reliefHeight, z = reliefZ) {
@@ -12464,6 +12723,7 @@ if (decalOn > 0.5) {
         || Boolean(reliefBounds)
         || reliefFlipGreen === false
         || reliefBackSide
+        || Boolean(reliefWrap)
         || Math.abs(reliefBand - RELIEF_BAND) > 1e-4
         || Math.abs(reliefStrength - RELIEF_STRENGTH) > 1e-4;
     }
@@ -12490,6 +12750,16 @@ if (decalOn > 0.5) {
         && (move.tile == null || typeof move.tile === "boolean");
     }
 
+    function serializeReliefWrap(wrap) {
+      const normal = normalizeReliefWrap(wrap);
+      if (!normal) return undefined;
+      return { angle: roundNumber(normal.angle), x: roundNumber(normal.x), z: roundNumber(normal.z), radius: roundNumber(normal.radius) };
+    }
+
+    function validImageAspect(value) {
+      return typeof value === "number" && Number.isFinite(value) && value >= 0.01 && value <= 100;
+    }
+
     function serializeMeshRelief(relief) {
       if (!reliefIsStored(relief)) return undefined;
       if (relief.encoded && relief.encodedRevision === relief.revision) return relief.encoded;
@@ -12503,6 +12773,8 @@ if (decalOn > 0.5) {
         height: keep ? encodeReliefPNG(relief.height, relief.z) : undefined,
         normal: relief.image ? encodeColorPNG(relief.image) : undefined,
         imageMove: relief.image ? serializeImageMove(relief.imageMove) : undefined,
+        imageAspect: relief.image && relief.imageAspect > 0 ? roundNumber(relief.imageAspect) : undefined,
+        wrap: serializeReliefWrap(relief.wrap),
       };
       relief.encoded = encoded;
       relief.encodedRevision = relief.revision;
@@ -12520,16 +12792,22 @@ if (decalOn > 0.5) {
         backSide: reliefBackSide ? true : undefined,
         height: maps.height,
         normal: maps.normal,
+        imageAspect: reliefImage && reliefImageAspect > 0 ? roundNumber(reliefImageAspect) : undefined,
+        wrap: serializeReliefWrap(reliefWrap),
       };
     }
 
-    async function decodeReliefPixels(url) {
+    async function decodeReliefPixels(url, size = null) {
       const blob = await (await fetch(url)).blob();
       let bitmap;
       try {
         bitmap = await createImageBitmap(blob, { colorSpaceConversion: "none", premultiplyAlpha: "none" });
       } catch {
         bitmap = await createImageBitmap(blob);
+      }
+      if (size) {
+        size.width = bitmap.width;
+        size.height = bitmap.height;
       }
       reliefScratchCtx.clearRect(0, 0, RELIEF_SIZE, RELIEF_SIZE);
       reliefScratchCtx.drawImage(bitmap, 0, 0, RELIEF_SIZE, RELIEF_SIZE);
@@ -12557,18 +12835,16 @@ if (decalOn > 0.5) {
       let bounds = isVector(relief.bounds, 4) && relief.bounds[2] > 0 && relief.bounds[3] > 0
         ? { minX: relief.bounds[0], minY: relief.bounds[1], width: relief.bounds[2], height: relief.bounds[3] }
         : null;
-      if (image && !zHasData(z)) {
+      const wrap = normalizeReliefWrap(relief.wrap);
+      if ((image && !zHasData(z)) || (wrap && !bounds)) {
         const previousTarget = reliefTarget;
-        const previousBounds = reliefBounds;
         reliefTarget = mesh;
         if (!bounds) {
           const box = measureFrontBox();
           if (!box.isEmpty()) bounds = boundsFromBox(box);
         }
-        reliefBounds = bounds;
-        if (bounds) rasterFrontDepth(z);
         reliefTarget = previousTarget;
-        reliefBounds = previousBounds;
+        if (image && bounds && !zHasData(z)) rasterFrontDepth(z, mesh, bounds, false, wrap);
       }
       const stored = {
         height,
@@ -12576,7 +12852,9 @@ if (decalOn > 0.5) {
         image,
         imageId: image ? 1 : 0,
         imageMove: image ? normalizeImageMove(relief.imageMove) : null,
+        imageAspect: image && validImageAspect(relief.imageAspect) ? relief.imageAspect : null,
         bounds,
+        wrap: bounds ? wrap : null,
         band: Number.isFinite(relief.band) ? relief.band : RELIEF_BAND,
         strength: Number.isFinite(relief.strength) ? relief.strength : RELIEF_STRENGTH,
         flipGreen: relief.flipGreen !== false,
@@ -12594,13 +12872,15 @@ if (decalOn > 0.5) {
       setFileStatus("法線マップを読み込んでいます");
       await new Promise((resolve) => requestAnimationFrame(resolve));
       try {
-        const px = await decodeReliefPixels(url);
+        const size = { width: 0, height: 0 };
+        const px = await decodeReliefPixels(url, size);
         lockReliefBounds();
         const copy = new Uint8Array(px);
         reliefImage = copy;
         reliefImageFrozen = copy;
         reliefImageId += 1;
         reliefImageMove = null;
+        reliefImageAspect = size.width > 0 && size.height > 0 ? Math.min(100, Math.max(0.01, size.width / size.height)) : 1;
         if (reliefZ === reliefZFrozen) reliefZ = new Uint8Array(reliefZFrozen);
         rasterFrontDepth(reliefZ);
         reliefZFrozen = reliefZ;
@@ -12680,6 +12960,19 @@ if (decalOn > 0.5) {
     document.getElementById("relief-back").addEventListener("change", (event) => {
       reliefBackSide = event.target.checked;
       if (reliefBackSide) lockReliefBounds();
+      reliefRevision += 1;
+      publishRelief();
+      commit();
+    });
+    document.getElementById("relief-project-flat").addEventListener("change", () => setReliefProjection(false));
+    document.getElementById("relief-project-wrap").addEventListener("change", () => setReliefProjection(true));
+    document.getElementById("relief-wrap-angle").addEventListener("input", (event) => {
+      if (!reliefWrap) return;
+      reliefWrap = { ...reliefWrap, angle: Number(event.target.value) };
+      rebuildReliefDepth();
+    });
+    document.getElementById("relief-wrap-angle").addEventListener("change", () => {
+      if (!reliefWrap) return;
       reliefRevision += 1;
       publishRelief();
       commit();
@@ -13645,6 +13938,8 @@ if (decalOn > 0.5) {
         if (relief.strength != null && (typeof relief.strength !== "number" || relief.strength < 0 || relief.strength > 4)) throw new Error("invalid");
         if (relief.flipGreen != null && typeof relief.flipGreen !== "boolean") throw new Error("invalid");
         if (relief.backSide != null && typeof relief.backSide !== "boolean") throw new Error("invalid");
+        if (relief.imageAspect != null && !validImageAspect(relief.imageAspect)) throw new Error("invalid");
+        if (relief.wrap != null && !validReliefWrap(relief.wrap)) throw new Error("invalid");
         for (const key of ["height", "normal"]) {
           if (relief[key] == null) continue;
           if (typeof relief[key] !== "string" || !relief[key].startsWith("data:image/") || relief[key].length > 12000000) throw new Error("invalid");
@@ -13662,6 +13957,8 @@ if (decalOn > 0.5) {
             if (relief.flipGreen != null && typeof relief.flipGreen !== "boolean") throw new Error("invalid");
             if (relief.backSide != null && typeof relief.backSide !== "boolean") throw new Error("invalid");
             if (relief.imageMove != null && !validImageMove(relief.imageMove)) throw new Error("invalid");
+            if (relief.imageAspect != null && !validImageAspect(relief.imageAspect)) throw new Error("invalid");
+            if (relief.wrap != null && !validReliefWrap(relief.wrap)) throw new Error("invalid");
             for (const key of ["height", "normal"]) {
               if (relief[key] == null) continue;
               if (typeof relief[key] !== "string" || !relief[key].startsWith("data:image/") || relief[key].length > 12000000) throw new Error("invalid");
