@@ -2037,6 +2037,7 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.autoUpdate = false;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
     viewport.appendChild(renderer.domElement);
@@ -3154,6 +3155,7 @@ if (decalOn > 0.5) {
     const SAG_WOBBLE_DAMPING = 0.22;
     const SAG_EASE_MAX = 5;
     const sagMotions = new WeakMap();
+    let sagSettling = false;
     const sagBoxes = new WeakMap();
     const sagLocalAxis = new THREE.Vector3();
     const sagWorldAxis = new THREE.Vector3();
@@ -3412,6 +3414,7 @@ if (decalOn > 0.5) {
       }
       if (motion.offset.length() > length * 0.6 * boost) motion.offset.setLength(length * 0.6 * boost);
       wobble.copy(motion.offset).multiplyScalar(sag.wobble);
+      if (motion.offset.length() > length * 1e-4 || motion.speed.length() > length * 1e-3) sagSettling = true;
     }
 
     const SAG_PATH_DROP = 1.5;
@@ -20784,6 +20787,96 @@ if (decalOn > 0.5) {
       if (MODEL_ID) showModelTitle();
     })();
 
+    // 影はライト固定なので、影を落とす物の状態が変わったときだけ描き直す。
+    const hashView = new DataView(new ArrayBuffer(8));
+    let hashState = 0;
+    function hashNumber(value) {
+      hashView.setFloat64(0, value);
+      hashState = Math.imul(hashState ^ hashView.getUint32(0), 0x9e3779b1) ^ hashView.getUint32(4);
+      hashState = Math.imul(hashState ^ (hashState >>> 15), 0x85ebca6b);
+    }
+    function hashValue(value) {
+      if (typeof value === "number" || typeof value === "boolean") hashNumber(+value);
+      else if (!value || typeof value !== "object") hashNumber(-1);
+      else if (value.isTexture) {
+        hashNumber(value.id);
+        hashNumber(value.version);
+      } else if (value.elements) for (const n of value.elements) hashNumber(n);
+      else if (value.isColor) {
+        hashNumber(value.r);
+        hashNumber(value.g);
+        hashNumber(value.b);
+      } else if (value.isVector2 || value.isVector3 || value.isVector4 || value.isQuaternion) {
+        hashNumber(value.x);
+        hashNumber(value.y);
+        hashNumber(value.z ?? 0);
+        hashNumber(value.w ?? 0);
+      } else if (Array.isArray(value) || ArrayBuffer.isView(value)) for (const item of value) hashValue(item);
+      else hashNumber(-2);
+    }
+    function hashUniforms(uniforms) {
+      if (!uniforms) return;
+      for (const name in uniforms) hashValue(uniforms[name]?.value);
+    }
+    function hashMaterial(material) {
+      hashNumber(material.id);
+      hashNumber(material.version);
+      hashNumber(material.visible);
+      hashNumber(material.side);
+      hashNumber(material.alphaTest);
+      hashNumber(material.opacity);
+      hashNumber(material.transparent);
+      hashNumber(material.wireframe);
+      hashValue(material.color);
+      hashValue(material.emissive);
+      hashValue(material.map);
+      hashValue(material.alphaMap);
+      hashValue(material.displacementMap);
+      hashUniforms(material.uniforms);
+      hashUniforms(material.userData.maskUniforms);
+      hashUniforms(material.userData.capUniforms);
+      hashUniforms(material.userData.reliefGpu?.uniforms);
+      hashUniforms(decalGpus.get(material)?.uniforms);
+    }
+    function sceneSignature(castersOnly) {
+      hashState = 0;
+      for (const light of [key, drop]) {
+        hashNumber(light.castShadow);
+        hashValue(light.matrixWorld);
+        hashValue(light.target.matrixWorld);
+      }
+      scene.traverseVisible((object) => {
+        if (castersOnly && !object.castShadow) return;
+        hashNumber(object.id);
+        hashValue(object.matrixWorld);
+        hashNumber(object.castShadow);
+        hashNumber(object.receiveShadow);
+        hashNumber(object.renderOrder);
+        const geometry = object.geometry;
+        if (geometry) {
+          hashNumber(geometry.id);
+          hashNumber(geometry.drawRange.start);
+          hashNumber(geometry.drawRange.count);
+          hashNumber(geometry.index?.version ?? -1);
+          for (const name in geometry.attributes) {
+            const attribute = geometry.attributes[name];
+            hashNumber(attribute.version ?? attribute.data?.version ?? -1);
+            hashNumber(attribute.count);
+          }
+        }
+        if (object.morphTargetInfluences) hashValue(object.morphTargetInfluences);
+        for (const material of [object.material, object.customDepthMaterial].flat()) if (material) hashMaterial(material);
+        if (!castersOnly && object.isLight) {
+          hashValue(object.color);
+          hashNumber(object.intensity);
+        }
+      });
+      return hashState;
+    }
+    let shadowSignature = null;
+    const drawingSize = new THREE.Vector2();
+    let frameSignature = null;
+
     let lastFrameTime = 0;
     function animating() {
       return controls.autoRotate || pivotPan || softTarget || (rigEditing && rigPlayer.showing && rigPlayer.playing) || sagMoving;
@@ -20795,6 +20888,7 @@ if (decalOn > 0.5) {
         lastFrameTime = 0;
         return;
       }
+      const safetyTick = !animating() && now > renderUntil;
       lastFullFrame = now;
       const frameDt = lastFrameTime ? (time - lastFrameTime) / 1000 : 0;
       lastFrameTime = time;
@@ -20828,14 +20922,27 @@ if (decalOn > 0.5) {
       }
       updateSoftPreview(frameDt);
       updateSags(maskMeshes, frameDt);
-      sagMoving = swaying.size > 0 || maskMeshes.some((mesh) => mesh.material?.userData?.maskUniforms?.sagOn?.value);
       updateSagGuides();
       syncFolderColors();
       updateReliefFrame();
       for (const mesh of maskMeshes) updateDecal(mesh);
       updateLoftOverlay();
       updateRigGuide();
-      renderer.render(scene, camera);
+      sagMoving = sagSettling;
+      sagSettling = false;
+      scene.updateMatrixWorld();
+      camera.updateMatrixWorld();
+      const drawSize = renderer.getDrawingBufferSize(drawingSize);
+      const shadowKey = sceneSignature(true);
+      const frameKey = [sceneSignature(false), drawSize.x, drawSize.y, ...camera.matrixWorld.elements, ...camera.projectionMatrix.elements, scene.background?.id, scene.environment?.id].join();
+      if (shadowKey !== shadowSignature) {
+        shadowSignature = shadowKey;
+        renderer.shadowMap.needsUpdate = true;
+      }
+      if (!safetyTick || frameKey !== frameSignature) {
+        frameSignature = frameKey;
+        renderer.render(scene, camera);
+      }
       restoreRigPose();
       restorePathSags();
       drawRulers();
