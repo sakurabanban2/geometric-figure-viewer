@@ -14729,6 +14729,11 @@ if (decalOn > 0.5) {
       const carried = (full.curves ?? []).filter((item) => inside.has(item.id) || used.has(item.id))
         .map((item) => (folder && inside.has(item.id) ? item : { ...item, folderId: null }));
       if (carried.length) doc.curves = carried;
+      // 下書きは、別モデル化するフォルダの中にあるものだけを持っていく（ほかの下書きは元のモデルに残す）
+      const movedSketches = folder ? sketches.filter((sketch) => folderIds.has(sketch.folderId)) : [];
+      doc.sketches = movedSketches.length
+        ? (full.sketches ?? []).filter((item) => movedSketches.some((sketch) => sketch.id === item.id))
+        : undefined;
       try {
         assertDocument(doc);
         localStorage.setItem(modelKey(id), JSON.stringify(doc));
@@ -14763,6 +14768,10 @@ if (decalOn > 0.5) {
       for (const curve of curves) {
         if (folderIds.has(curve.userData.folderId)) curve.userData.folderId = folder?.parentId ?? null;
       }
+      if (movedSketches.length) {
+        sketches = sketches.filter((sketch) => !movedSketches.includes(sketch));
+        if (sketchDrawing && !sketchById(sketchDrawing)) endSketchDraw();
+      }
       if (folder) {
         folders = folders.filter((item) => !folderIds.has(item.id));
         if (folderIds.has(focusedFolder)) focusedFolder = null;
@@ -14789,6 +14798,16 @@ if (decalOn > 0.5) {
           name: item.name,
           parentId: nested ? remap.get(item.parentId) : link.parentId ?? null,
           order: nested ? item.order ?? 0 : link.order ?? 0,
+          ...(/^#[0-9a-f]{6}$/i.test(item.color ?? "") ? { color: item.color.toLowerCase() } : {}),
+        });
+      }
+      // リンク先の下書きも、新しい ID で元のモデルに戻す
+      for (const sketch of sanitizeSketches(data?.sketches, new Set(remap.keys()))) {
+        sketches.push({
+          ...sketch,
+          id: `sketch-${nextSketchId++}`,
+          folderId: sketch.folderId ? remap.get(sketch.folderId) : link.parentId ?? null,
+          order: sketch.folderId ? sketch.order : (link.order ?? 0) + sketch.order * 0.001,
         });
       }
       const released = [];
@@ -20879,9 +20898,32 @@ if (decalOn > 0.5) {
           name: folder.name,
           parentId: folder.parentId && remap.has(folder.parentId) ? remap.get(folder.parentId) : rootId,
           order: folder.order ?? 0,
+          ...(folder.color ? { color: folder.color } : {}),
         });
       }
       const folderOf = (part) => (part.folderId && remap.has(part.folderId) ? remap.get(part.folderId) : rootId);
+      // パスと下書きも新しい ID で取り込み、パーツ・マスク・リンクの沿わせ先をつけかえる
+      const curveRemap = new Map();
+      const importedCurves = [];
+      for (const source of sanitizeCurves(data.curves, new Set(remap.keys()))) {
+        const id = `${ID_PREFIX}curve-${nextCurveId++}`;
+        curveRemap.set(source.id, id);
+        const curve = createCurve(id);
+        writeCurve(curve, { ...source, id, folderId: folderOf(source) });
+        curves.push(curve);
+        importedCurves.push(curve);
+      }
+      if (importedCurves.length) paintCurves();
+      const rebindCurve = (object, bind) => {
+        const curveId = bind && curveRemap.get(bind.curveId);
+        setCurveBind(object, curveId ? { ...bind, curveId } : null);
+      };
+      const importedSketches = sanitizeSketches(data.sketches, new Set(remap.keys())).map((sketch) => ({
+        ...sketch,
+        id: `sketch-${nextSketchId++}`,
+        folderId: sketch.folderId ? remap.get(sketch.folderId) : rootId,
+      }));
+      sketches.push(...importedSketches);
       const zero = new THREE.Vector3();
       const imported = [];
       const reliefs = [];
@@ -20889,6 +20931,11 @@ if (decalOn > 0.5) {
         const first = pastePart(record.mesh, record.mirror, zero, folderOf);
         const second = record.mirror ? pastePart(record.mirror, record.mesh, zero, folderOf) : null;
         reliefs.push([first, record.mesh], [second, record.mirror]);
+        for (const [made, part] of [[first, record.mesh], [second, record.mirror]]) {
+          if (!made) continue;
+          rebindCurve(made, readCurveBind(part.curve));
+          for (const shape of made.userData.masks ?? []) rebindCurve(shape, shape.userData.curveBind);
+        }
         const mesh = first ?? second;
         if (!mesh) continue;
         const mirror = first ? second : null;
@@ -20919,8 +20966,12 @@ if (decalOn > 0.5) {
           position: isVector(source.position, 3) ? [...source.position] : undefined,
           quaternion: isVector(source.quaternion, 4) ? [...source.quaternion] : [0, 0, 0, 1],
           scale: isVector(source.scale, 3) ? [...source.scale] : [1, 1, 1],
-          masks: Array.isArray(source.masks) ? source.masks : undefined,
-          curveBind: withCurveRest(readCurveBind(source.curveBind), isVector(source.quaternion, 4) ? source.quaternion : [0, 0, 0, 1]) ?? undefined,
+          curveBind: withCurveRest(readCurveBind(source.curveBind && curveRemap.has(source.curveBind.curveId)
+            ? { ...source.curveBind, curveId: curveRemap.get(source.curveBind.curveId) }
+            : null), isVector(source.quaternion, 4) ? source.quaternion : [0, 0, 0, 1]) ?? undefined,
+          masks: Array.isArray(source.masks)
+            ? source.masks.map((mask) => (mask?.curve ? { ...mask, curve: curveRemap.has(mask.curve.curveId) ? { ...mask.curve, curveId: curveRemap.get(mask.curve.curveId) } : undefined } : mask))
+            : undefined,
         };
         links.push(link);
         added.push(link);
