@@ -9376,6 +9376,24 @@ if (decalOn > 0.5) {
     }
 
     let modelSaveTimer = 0;
+    let savedSignature = null;
+
+    // 最後に保存（または読み込み）した時点の状態を覚えておき、未保存の変更があるか判定する
+    function markSaved() {
+      savedSignature = history[historyIndex]?.signature ?? null;
+    }
+
+    function hasUnsavedChanges() {
+      if (MODEL_ID) return false;
+      const current = history[historyIndex]?.signature ?? null;
+      return current !== savedSignature;
+    }
+
+    window.addEventListener("beforeunload", (event) => {
+      if (!hasUnsavedChanges()) return;
+      event.preventDefault();
+      event.returnValue = "";
+    });
 
     function saveModelSoon() {
       if (!MODEL_ID || !modelReady) return;
@@ -14161,7 +14179,7 @@ if (decalOn > 0.5) {
     }
 
     async function withLoading(title, data, task) {
-      if (loadingBusy) return;
+      if (loadingBusy) return false;
       loadingBusy = true;
       const merges = documentMerges(data);
       const count = (data.records ?? []).length;
@@ -14177,6 +14195,7 @@ if (decalOn > 0.5) {
         await task();
         showLoading(title, "完了しました", 1);
         await nextPaint();
+        return true;
       } finally {
         mergeCacheLimit = 12;
         loadingView.hidden = true;
@@ -17635,6 +17654,7 @@ if (decalOn > 0.5) {
     });
 
     function saveDocument() {
+      markSaved();
       const data = serialize();
       let stored = true;
       try {
@@ -20832,6 +20852,7 @@ if (decalOn > 0.5) {
       select(null);
       commit();
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(serialize())); } catch { /* 新しい状態の保存に失敗しても画面は空のまま */ }
+      markSaved();
       setFileStatus("新しいモデルを作りました");
     }
 
@@ -21035,17 +21056,34 @@ if (decalOn > 0.5) {
       const file = event.target.files?.[0];
       event.target.value = "";
       if (!file) return;
+      let data;
       try {
-        const data = JSON.parse(await file.text());
+        data = JSON.parse(await file.text());
         assertDocument(data);
-        restoreLinkedModels(data);
-        await withLoading("ファイルを開いています", data, () => loadDocument(data));
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(serialize()));
-        const missing = links.filter((link) => !readLinkedDoc(linkModel(link))).length;
-        setFileStatus(missing ? `読み込みました（中身が見つからないリンクが${missing}個あります。リンク先を含めて保存し直したファイルが必要です）` : "読み込みました");
       } catch {
         setFileStatus("読み込めませんでした");
+        return;
       }
+      if (hasUnsavedChanges() && !window.confirm(`「${file.name}」を開くと、今のモデルの保存していない変更は失われます。開きますか？`)) return;
+      try {
+        restoreLinkedModels(data);
+        if (!(await withLoading("ファイルを開いています", data, () => loadDocument(data)))) return;
+      } catch {
+        setFileStatus("読み込めませんでした");
+        return;
+      }
+      markSaved();
+      let stored = true;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(serialize()));
+      } catch {
+        stored = false;
+      }
+      const missing = links.filter((link) => !readLinkedDoc(linkModel(link))).length;
+      const notes = [];
+      if (missing) notes.push(`中身が見つからないリンクが${missing}個あります。リンク先を含めて保存し直したファイルが必要です`);
+      if (!stored) notes.push("ブラウザ内への保存はできませんでした");
+      setFileStatus(notes.length ? `読み込みました（${notes.join("。")}）` : "読み込みました");
     });
 
     const menus = [...document.querySelectorAll("#menubar .menu")];
@@ -21157,6 +21195,7 @@ if (decalOn > 0.5) {
       } finally {
         loadingView.hidden = true;
       }
+      markSaved();
       if (MODEL_ID) showModelTitle();
     })();
 
