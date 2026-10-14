@@ -19303,7 +19303,7 @@ if (decalOn > 0.5) {
         return;
       }
       if (rigPlayer.playing) {
-        rigPlayer.time += Math.min(dt, 0.1) * rigPlayer.speed;
+        rigPlayer.time += Math.min(dt, 0.5) * rigPlayer.speed; // 重いフレームでも実時間で進める（コマ落ち）
         if (rigPlayer.time >= rigMotion.duration) {
           if (rigPlayer.loop) rigPlayer.time %= rigMotion.duration;
           else {
@@ -21292,6 +21292,8 @@ if (decalOn > 0.5) {
     let shadowSignature = null;
     const drawingSize = new THREE.Vector2();
     let frameSignature = null;
+    const MOTION_SHADOW_EVERY = 3;
+    let motionShadowSkip = 0;
 
     let lastFrameTime = 0;
     function animating() {
@@ -21349,15 +21351,29 @@ if (decalOn > 0.5) {
       scene.updateMatrixWorld();
       camera.updateMatrixWorld();
       const drawSize = renderer.getDrawingBufferSize(drawingSize);
-      const shadowKey = sceneSignature(true);
-      const frameKey = [sceneSignature(false), drawSize.x, drawSize.y, ...camera.matrixWorld.elements, ...camera.projectionMatrix.elements, scene.background?.id, scene.environment?.id].join();
-      if (shadowKey !== shadowSignature) {
-        shadowSignature = shadowKey;
-        renderer.shadowMap.needsUpdate = true;
-      }
-      if (!safetyTick || frameKey !== frameSignature) {
-        frameSignature = frameKey;
+      const motionPlaying = rigPlayer.playing && !!rigPoseFrame;
+      if (motionPlaying) {
+        // モーション再生中は毎フレーム骨が動くため、影の再描画を数フレームに 1 回に間引く。
+        // 署名ハッシュも省略し、停止後の最初のフレームで必ず影を描き直す。
+        shadowSignature = null;
+        frameSignature = null;
+        if (++motionShadowSkip >= MOTION_SHADOW_EVERY) {
+          motionShadowSkip = 0;
+          renderer.shadowMap.needsUpdate = true;
+        }
         renderer.render(scene, camera);
+      } else {
+        motionShadowSkip = MOTION_SHADOW_EVERY;
+        const shadowKey = sceneSignature(true);
+        if (shadowKey !== shadowSignature) {
+          shadowSignature = shadowKey;
+          renderer.shadowMap.needsUpdate = true;
+        }
+        const frameKey = safetyTick ? [sceneSignature(false), drawSize.x, drawSize.y, ...camera.matrixWorld.elements, ...camera.projectionMatrix.elements, scene.background?.id, scene.environment?.id].join() : null;
+        if (!safetyTick || frameKey !== frameSignature) {
+          frameSignature = frameKey;
+          renderer.render(scene, camera);
+        }
       }
       restoreRigPose();
       restorePathSags();
