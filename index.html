@@ -4202,7 +4202,9 @@ if (decalOn > 0.5) {
       const now = performance.now();
       const stale = proxy.userData.pushKey !== key;
       // マスクをドラッグ中は作り直しを間引き、そのあいだは前の分割のまま押し込む。
-      if (stale && (proxy.userData.pushCount !== shapes.length || now - proxy.userData.pushBuilt > 250)) {
+      // モーション再生中は骨ごとに相対位置が毎フレーム変わり、作り直しが重い（1 回数十〜百 ms 超）ため止め、停止後に作り直す。
+      const motionBusy = rigPlayer.playing && Boolean(rigPoseFrame);
+      if (stale && (proxy.userData.pushCount !== shapes.length || (!motionBusy && now - proxy.userData.pushBuilt > 250))) {
         proxy.geometry.dispose();
         proxy.geometry = refinePushGeometry(source, boxes, probes, target);
         proxy.userData.pushKey = key;
