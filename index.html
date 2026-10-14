@@ -245,6 +245,7 @@
     #feature-banner,
     #soft-banner,
     #rig-banner,
+    #preview-banner,
     #path-draw-banner {
       position: absolute;
       top: 36px;
@@ -266,6 +267,8 @@
     #feature-banner[hidden],
     #soft-banner[hidden],
     #rig-banner[hidden],
+    #preview-banner[hidden],
+    #preview-overlay[hidden],
     #path-draw-banner[hidden] { display: none; }
     body.path-drawing #viewport { box-shadow: inset 0 0 0 2px rgba(53, 214, 255, 0.55); }
     body.path-drawing #viewport canvas { cursor: crosshair; }
@@ -709,6 +712,15 @@
       font: inherit;
       font-size: 13px;
     }
+
+
+    #preview-overlay { position: absolute; inset: 0; z-index: 1; touch-action: none; }
+    body.motion-preview #menubar,
+    body.motion-preview #outliner,
+    body.motion-preview #view-dock,
+    body.motion-preview #sidebar > section:not(#rig-motion-section),
+    body.motion-preview #rig-load { pointer-events: none; opacity: 0.45; }
+    body.motion-preview #rig-preview { border-color: var(--accent); }
 
     .modal-actions {
       display: flex;
@@ -1651,6 +1663,7 @@
         <button id="rig-play" type="button" title="再生と一時停止を切り替える（Space）">再生</button>
         <button id="rig-stop" type="button" title="再生をやめて元の姿勢に戻す">停止</button>
       </div>
+      <div class="wide"><button id="rig-preview" type="button" aria-pressed="false" title="見えている形を軽い 1 つの形に焼き込み、モーションだけを滑らかに確認する（Escで終了）">モーション確認モード</button></div>
       <div class="slider-row" title="再生している位置"><span>位置</span><input id="rig-time" type="range" min="0" max="1000" value="0" step="1" aria-label="再生位置" /><span id="rig-time-label" class="rig-time">0.0 秒</span></div>
       <div class="slider-row" title="再生の速さ"><span>速さ</span><input id="rig-speed" type="range" min="10" max="200" value="100" step="5" aria-label="再生の速さ" /><span class="num-field"><input id="rig-speed-num" class="num" type="number" aria-label="再生の速さ（%）" /><span class="unit">%</span></span></div>
       <div class="slider-row" title="再生中、すべての柔らかいパーツの揺れに掛ける倍率。パーツごとの差は「柔らかさ」の「揺れやすさ」で付ける"><span>全体の揺れ</span><input id="rig-sway" type="range" min="0" max="500" value="100" step="10" aria-label="再生中の揺れの大きさ" /><span class="num-field"><input id="rig-sway-num" class="num" type="number" aria-label="再生中の揺れの大きさ（%）" /><span class="unit">%</span></span></div>
@@ -1803,6 +1816,8 @@
     <div id="mask-banner" hidden>マスク編集 · <span id="mask-banner-name"></span></div>
     <div id="path-draw-banner" hidden>パスを描く（<span id="path-draw-count"></span>） · クリックで点 · 最初の点でループ · 右クリック／Enterで確定 · Backspaceで戻す</div>
     <div id="feature-banner" hidden>顔・手・足の編集 · <span id="feature-banner-name"></span> · 右ドラッグで視点 · Escで終了</div>
+    <div id="preview-banner" hidden>モーション確認モード · Spaceで再生/一時停止 · ドラッグで視点 · Escで終了</div>
+    <div id="preview-overlay" hidden></div>
     <div id="rig-banner" hidden>ボーンとモーション · 点をドラッグで関節を動かす · 左ドラッグで視点 · Spaceで再生/一時停止 · Escで終了</div>
     <div id="soft-banner" hidden>柔らかさの編集 · <span id="soft-banner-name"></span> · 左ドラッグで揺らす · 右ドラッグで視点 · Escで終了</div>
     <div id="relief-banner" hidden>法線編集 · <span id="relief-banner-name"></span> · <span id="relief-banner-hint">左ドラッグで描く</span> · 右ドラッグで視点 · Escで終了</div>
@@ -1915,6 +1930,16 @@
     <div class="modal-actions">
       <button id="import-cancel" type="button">キャンセル</button>
       <button id="import-apply" type="button">インポート</button>
+    </div>
+  </dialog>
+  <dialog id="preview-modal" aria-labelledby="preview-title">
+    <h2 id="preview-title">モーション確認モード</h2>
+    <p>前回モーション確認モードの形を作ったあとに、モデルが変更されています。今の形で作り直しますか？</p>
+    <p class="relink-note">作り直すには少し時間がかかります。前回の形を使うと、すぐに始められますが、その後の変更は反映されません。</p>
+    <div class="modal-actions">
+      <button id="preview-cancel" type="button">キャンセル</button>
+      <button id="preview-reuse" type="button">前回の形を使う</button>
+      <button id="preview-rebake" type="button">作り直す</button>
     </div>
   </dialog>
   <dialog id="relink-modal" aria-labelledby="relink-title">
@@ -2789,6 +2814,8 @@ if (decalOn > 0.5) {
     let rigLookActive = false;
     let rigMirror = true;
     const rigPlayer = { playing: false, showing: false, time: 0, speed: 1, loop: true, travel: true, sway: 1 };
+    let previewMode = false;
+    let previewBake = null;
     const RIG_BONES = [
       { name: "hips", label: "腰", tail: "spine", parent: null },
       { name: "spine", label: "背骨", tail: "chest", parent: "hips", fromRoot: true },
@@ -19440,8 +19467,9 @@ if (decalOn > 0.5) {
 
     function updateRigChrome() {
       document.body.classList.toggle("rig-edit", rigEditing);
-      document.getElementById("rig-banner").hidden = !rigEditing;
+      document.getElementById("rig-banner").hidden = !rigEditing || previewMode;
       updateRigLook();
+      updatePreviewButton();
       if (!rigEditing) return;
       const focusText = document.getElementById("rig-focus");
       if (rigPart) {
@@ -19507,6 +19535,7 @@ if (decalOn > 0.5) {
     }
 
     function leaveRigEdit() {
+      if (previewMode) exitMotionPreview();
       if (!rigEditing) return;
       dropRigMode();
       refreshChrome();
@@ -21315,7 +21344,601 @@ if (decalOn > 0.5) {
       return controls.autoRotate || pivotPan || softTarget || (rigEditing && rigPlayer.showing && rigPlayer.playing) || sagMoving;
     }
 
+    // ===== モーション確認モード =====
+    // 見えているパーツを今の見た目（マスク・押し込み・結合など）のまま 1 つの形に焼き込み、
+    // ボーンで動く SkinnedMesh として GPU だけで再生する。編集中のモデルには一切書き込まない。
+    let previewHidden = [];
+    let previewLast = 0;
+    let previewControls = null;
+    const previewTfPrograms = new Map();
+    const previewClassifiers = new Map();
+    const PREVIEW_SPLIT_LEVELS = 3;
+
+    function previewSignature() {
+      return `${history[historyIndex]?.signature ?? ""}|${JSON.stringify(rig?.joints ?? null)}`;
+    }
+
+    function previewCompile(gl, vertex, fragment, varyings) {
+      const make = (type, source) => {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error(`bake shader: ${gl.getShaderInfoLog(shader)}`);
+        return shader;
+      };
+      const program = gl.createProgram();
+      const vs = make(gl.VERTEX_SHADER, vertex);
+      const fs = make(gl.FRAGMENT_SHADER, fragment);
+      gl.attachShader(program, vs);
+      gl.attachShader(program, fs);
+      gl.transformFeedbackVaryings(program, varyings, gl.SEPARATE_ATTRIBS);
+      gl.linkProgram(program);
+      gl.deleteShader(vs);
+      gl.deleteShader(fs);
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(`bake link: ${gl.getProgramInfoLog(program)}`);
+      return program;
+    }
+
+    const PREVIEW_FRAGMENT = "#version 300 es\nprecision highp float;\nout vec4 bakeColor;\nvoid main() { bakeColor = vec4(0.0); }";
+
+    // 描いた直後のプログラムの頂点シェーダーをそのまま使い、最終的な位置（ワールド座標）を取り出す。
+    function previewTfProgram(gl, source) {
+      if (previewTfPrograms.has(source)) return previewTfPrograms.get(source);
+      const vs = gl.getAttachedShaders(source).find((shader) => gl.getShaderParameter(shader, gl.SHADER_TYPE) === gl.VERTEX_SHADER);
+      let text = gl.getShaderSource(vs);
+      const main = text.lastIndexOf("void main()");
+      text = `${text.slice(0, main)}out vec3 bakePos;\n${text.slice(main)}`;
+      const close = text.lastIndexOf("}");
+      text = `${text.slice(0, close)}\nbakePos = gl_Position.xyz / gl_Position.w;\n}\n`;
+      const program = previewCompile(gl, text, PREVIEW_FRAGMENT, ["bakePos"]);
+      previewTfPrograms.set(source, program);
+      return program;
+    }
+
+    // 画面で discard される場所かどうかを、同じ判定式で点ごとに調べるプログラム。
+    function previewClassifier(gl, cap) {
+      if (previewClassifiers.has(cap)) return previewClassifiers.get(cap);
+      const exec = (cap ? CAP_EXEC : BODY_EXEC).replace(/discard;/g, "bakeCut = 1.0;");
+      const text = `#version 300 es
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp sampler3D;
+in vec3 bakeWorld;
+out float bakeCut;
+${MASK_LIB}
+${MASK_FNS}
+${cap ? CAP_LIB : BODY_LIB}
+void main() {
+  vec3 vMaskWorld = bakeWorld;
+  bakeCut = 0.0;
+  ${exec}
+  gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
+  gl_PointSize = 1.0;
+}`;
+      const program = previewCompile(gl, text, PREVIEW_FRAGMENT, ["bakeCut"]);
+      previewClassifiers.set(cap, program);
+      return program;
+    }
+
+    const PREVIEW_SAMPLERS = new Set();
+    function previewCopyUniforms(gl, from, to) {
+      if (!PREVIEW_SAMPLERS.size) {
+        for (const name of ["SAMPLER_2D", "SAMPLER_3D", "SAMPLER_CUBE", "INT_SAMPLER_2D", "UNSIGNED_INT_SAMPLER_2D", "SAMPLER_2D_ARRAY", "SAMPLER_2D_SHADOW"]) if (gl[name]) PREVIEW_SAMPLERS.add(gl[name]);
+      }
+      gl.useProgram(to);
+      const units = gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS);
+      let spare = units - 1;
+      const total = gl.getProgramParameter(to, gl.ACTIVE_UNIFORMS);
+      for (let i = 0; i < total; i += 1) {
+        const info = gl.getActiveUniform(to, i);
+        const array = info.name.endsWith("[0]");
+        const base = array ? info.name.slice(0, -3) : info.name;
+        for (let k = 0; k < info.size; k += 1) {
+          const name = array ? `${base}[${k}]` : base;
+          const dst = gl.getUniformLocation(to, name);
+          if (!dst) continue;
+          const src = gl.getUniformLocation(from, name);
+          const t = info.type;
+          if (PREVIEW_SAMPLERS.has(t)) {
+            gl.uniform1i(dst, src ? gl.getUniform(from, src) : spare--);
+            continue;
+          }
+          if (!src) continue;
+          const v = gl.getUniform(from, src);
+          if (t === gl.FLOAT) gl.uniform1f(dst, v);
+          else if (t === gl.FLOAT_VEC2) gl.uniform2fv(dst, v);
+          else if (t === gl.FLOAT_VEC3) gl.uniform3fv(dst, v);
+          else if (t === gl.FLOAT_VEC4) gl.uniform4fv(dst, v);
+          else if (t === gl.INT || t === gl.BOOL) gl.uniform1i(dst, Number(v));
+          else if (t === gl.INT_VEC2 || t === gl.BOOL_VEC2) gl.uniform2iv(dst, Array.from(v, Number));
+          else if (t === gl.INT_VEC3 || t === gl.BOOL_VEC3) gl.uniform3iv(dst, Array.from(v, Number));
+          else if (t === gl.INT_VEC4 || t === gl.BOOL_VEC4) gl.uniform4iv(dst, Array.from(v, Number));
+          else if (t === gl.UNSIGNED_INT) gl.uniform1ui(dst, v);
+          else if (t === gl.FLOAT_MAT3) gl.uniformMatrix3fv(dst, false, v);
+          else if (t === gl.FLOAT_MAT4) gl.uniformMatrix4fv(dst, false, v);
+          else if (t === gl.FLOAT_MAT2) gl.uniformMatrix2fv(dst, false, v);
+        }
+      }
+    }
+
+    // program の頂点シェーダーを、columns（名前 → {array,size}）を入力に count 個の点で回し、varying を読み戻す。
+    function previewRun(gl, program, columns, count, outputs) {
+      const vao = gl.createVertexArray();
+      gl.bindVertexArray(vao);
+      const buffers = [];
+      const attributes = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
+      for (let i = 0; i < attributes; i += 1) {
+        const info = gl.getActiveAttrib(program, i);
+        const location = gl.getAttribLocation(program, info.name);
+        if (location < 0) continue;
+        const column = columns[info.name];
+        if (!column) {
+          gl.disableVertexAttribArray(location);
+          gl.vertexAttrib4f(location, 0, 0, 0, 1);
+          continue;
+        }
+        const buffer = gl.createBuffer();
+        buffers.push(buffer);
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, column.array, gl.STATIC_DRAW);
+        gl.enableVertexAttribArray(location);
+        gl.vertexAttribPointer(location, column.size, gl.FLOAT, false, 0, 0);
+      }
+      const feedback = gl.createTransformFeedback();
+      gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, feedback);
+      const targets = outputs.map((size, slot) => {
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.TRANSFORM_FEEDBACK_BUFFER, buffer);
+        gl.bufferData(gl.TRANSFORM_FEEDBACK_BUFFER, Math.max(4, count * size * 4), gl.STREAM_READ);
+        gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, slot, buffer);
+        return buffer;
+      });
+      gl.enable(gl.RASTERIZER_DISCARD);
+      gl.beginTransformFeedback(gl.POINTS);
+      gl.drawArrays(gl.POINTS, 0, count);
+      gl.endTransformFeedback();
+      gl.disable(gl.RASTERIZER_DISCARD);
+      outputs.forEach((_, slot) => gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, slot, null));
+      gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, null);
+      const result = targets.map((buffer, slot) => {
+        const out = new Float32Array(count * outputs[slot]);
+        gl.bindBuffer(gl.TRANSFORM_FEEDBACK_BUFFER, buffer);
+        if (count) gl.getBufferSubData(gl.TRANSFORM_FEEDBACK_BUFFER, 0, out);
+        gl.deleteBuffer(buffer);
+        return out;
+      });
+      gl.bindBuffer(gl.TRANSFORM_FEEDBACK_BUFFER, null);
+      gl.bindVertexArray(null);
+      gl.deleteVertexArray(vao);
+      gl.deleteTransformFeedback(feedback);
+      for (const buffer of buffers) gl.deleteBuffer(buffer);
+      return result;
+    }
+
+    function previewColumn(attribute) {
+      if (!attribute.isInterleavedBufferAttribute && attribute.array instanceof Float32Array && !attribute.normalized) {
+        return { array: attribute.array, size: attribute.itemSize };
+      }
+      const array = new Float32Array(attribute.count * attribute.itemSize);
+      for (let i = 0; i < attribute.count; i += 1) {
+        for (let k = 0; k < attribute.itemSize; k += 1) array[i * attribute.itemSize + k] = attribute.getComponent(i, k);
+      }
+      return { array, size: attribute.itemSize };
+    }
+
+    // 1 つのパーツ（描いた直後に呼ぶ）: 頂点の最終位置を取り、切り抜かれる三角形を除き、境目の三角形は細かく割って判定する。
+    function previewCapture(object, geometry, material) {
+      const gl = renderer.getContext();
+      const source = renderer.properties.get(material).currentProgram?.program;
+      if (!source || !geometry.attributes.position) return null;
+      const count = geometry.attributes.position.count;
+      const columns = {};
+      for (const [name, attribute] of Object.entries(geometry.attributes)) columns[name] = previewColumn(attribute);
+      const tf = previewTfProgram(gl, source);
+      previewCopyUniforms(gl, source, tf);
+      let [positions] = previewRun(gl, tf, columns, count, [3]);
+      let points = Array.from({ length: count }, (_, i) => i);
+      let index = geometry.index ? Array.from(geometry.index.array) : points;
+      const start = geometry.drawRange.start;
+      const end = Math.min(index.length, start + geometry.drawRange.count);
+      index = index.slice(start, end - ((end - start) % 3));
+      const cap = Boolean(material.userData.capUniforms);
+      const masks = material.userData.maskUniforms;
+      const cutting = cap || (masks && (masks.peerCount.value > 0 || Array.from({ length: masks.maskCount.value }, (_, i) => masks.maskMode.value[i]).includes(0)));
+      if (!cutting) return { positions: new Float32Array(positions), index };
+      const classifier = previewClassifier(gl, cap);
+      previewCopyUniforms(gl, source, classifier);
+      const world = Array.from(positions);
+      const classify = (from) => {
+        const n = world.length / 3 - from;
+        if (n <= 0) return [];
+        const [flags] = previewRun(gl, classifier, { bakeWorld: { array: new Float32Array(world.slice(from * 3)), size: 3 } }, n, [1]);
+        return flags;
+      };
+      const cut = Array.from(classify(0));
+      const midpoint = new Map();
+      const addPoint = (x, y, z) => {
+        world.push(x, y, z);
+        return world.length / 3 - 1;
+      };
+      const mid = (a, b) => {
+        const k = a < b ? `${a}_${b}` : `${b}_${a}`;
+        if (!midpoint.has(k)) midpoint.set(k, addPoint((world[a * 3] + world[b * 3]) / 2, (world[a * 3 + 1] + world[b * 3 + 1]) / 2, (world[a * 3 + 2] + world[b * 3 + 2]) / 2));
+        return midpoint.get(k);
+      };
+      const done = [];
+      let pending = index;
+      for (let level = 0; level <= PREVIEW_SPLIT_LEVELS && pending.length; level += 1) {
+        // 三角形の中心と辺の中点も調べ、どれか 1 つでも判定が違えば境目とみなして細かく割る。
+        const before = world.length / 3;
+        const probes = [];
+        for (let t = 0; t < pending.length; t += 3) {
+          const [a, b, c] = [pending[t], pending[t + 1], pending[t + 2]];
+          const center = addPoint((world[a * 3] + world[b * 3] + world[c * 3]) / 3, (world[a * 3 + 1] + world[b * 3 + 1] + world[c * 3 + 1]) / 3, (world[a * 3 + 2] + world[b * 3 + 2] + world[c * 3 + 2]) / 3);
+          probes.push(center, mid(a, b), mid(b, c), mid(c, a));
+        }
+        const fresh = classify(before);
+        for (let i = 0; i < fresh.length; i += 1) cut[before + i] = fresh[i];
+        const next = [];
+        for (let t = 0, p = 0; t < pending.length; t += 3, p += 4) {
+          const [a, b, c] = [pending[t], pending[t + 1], pending[t + 2]];
+          const [center, ab, bc, ca] = probes.slice(p, p + 4);
+          const flags = [cut[a], cut[b], cut[c], cut[center], cut[ab], cut[bc], cut[ca]];
+          const any = flags.some((f) => f > 0.5);
+          if (flags.every((f) => f > 0.5)) continue;
+          if (!any) done.push(a, b, c);
+          else if (level === PREVIEW_SPLIT_LEVELS) {
+            if (cut[center] <= 0.5) done.push(a, b, c);
+          } else next.push(a, ab, ca, ab, b, bc, ca, bc, c, ab, bc, ca);
+        }
+        pending = next;
+      }
+      index = done;
+      // 使っている点だけに詰める
+      const remap = new Map();
+      const packed = [];
+      const outIndex = index.map((i) => {
+        if (!remap.has(i)) {
+          remap.set(i, packed.length / 3);
+          packed.push(world[i * 3], world[i * 3 + 1], world[i * 3 + 2]);
+        }
+        return remap.get(i);
+      });
+      return { positions: new Float32Array(packed), index: outIndex };
+    }
+
+    function previewHost(object) {
+      for (let cursor = object; cursor; cursor = cursor.parent) if (cursor.isMesh && cursor.material?.userData?.maskUniforms && !cursor.userData.isMask) return cursor;
+      return object;
+    }
+
+    async function bakePreview() {
+      const gl = renderer.getContext();
+      const targets = rigPoseTargets();
+      const boneOf = (object) => {
+        for (let cursor = object; cursor; cursor = cursor.parent) if (targets.has(cursor)) return targets.get(cursor);
+        return "none";
+      };
+      const sources = [];
+      scene.traverseVisible((object) => {
+        if (!object.isMesh || Array.isArray(object.material) || !object.layers.test(camera.layers)) return;
+        const data = object.material?.userData;
+        if (data?.maskUniforms || data?.capUniforms) sources.push(object);
+      });
+      showLoading("モーション確認モードの準備", `パーツの形を焼き込んでいます（${sources.length}個）`, 0.1);
+      await nextPaint();
+      const started = performance.now();
+      const captured = new Map();
+      const hooks = [];
+      const culled = [];
+      scene.traverse((object) => {
+        if (object.isMesh) {
+          culled.push([object, object.frustumCulled]);
+          object.frustumCulled = false;
+        }
+      });
+      let failure = null;
+      for (const object of sources) {
+        hooks.push([object, Object.prototype.hasOwnProperty.call(object, "onAfterRender") ? object.onAfterRender : undefined]);
+        object.onAfterRender = (_renderer, _scene, _camera, geometry, material) => {
+          if (captured.has(object) || failure) return;
+          try {
+            captured.set(object, previewCapture(object, geometry, material));
+          } catch (error) {
+            failure = error;
+          }
+          renderer.resetState();
+        };
+      }
+      const bakeCamera = new THREE.Camera();
+      bakeCamera.layers.mask = camera.layers.mask;
+      const target = new THREE.WebGLRenderTarget(4, 4);
+      const shadowNeeds = renderer.shadowMap.needsUpdate;
+      renderer.shadowMap.needsUpdate = false;
+      const previousTarget = renderer.getRenderTarget();
+      try {
+        renderer.setRenderTarget(target);
+        renderer.render(scene, bakeCamera);
+      } finally {
+        renderer.setRenderTarget(previousTarget);
+        renderer.shadowMap.needsUpdate = shadowNeeds;
+        target.dispose();
+        for (const [object, value] of culled) object.frustumCulled = value;
+        for (const [object, hook] of hooks) {
+          if (hook === undefined) delete object.onAfterRender;
+          else object.onAfterRender = hook;
+        }
+        renderer.resetState();
+      }
+      if (failure) throw failure;
+      showLoading("モーション確認モードの準備", "ボーンにつないでいます", 0.8);
+      await nextPaint();
+      const boneNames = [...RIG_BONES.map((bone) => bone.name), "none"];
+      const boneIndex = new Map(boneNames.map((name, index) => [name, index]));
+      const groups = new Map();
+      for (const [object, part] of captured) {
+        if (!part || !part.index.length) continue;
+        const material = object.material;
+        const key = `${material.transparent}|${material.opacity}|${material.side}|${material.depthWrite}`;
+        if (!groups.has(key)) groups.set(key, { material, parts: [] });
+        const color = material.color;
+        groups.get(key).parts.push({ part, color, bone: boneIndex.get(boneOf(previewHost(object))) ?? boneIndex.get("none") });
+      }
+      const bones = boneNames.map((name) => {
+        const bone = new THREE.Bone();
+        bone.name = name;
+        bone.matrixAutoUpdate = false;
+        return bone;
+      });
+      const root = new THREE.Group();
+      root.name = "motion-preview";
+      for (const bone of bones) root.add(bone);
+      const skeleton = new THREE.Skeleton(bones, bones.map(() => new THREE.Matrix4()));
+      let triangles = 0;
+      for (const { material: sourceMaterial, parts } of groups.values()) {
+        const vertexCount = parts.reduce((sum, { part }) => sum + part.positions.length / 3, 0);
+        const indexCount = parts.reduce((sum, { part }) => sum + part.index.length, 0);
+        const position = new Float32Array(vertexCount * 3);
+        const color = new Float32Array(vertexCount * 3);
+        const skinIndex = new Uint16Array(vertexCount * 4);
+        const skinWeight = new Float32Array(vertexCount * 4);
+        const index = vertexCount > 65535 ? new Uint32Array(indexCount) : new Uint16Array(indexCount);
+        let v = 0;
+        let n = 0;
+        for (const { part, color: tint, bone } of parts) {
+          position.set(part.positions, v * 3);
+          const count = part.positions.length / 3;
+          for (let i = 0; i < count; i += 1) {
+            color[(v + i) * 3] = tint.r;
+            color[(v + i) * 3 + 1] = tint.g;
+            color[(v + i) * 3 + 2] = tint.b;
+            skinIndex[(v + i) * 4] = bone;
+            skinWeight[(v + i) * 4] = 1;
+          }
+          for (const i of part.index) index[n++] = i + v;
+          v += count;
+        }
+        triangles += indexCount / 3;
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute("position", new THREE.BufferAttribute(position, 3));
+        geometry.setAttribute("color", new THREE.BufferAttribute(color, 3));
+        geometry.setAttribute("skinIndex", new THREE.BufferAttribute(skinIndex, 4));
+        geometry.setAttribute("skinWeight", new THREE.BufferAttribute(skinWeight, 4));
+        geometry.setIndex(new THREE.BufferAttribute(index, 1));
+        geometry.computeVertexNormals();
+        geometry.computeBoundingSphere();
+        const material = skin.clone();
+        material.vertexColors = true;
+        material.color.set(0xffffff);
+        material.transparent = sourceMaterial.transparent;
+        material.opacity = sourceMaterial.opacity;
+        material.side = sourceMaterial.side;
+        material.depthWrite = sourceMaterial.depthWrite;
+        const mesh = new THREE.SkinnedMesh(geometry, material);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.frustumCulled = false;
+        mesh.bind(skeleton, new THREE.Matrix4());
+        root.add(mesh);
+      }
+      return { root, bones, boneIndex, skeleton, triangles, parts: captured.size, meshes: groups.size, ms: performance.now() - started, signature: previewSignature() };
+    }
+
+    function disposePreviewBake(bake) {
+      if (!bake) return;
+      bake.root.removeFromParent();
+      bake.root.traverse((object) => {
+        if (object.isMesh) {
+          object.geometry.dispose();
+          object.material.dispose();
+        }
+      });
+      bake.skeleton.dispose();
+    }
+
+    function askPreviewReuse() {
+      const modal = document.getElementById("preview-modal");
+      return new Promise((resolve) => {
+        const finish = (value) => {
+          modal.removeEventListener("close", onClose);
+          for (const [id, handler] of handlers) document.getElementById(id).removeEventListener("click", handler);
+          if (modal.open) modal.close();
+          resolve(value);
+        };
+        const onClose = () => finish("cancel");
+        const handlers = [
+          ["preview-reuse", () => finish("reuse")],
+          ["preview-rebake", () => finish("rebake")],
+          ["preview-cancel", () => finish("cancel")],
+        ];
+        for (const [id, handler] of handlers) document.getElementById(id).addEventListener("click", handler);
+        modal.addEventListener("close", onClose);
+        modal.showModal();
+      });
+    }
+
+    function waitFrames(count) {
+      return new Promise((resolve) => {
+        const step = () => (count-- <= 0 ? resolve() : requestAnimationFrame(step));
+        requestAnimationFrame(step);
+      });
+    }
+
+    async function enterMotionPreview() {
+      if (previewMode || !rigEditing || !rig || !loadingView.hidden) return;
+      const signature = previewSignature();
+      let rebake = !previewBake;
+      if (previewBake && previewBake.signature !== signature) {
+        const answer = await askPreviewReuse();
+        if (answer === "cancel") return;
+        rebake = answer === "rebake";
+      }
+      if (rebake) {
+        // 焼き込みは止まった姿勢で行う。再生の状態は覚えておいて戻す。
+        const saved = { playing: rigPlayer.playing, showing: rigPlayer.showing };
+        rigPlayer.playing = false;
+        rigPlayer.showing = false;
+        rigPart = null;
+        rigBone = null;
+        updateRigChrome();
+        loadingBusy = true;
+        showLoading("モーション確認モードの準備", "止まった姿勢で描き直しています", 0);
+        try {
+          requestRender();
+          await waitFrames(3);
+          const bake = await bakePreview();
+          disposePreviewBake(previewBake);
+          previewBake = bake;
+          showLoading("モーション確認モードの準備", "完了しました", 1);
+          await nextPaint();
+        } catch (error) {
+          console.warn(error);
+          setFileStatus("モーション確認モードの準備に失敗しました");
+          return;
+        } finally {
+          rigPlayer.playing = saved.playing;
+          rigPlayer.showing = saved.showing;
+          loadingView.hidden = true;
+          loadingBusy = false;
+        }
+      }
+      previewMode = true;
+      previewHidden = [];
+      for (const object of scene.children) {
+        if (object.isLight || object === floor || object === floorShadow || !object.visible) continue;
+        previewHidden.push(object);
+        object.visible = false;
+      }
+      scene.add(previewBake.root);
+      if (!previewControls) {
+        previewControls = new OrbitControls(camera, document.getElementById("preview-overlay"));
+        previewControls.addEventListener("change", () => requestRender());
+      }
+      previewControls.target = controls.target;
+      previewControls.enableDamping = controls.enableDamping;
+      previewControls.dampingFactor = controls.dampingFactor;
+      previewControls.enabled = true;
+      controls.enabled = false;
+      previewLast = 0;
+      document.body.classList.add("motion-preview");
+      document.getElementById("preview-overlay").hidden = false;
+      document.getElementById("preview-banner").hidden = false;
+      document.getElementById("rig-banner").hidden = true;
+      updatePreviewButton();
+      renderer.shadowMap.needsUpdate = true;
+      requestRender();
+    }
+
+    function exitMotionPreview() {
+      if (!previewMode) return;
+      previewMode = false;
+      previewBake.root.removeFromParent();
+      for (const object of previewHidden) object.visible = true;
+      previewHidden = [];
+      previewControls.enabled = false;
+      controls.enabled = true;
+      controls.update();
+      document.body.classList.remove("motion-preview");
+      document.getElementById("preview-overlay").hidden = true;
+      document.getElementById("preview-banner").hidden = true;
+      document.getElementById("rig-banner").hidden = !rigEditing;
+      shadowSignature = null;
+      frameSignature = null;
+      lastFrameTime = 0;
+      updatePreviewButton();
+      requestRender();
+    }
+
+    function updatePreviewButton() {
+      const button = document.getElementById("rig-preview");
+      if (!button) return;
+      button.textContent = previewMode ? "確認モードを終える" : "モーション確認モード";
+      button.setAttribute("aria-pressed", String(previewMode));
+      button.disabled = !rig;
+    }
+
+    function previewFrame(time) {
+      const now = performance.now();
+      const dt = previewLast ? (time - previewLast) / 1000 : 0;
+      previewLast = time;
+      previewControls.update();
+      const playing = Boolean(rigMotion && rigPlayer.showing && rigPlayer.playing);
+      if (!playing && now > renderUntil) return;
+      if (playing) {
+        rigPlayer.time += Math.min(dt, 0.5) * rigPlayer.speed;
+        if (rigPlayer.time >= rigMotion.duration) {
+          if (rigPlayer.loop) rigPlayer.time %= rigMotion.duration;
+          else {
+            rigPlayer.time = rigMotion.duration;
+            rigPlayer.playing = false;
+            updateRigChrome();
+          }
+        }
+        showRigTime();
+      }
+      if (!playing) showRigTime();
+      const pose = rigMotion && rigPlayer.showing ? computeRigPose(rigMotion.sample(rigPlayer.time)).matrices : null;
+      for (const bone of previewBake.bones) {
+        const matrix = pose?.get(bone.name);
+        if (matrix) bone.matrix.copy(matrix);
+        else bone.matrix.identity();
+        bone.matrixWorldNeedsUpdate = true;
+      }
+      renderer.shadowMap.needsUpdate = true;
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener("keydown", (event) => {
+      if (!previewMode || !loadingView.hidden) return;
+      const typing = (event.target instanceof HTMLInputElement && event.target.type !== "file" && event.target.type !== "checkbox" && event.target.type !== "range")
+        || event.target instanceof HTMLTextAreaElement;
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        exitMotionPreview();
+        return;
+      }
+      if (typing) return;
+      if (event.code === "Space") {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        toggleRigPlay();
+        return;
+      }
+      event.stopImmediatePropagation();
+    }, true);
+
+    document.getElementById("rig-preview").addEventListener("click", () => {
+      if (previewMode) exitMotionPreview();
+      else enterMotionPreview();
+    });
+
     renderer.setAnimationLoop((time) => {
+      if (previewMode) {
+        previewFrame(time);
+        return;
+      }
       const now = performance.now();
       if (!animating() && now > renderUntil && now - lastFullFrame < 1000) {
         lastFrameTime = 0;
