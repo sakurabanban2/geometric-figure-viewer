@@ -776,7 +776,10 @@
     .num:focus { outline: none; border-color: var(--accent); }
     .num:disabled { opacity: 0.45; }
 
-    #decal-section[hidden], #point-size-section[hidden] { display: none; }
+    #decal-section[hidden], #point-size-section[hidden], #conform-section[hidden], #conform-make[hidden] { display: none; }
+    #conform-target { flex: 1; min-width: 0; }
+    .conform-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+    .conform-row .hint { flex: 1; margin: 0; }
     #point-size-section .hint { margin-top: 8px; }
     #decal-preview {
       display: grid;
@@ -1750,6 +1753,15 @@
       <div class="slider-row" id="smooth-row" title="接している部分を、くっきり → なだらか"><span>なだらか</span><input id="smooth-range" type="range" min="0" max="100" value="0" step="1" aria-label="なだらかにする" /><span class="num-field"><input id="smooth-range-num" class="num" type="number" aria-label="なだらかにする（%）" /><span class="unit">%</span></span></div>
       <div class="slider-row" title="角あり → 角丸"><span>角の丸み</span><input id="round-range" type="range" min="0" max="100" value="0" step="1" aria-label="角を丸める" /><span class="num-field"><input id="round-range-num" class="num" type="number" aria-label="角を丸める（%）" /><span class="unit">%</span></span></div>
       <div class="slider-row" id="cut-row" title="マスクの切り口を、くっきり → 丸く"><span>切り口</span><input id="cut-range" type="range" min="0" max="100" value="0" step="1" aria-label="切り口を丸める" /><span class="num-field"><input id="cut-range-num" class="num" type="number" aria-label="切り口を丸める（%）" /><span class="unit">%</span></span></div>
+    </section>
+    <section id="conform-section" hidden>
+      <h2>表面デカール</h2>
+      <div id="conform-make">
+        <p id="conform-hint" class="hint"></p>
+        <div class="slider-row" title="平面パーツを沿わせる先のパーツ"><span>沿わせる先</span><select id="conform-target" aria-label="沿わせる先のパーツ"></select></div>
+        <div class="wide"><button id="conform-apply" type="button" title="選んだ平面パーツを、それぞれの向き（法線）に沿って先のパーツの表面へ写し、表面に貼り付いた形にする。元の平面パーツは非表示で残る">デカール（表面に沿わせる）</button></div>
+      </div>
+      <div id="conform-list"></div>
     </section>
     <section id="decal-section" hidden>
       <h2>画像の投影</h2>
@@ -9129,7 +9141,7 @@ if (decalOn > 0.5) {
         folder.color ?? "",
         folder.feature ? JSON.stringify(folder.feature) : "",
       ].join(",")).join(";");
-      const sideSig = (mesh) => `${mesh.uuid}:${transformSignature(mesh)}:${maskSignature(mesh)}:${reliefSigOf(mesh)}:${decalSigOf(mesh)}:${mesh.userData.bone ?? ""}`;
+      const sideSig = (mesh) => `${mesh.uuid}:${transformSignature(mesh)}:${maskSignature(mesh)}:${reliefSigOf(mesh)}:${decalSigOf(mesh)}:${conformSigOf(mesh)}:${mesh.userData.bone ?? ""}`;
       return `${records
         .map((record) => [
           record.kind,
@@ -9169,6 +9181,7 @@ if (decalOn > 0.5) {
         curveBind: mesh.userData.curveBind ? { ...mesh.userData.curveBind } : null,
         relief: packMeshRelief(mesh),
         decal: mesh.userData.decal ?? null,
+        conform: mesh.userData.conform ?? null,
       };
     }
 
@@ -9247,6 +9260,7 @@ if (decalOn > 0.5) {
       if (packed.mesh.userData.relief !== packed.relief) packed.mesh.userData.reliefGpuDirty = true;
       packed.mesh.userData.reliefGpuDirty = true;
       if (!packed.mesh.userData.isMask) setDecal(packed.mesh, packed.decal ?? null);
+      if (!packed.mesh.userData.isMask) setConform(packed.mesh, packed.conform ?? null);
       setDome(packed.mesh, packed.dome ?? null);
       if (packed.loft) setLoft(packed.mesh, packed.loft);
       if (packed.detail != null) setDetail(packed.mesh, packed.detail);
@@ -9725,6 +9739,7 @@ if (decalOn > 0.5) {
       document.getElementById("loft-section").hidden = !loftable;
       if (loftable) refreshLoftUI();
       refreshDecalUI();
+      refreshConformUI();
       refreshPointSizeUI();
       const mergeSection = document.getElementById("merge-section");
       mergeSection.hidden = !selected?.userData.merge || Boolean(maskTarget);
@@ -13757,6 +13772,7 @@ if (decalOn > 0.5) {
         masks: serializeMasks(mesh),
         relief: serializeMeshRelief(mesh.userData.relief),
         decal: serializeDecal(mesh.userData.decal),
+        conform: serializeConform(mesh.userData.conform),
       };
     }
 
@@ -14084,6 +14100,7 @@ if (decalOn > 0.5) {
       mesh.userData.linkId = typeof part.linkId === "string" ? part.linkId : null;
       mesh.userData.home = isVector(part.home, 3) ? [...part.home] : undefined;
       setDecal(mesh, readDecal(part.decal));
+      setConform(mesh, readConform(part.conform));
       attachLoadedMasks(mesh, part.masks);
       return mesh;
     }
@@ -14509,6 +14526,7 @@ if (decalOn > 0.5) {
       setPartBone(mesh, part.bone);
       mesh.userData.home = isVector(part.home, 3) ? [...part.home] : undefined;
       setDecal(mesh, readDecal(part.decal));
+      setConform(mesh, readConform(part.conform));
       attachLoadedMasks(mesh, part.masks);
       return mesh;
     }
@@ -21613,22 +21631,8 @@ void main() {
       return object;
     }
 
-    async function bakePreview() {
-      const gl = renderer.getContext();
-      const targets = rigPoseTargets();
-      const boneOf = (object) => {
-        for (let cursor = object; cursor; cursor = cursor.parent) if (targets.has(cursor)) return targets.get(cursor);
-        return "none";
-      };
-      const sources = [];
-      scene.traverseVisible((object) => {
-        if (!object.isMesh || Array.isArray(object.material) || !object.layers.test(camera.layers)) return;
-        const data = object.material?.userData;
-        if (data?.maskUniforms || data?.capUniforms) sources.push(object);
-      });
-      showLoading("モーション確認モードの準備", `パーツの形を焼き込んでいます（${sources.length}個）`, 0.1);
-      await nextPaint();
-      const started = performance.now();
+    // 指定したパーツを 1 回描き、描いた直後に頂点シェーダーを回して、画面に出ている形（ワールド座標）を取り出す。
+    function captureRendered(sources) {
       const captured = new Map();
       const hooks = [];
       const culled = [];
@@ -21672,6 +21676,26 @@ void main() {
         renderer.resetState();
       }
       if (failure) throw failure;
+      return captured;
+    }
+
+    async function bakePreview() {
+      const gl = renderer.getContext();
+      const targets = rigPoseTargets();
+      const boneOf = (object) => {
+        for (let cursor = object; cursor; cursor = cursor.parent) if (targets.has(cursor)) return targets.get(cursor);
+        return "none";
+      };
+      const sources = [];
+      scene.traverseVisible((object) => {
+        if (!object.isMesh || Array.isArray(object.material) || !object.layers.test(camera.layers)) return;
+        const data = object.material?.userData;
+        if (data?.maskUniforms || data?.capUniforms || object.userData.conformPiece) sources.push(object);
+      });
+      showLoading("モーション確認モードの準備", `パーツの形を焼き込んでいます（${sources.length}個）`, 0.1);
+      await nextPaint();
+      const started = performance.now();
+      const captured = captureRendered(sources);
       showLoading("モーション確認モードの準備", "ボーンにつないでいます", 0.8);
       await nextPaint();
       const boneNames = [...RIG_BONES.map((bone) => bone.name), "none"];
@@ -21933,6 +21957,587 @@ void main() {
       if (previewMode) exitMotionPreview();
       else enterMotionPreview();
     });
+
+    // ===== 表面デカール（平面パーツを別のパーツの表面に沿わせる） =====
+    // 沿わせた形は「沿わせる先」のパーツの userData.conform に、先のパーツから見た座標で持つ。
+    // 先のパーツの子として描くので、先のパーツの移動・ボーンの動き・モーション確認モードの焼き込みにそのまま付いていく。
+    // 元の平面パーツは消さずに非表示にして残し、「沿わせ直す」で作り直し、「解除」で元に戻す。
+    const CONFORM_OFFSET = 0.0006;
+    const CONFORM_REACH = 0.6;
+    const CONFORM_STEP = 0.003;
+    let nextConformId = 0;
+
+    function isPlanePart(mesh) {
+      return Boolean(mesh && FLAT_KINDS.has(mesh.userData.kind) && !mesh.userData.isMask && !mesh.userData.conformPiece);
+    }
+
+    function conformBytesToBase64(bytes) {
+      let text = "";
+      for (let i = 0; i < bytes.length; i += 0x8000) text += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      return btoa(text);
+    }
+
+    function conformBase64ToBytes(value) {
+      const text = atob(value);
+      const bytes = new Uint8Array(text.length);
+      for (let i = 0; i < text.length; i += 1) bytes[i] = text.charCodeAt(i);
+      return bytes;
+    }
+
+    function readConform(value) {
+      if (!value || typeof value !== "object" || !Array.isArray(value.groups)) return null;
+      const groups = [];
+      for (const group of value.groups) {
+        if (!group || typeof group.id !== "string" || !Array.isArray(group.pieces)) continue;
+        const pieces = [];
+        for (const piece of group.pieces) {
+          try {
+            if (typeof piece.positions !== "string" || typeof piece.index !== "string") continue;
+            const positions = new Float32Array(conformBase64ToBytes(piece.positions).buffer);
+            const index = new Uint32Array(conformBase64ToBytes(piece.index).buffer);
+            const count = positions.length / 3;
+            if (!Number.isInteger(count) || index.length % 3 || index.some((i) => i >= count) || positions.some((v) => !Number.isFinite(v))) continue;
+            pieces.push({
+              source: typeof piece.source === "string" ? piece.source : null,
+              color: /^#[0-9a-f]{6}$/i.test(piece.color ?? "") ? piece.color : "#ffffff",
+              positions,
+              index,
+            });
+          } catch {
+            continue;
+          }
+        }
+        if (!pieces.length) continue;
+        groups.push({
+          id: group.id,
+          sources: Array.isArray(group.sources) ? group.sources.filter((id) => typeof id === "string") : [],
+          pair: typeof group.pair === "string" ? group.pair : null,
+          pieces,
+        });
+      }
+      return groups.length ? { groups } : null;
+    }
+
+    function serializeConform(conform) {
+      if (!conform?.groups?.length) return undefined;
+      return {
+        groups: conform.groups.map((group) => ({
+          id: group.id,
+          sources: [...group.sources],
+          pair: group.pair ?? undefined,
+          pieces: group.pieces.map((piece) => ({
+            source: piece.source ?? undefined,
+            color: piece.color,
+            positions: conformBytesToBase64(new Uint8Array(piece.positions.buffer, piece.positions.byteOffset, piece.positions.byteLength)),
+            index: conformBytesToBase64(new Uint8Array(piece.index.buffer, piece.index.byteOffset, piece.index.byteLength)),
+          })),
+        })),
+      };
+    }
+
+    function conformSigOf(mesh) {
+      const conform = mesh?.userData?.conform;
+      if (!conform) return "-";
+      return conform.groups.map((group) => `${group.id}:${group.rev ?? 0}:${group.pieces.length}`).join(",");
+    }
+
+    function disposeConformMeshes(mesh) {
+      const built = mesh.userData.conformObject;
+      if (!built) return;
+      built.removeFromParent();
+      built.traverse((object) => {
+        if (object.isMesh) {
+          object.geometry.dispose();
+          object.material.dispose();
+        }
+      });
+      delete mesh.userData.conformObject;
+    }
+
+    // 値は書き換えず、変えるたびに新しいオブジェクトに差し替える（取り消しの履歴がそのまま参照を持てるように）。
+    function setConform(mesh, conform) {
+      if (conform?.groups?.length) mesh.userData.conform = conform;
+      else delete mesh.userData.conform;
+      if (mesh.userData.conformBuilt === (mesh.userData.conform ?? null)) return;
+      disposeConformMeshes(mesh);
+      mesh.userData.conformBuilt = mesh.userData.conform ?? null;
+      if (!mesh.userData.conform) return;
+      const holder = new THREE.Group();
+      holder.name = "conform-decals";
+      holder.userData.conformPiece = true;
+      for (const group of mesh.userData.conform.groups) {
+        for (const piece of group.pieces) {
+          const geometry = new THREE.BufferGeometry();
+          geometry.setAttribute("position", new THREE.BufferAttribute(piece.positions, 3));
+          geometry.setIndex(new THREE.BufferAttribute(piece.index, 1));
+          geometry.computeVertexNormals();
+          const material = skin.clone();
+          material.color.set(piece.color);
+          material.side = THREE.DoubleSide;
+          material.polygonOffset = true;
+          material.polygonOffsetFactor = -2;
+          material.polygonOffsetUnits = -2;
+          material.userData = { conformPiece: true };
+          const part = new THREE.Mesh(geometry, material);
+          part.userData.conformPiece = true;
+          part.userData.conformGroup = group.id;
+          part.castShadow = false;
+          part.receiveShadow = true;
+          part.raycast = () => {};
+          holder.add(part);
+        }
+      }
+      mesh.add(holder);
+      mesh.userData.conformObject = holder;
+      requestRender();
+    }
+
+    // 平面パーツの外形（凸多角形）を、細かい格子で切って三角形に分ける。座標はパーツ自身の向き（z=0 の面）。
+    function conformGridMesh(source) {
+      let outline = flatOutline(source.userData.kind).map(([x, y]) => [x, y]);
+      if (polygonArea(outline) < 0) outline = outline.reverse();
+      const xs = outline.map((p) => p[0]);
+      const ys = outline.map((p) => p[1]);
+      const minX = Math.min(...xs);
+      const maxX = Math.max(...xs);
+      const minY = Math.min(...ys);
+      const maxY = Math.max(...ys);
+      const worldSize = Math.max((maxX - minX) * Math.abs(source.scale.x), (maxY - minY) * Math.abs(source.scale.y));
+      const cells = Math.min(96, Math.max(8, Math.round(worldSize / CONFORM_STEP)));
+      const step = Math.max(maxX - minX, maxY - minY) / cells;
+      const clip = (polygon) => {
+        let out = polygon;
+        for (let i = 0; i < outline.length && out.length; i += 1) {
+          const [ax, ay] = outline[i];
+          const [bx, by] = outline[(i + 1) % outline.length];
+          const side = ([x, y]) => (bx - ax) * (y - ay) - (by - ay) * (x - ax);
+          const input = out;
+          out = [];
+          for (let k = 0; k < input.length; k += 1) {
+            const p = input[k];
+            const q = input[(k + 1) % input.length];
+            const sp = side(p);
+            const sq = side(q);
+            if (sp >= 0) out.push(p);
+            if ((sp >= 0) !== (sq >= 0)) {
+              const t = sp / (sp - sq);
+              out.push([p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]);
+            }
+          }
+        }
+        return out;
+      };
+      const points = [];
+      const keys = new Map();
+      const vertex = ([x, y]) => {
+        const key = `${x.toFixed(7)},${y.toFixed(7)}`;
+        if (!keys.has(key)) {
+          keys.set(key, points.length / 2);
+          points.push(x, y);
+        }
+        return keys.get(key);
+      };
+      const index = [];
+      const nx = Math.ceil((maxX - minX) / step);
+      const ny = Math.ceil((maxY - minY) / step);
+      for (let i = 0; i < nx; i += 1) {
+        for (let j = 0; j < ny; j += 1) {
+          const x0 = minX + i * step;
+          const y0 = minY + j * step;
+          const x1 = x0 + step;
+          const y1 = y0 + step;
+          for (const tri of [[[x0, y0], [x1, y0], [x1, y1]], [[x0, y0], [x1, y1], [x0, y1]]]) {
+            const polygon = clip(tri);
+            if (polygon.length < 3 || Math.abs(polygonArea(polygon)) < 1e-12) continue;
+            const ids = polygon.map(vertex);
+            for (let k = 1; k + 1 < ids.length; k += 1) index.push(ids[0], ids[k], ids[k + 1]);
+          }
+        }
+      }
+      return { points, index, bounds: [minX, minY, maxX, maxY] };
+    }
+
+    // 先のパーツの「画面に出ている形」（マスクで抜いた所・押し込み・キャップを含む）を、ワールド座標の三角形で取る。
+    function conformSurface(target) {
+      const objects = [];
+      target.traverseVisible((object) => {
+        if (!object.isMesh || Array.isArray(object.material) || object.userData.conformPiece || object.userData.isMask) return;
+        if (!object.layers.test(camera.layers)) return;
+        const data = object.material?.userData;
+        if (data?.maskUniforms || data?.capUniforms) objects.push(object);
+      });
+      let parts = [];
+      let rendered = true;
+      try {
+        const captured = captureRendered(objects);
+        parts = [...captured.values()].filter(Boolean);
+        if (!parts.length) throw new Error("empty");
+      } catch (error) {
+        console.warn("conform: rendered shape unavailable, using base geometry", error);
+        rendered = false;
+        target.updateWorldMatrix(true, false);
+        const geometry = target.geometry;
+        const position = geometry.attributes.position;
+        const positions = new Float32Array(position.count * 3);
+        const point = new THREE.Vector3();
+        for (let i = 0; i < position.count; i += 1) point.fromBufferAttribute(position, i).applyMatrix4(target.matrixWorld).toArray(positions, i * 3);
+        parts = [{ positions, index: geometry.index ? Array.from(geometry.index.array) : Array.from({ length: position.count }, (_, i) => i) }];
+      }
+      let vertexCount = 0;
+      let triangleCount = 0;
+      for (const part of parts) {
+        vertexCount += part.positions.length / 3;
+        triangleCount += part.index.length / 3;
+      }
+      const positions = new Float32Array(vertexCount * 3);
+      const index = new Uint32Array(triangleCount * 3);
+      let v = 0;
+      let n = 0;
+      for (const part of parts) {
+        positions.set(part.positions, v * 3);
+        for (const i of part.index) index[n++] = i + v;
+        v += part.positions.length / 3;
+      }
+      return { positions, index, rendered };
+    }
+
+    // 1 枚の平面パーツを、パーツの向き（法線）に沿って先の表面へ写す。当たらない所は一番近い表面の点に寄せる。
+    function conformPiece(source, surface, targetInverse) {
+      source.updateWorldMatrix(true, false);
+      const matrix = source.matrixWorld;
+      const inverse = matrix.clone().invert();
+      const normal = new THREE.Vector3().setFromMatrixColumn(matrix, 2).normalize();
+      const { points, index, bounds } = conformGridMesh(source);
+      const [minX, minY, maxX, maxY] = bounds;
+      const margin = Math.max(maxX - minX, maxY - minY) * 0.1;
+      const sp = surface.positions;
+      const si = surface.index;
+      const local = new Float32Array((sp.length / 3) * 2);
+      const probe = new THREE.Vector3();
+      for (let i = 0; i < sp.length / 3; i += 1) {
+        probe.fromArray(sp, i * 3).applyMatrix4(inverse);
+        local[i * 2] = probe.x;
+        local[i * 2 + 1] = probe.y;
+      }
+      const GRID = 32;
+      const cellW = (maxX - minX + 2 * margin) / GRID;
+      const cellH = (maxY - minY + 2 * margin) / GRID;
+      const cells = Array.from({ length: GRID * GRID }, () => []);
+      const near = [];
+      for (let t = 0; t < si.length; t += 3) {
+        const a = si[t];
+        const b = si[t + 1];
+        const c = si[t + 2];
+        const tx0 = Math.min(local[a * 2], local[b * 2], local[c * 2]);
+        const tx1 = Math.max(local[a * 2], local[b * 2], local[c * 2]);
+        const ty0 = Math.min(local[a * 2 + 1], local[b * 2 + 1], local[c * 2 + 1]);
+        const ty1 = Math.max(local[a * 2 + 1], local[b * 2 + 1], local[c * 2 + 1]);
+        if (tx1 < minX - margin || tx0 > maxX + margin || ty1 < minY - margin || ty0 > maxY + margin) continue;
+        near.push(t);
+        const i0 = Math.max(0, Math.floor((tx0 - minX + margin) / cellW));
+        const i1 = Math.min(GRID - 1, Math.floor((tx1 - minX + margin) / cellW));
+        const j0 = Math.max(0, Math.floor((ty0 - minY + margin) / cellH));
+        const j1 = Math.min(GRID - 1, Math.floor((ty1 - minY + margin) / cellH));
+        for (let i = i0; i <= i1; i += 1) for (let j = j0; j <= j1; j += 1) cells[j * GRID + i].push(t);
+      }
+      const A = new THREE.Vector3();
+      const B = new THREE.Vector3();
+      const C = new THREE.Vector3();
+      const e1 = new THREE.Vector3();
+      const e2 = new THREE.Vector3();
+      const pv = new THREE.Vector3();
+      const tv = new THREE.Vector3();
+      const qv = new THREE.Vector3();
+      const faceNormal = new THREE.Vector3();
+      const origin = new THREE.Vector3();
+      const result = new THREE.Vector3();
+      const triangle = new THREE.Triangle();
+      const closest = new THREE.Vector3();
+      const loadTriangle = (t) => {
+        A.fromArray(sp, si[t] * 3);
+        B.fromArray(sp, si[t + 1] * 3);
+        C.fromArray(sp, si[t + 2] * 3);
+      };
+      const out = new Float32Array((points.length / 2) * 3);
+      const ok = new Uint8Array(points.length / 2);
+      for (let p = 0; p < points.length / 2; p += 1) {
+        const x = points[p * 2];
+        const y = points[p * 2 + 1];
+        origin.set(x, y, 0).applyMatrix4(matrix);
+        const ci = Math.min(GRID - 1, Math.max(0, Math.floor((x - minX + margin) / cellW)));
+        const cj = Math.min(GRID - 1, Math.max(0, Math.floor((y - minY + margin) / cellH)));
+        let best = Infinity;
+        let bestT = 0;
+        let bestTri = -1;
+        for (const t of cells[cj * GRID + ci]) {
+          loadTriangle(t);
+          e1.subVectors(B, A);
+          e2.subVectors(C, A);
+          pv.crossVectors(normal, e2);
+          const det = e1.dot(pv);
+          if (Math.abs(det) < 1e-14) continue;
+          const inv = 1 / det;
+          tv.subVectors(origin, A);
+          const u = tv.dot(pv) * inv;
+          if (u < -1e-6 || u > 1 + 1e-6) continue;
+          qv.crossVectors(tv, e1);
+          const w = normal.dot(qv) * inv;
+          if (w < -1e-6 || u + w > 1 + 1e-6) continue;
+          const d = e2.dot(qv) * inv;
+          if (Math.abs(d) < best && Math.abs(d) <= CONFORM_REACH) {
+            best = Math.abs(d);
+            bestT = d;
+            bestTri = t;
+          }
+        }
+        if (bestTri >= 0) {
+          loadTriangle(bestTri);
+          result.copy(origin).addScaledVector(normal, bestT);
+          faceNormal.subVectors(C, B).cross(e1.subVectors(A, B)).normalize();
+          if (Math.abs(bestT) > 1e-6 ? faceNormal.dot(normal) * -bestT < 0 : false) faceNormal.negate();
+        } else {
+          // 向きに沿って当たらない所は、近くの三角形の一番近い点へ寄せる。
+          let nearest = Infinity;
+          for (const t of near) {
+            loadTriangle(t);
+            triangle.set(A, B, C).closestPointToPoint(origin, closest);
+            const d = closest.distanceToSquared(origin);
+            if (d < nearest) {
+              nearest = d;
+              result.copy(closest);
+              triangle.getNormal(faceNormal);
+            }
+          }
+          if (!(nearest <= CONFORM_REACH * CONFORM_REACH)) continue;
+          if (faceNormal.dot(tv.subVectors(origin, result)) < 0) faceNormal.negate();
+        }
+        result.addScaledVector(faceNormal, CONFORM_OFFSET).applyMatrix4(targetInverse);
+        result.toArray(out, p * 3);
+        ok[p] = 1;
+      }
+      const kept = [];
+      for (let t = 0; t < index.length; t += 3) {
+        if (ok[index[t]] && ok[index[t + 1]] && ok[index[t + 2]]) kept.push(index[t], index[t + 1], index[t + 2]);
+      }
+      return {
+        source: source.userData.id,
+        color: `#${source.material.color.getHexString()}`,
+        positions: out,
+        index: Uint32Array.from(kept),
+      };
+    }
+
+    function conformPieces(target, sources) {
+      target.updateWorldMatrix(true, true);
+      const surface = conformSurface(target);
+      const targetInverse = target.matrixWorld.clone().invert();
+      const pieces = [];
+      for (const source of sources) {
+        const piece = conformPiece(source, surface, targetInverse);
+        if (piece.index.length) pieces.push(piece);
+      }
+      return { pieces, rendered: surface.rendered };
+    }
+
+    function setPartsHidden(meshes, hidden) {
+      for (const mesh of meshes) {
+        if (!mesh) continue;
+        mesh.userData.hidden = hidden;
+        mesh.visible = !hidden;
+      }
+    }
+
+    function conformBusy() {
+      return rigEditing || previewMode || maskTarget || reliefTarget || featureTarget || softTarget || !loadingView.hidden;
+    }
+
+    // 1 つの先のパーツへ、平面パーツのまとまりを沿わせる（groupId があれば、その組を作り直す）。
+    function conformGroupOnto(target, sources, groupId = null, pair = null) {
+      const { pieces, rendered } = conformPieces(target, sources);
+      if (!pieces.length) return null;
+      const old = target.userData.conform?.groups ?? [];
+      const previous = groupId ? old.find((group) => group.id === groupId) : null;
+      const group = {
+        id: groupId ?? `${ID_PREFIX}conform-${Date.now().toString(36)}-${nextConformId++}`,
+        sources: sources.map((mesh) => mesh.userData.id),
+        pair: pair ?? previous?.pair ?? null,
+        rev: (previous?.rev ?? 0) + 1,
+        pieces,
+      };
+      const groups = previous ? old.map((item) => (item === previous ? group : item)) : [...old, group];
+      setConform(target, { groups });
+      setPartsHidden(sources, true);
+      return { group, rendered };
+    }
+
+    async function withConformLoading(detail, task) {
+      if (loadingBusy) return null;
+      loadingBusy = true;
+      showLoading("表面デカール", detail, 0.3);
+      try {
+        await nextPaint();
+        return task();
+      } finally {
+        loadingView.hidden = true;
+        loadingBusy = false;
+      }
+    }
+
+    async function applyConform() {
+      if (conformBusy()) return;
+      const sources = selection.filter((mesh) => isPlanePart(mesh) && !mesh.userData.hidden);
+      const target = meshById(document.getElementById("conform-target").value);
+      if (!sources.length || !target || sources.includes(target)) return;
+      let rendered = true;
+      const made = await withConformLoading(`平面パーツ ${sources.length} 枚を表面に沿わせています`, () => {
+        const main = conformGroupOnto(target, sources);
+        if (!main) return null;
+        rendered = main.rendered;
+        // 左右対称オンで、先のパーツと平面パーツすべてに反対側があれば、反対側にも同じように沿わせる。
+        const record = recordOf(target);
+        const other = symmetric && record ? otherOf(record, target) : null;
+        const others = sources.map((mesh) => {
+          const sourceRecord = recordOf(mesh);
+          return sourceRecord ? otherOf(sourceRecord, mesh) : null;
+        });
+        if (other && others.every(Boolean)) {
+          const mirrored = conformGroupOnto(other, others, null, main.group.id);
+          if (mirrored) {
+            const groups = target.userData.conform.groups.map((group) => (group === main.group ? { ...group, pair: mirrored.group.id } : group));
+            setConform(target, { groups });
+          }
+        }
+        return main;
+      });
+      if (!made) {
+        setFileStatus("表面デカール：沿わせる先の表面が見つかりませんでした（平面パーツを先のパーツに近づけてください）");
+        return;
+      }
+      select(target);
+      commit();
+      renderOutliner();
+      setFileStatus(rendered ? "平面パーツを表面に沿わせました（元のパーツは非表示で残しています）" : "平面パーツを表面に沿わせました（先のパーツの基本の形を使いました）");
+    }
+
+    function conformPairOf(mesh, group) {
+      if (!group.pair) return null;
+      for (const candidate of editableMeshes()) {
+        const found = candidate.userData.conform?.groups.find((item) => item.id === group.pair);
+        if (found) return { mesh: candidate, group: found };
+      }
+      return null;
+    }
+
+    async function reconform(mesh, groupId) {
+      if (conformBusy()) return;
+      const group = mesh.userData.conform?.groups.find((item) => item.id === groupId);
+      if (!group) return;
+      const sources = group.sources.map(meshById).filter(Boolean);
+      if (!sources.length) {
+        setFileStatus("表面デカール：元の平面パーツが見つからないため、沿わせ直せません");
+        return;
+      }
+      const done = await withConformLoading("表面に沿わせ直しています", () => {
+        const result = conformGroupOnto(mesh, sources, group.id);
+        const pair = conformPairOf(mesh, group);
+        if (pair) {
+          const pairSources = pair.group.sources.map(meshById).filter(Boolean);
+          if (pairSources.length) conformGroupOnto(pair.mesh, pairSources, pair.group.id);
+        }
+        return result;
+      });
+      if (!done) setFileStatus("表面デカール：沿わせる先の表面が見つかりませんでした");
+      commit();
+      renderOutliner();
+    }
+
+    function releaseConform(mesh, groupId) {
+      const group = mesh.userData.conform?.groups.find((item) => item.id === groupId);
+      if (!group) return;
+      const pair = conformPairOf(mesh, group);
+      for (const [host, item] of [[mesh, group], ...(pair ? [[pair.mesh, pair.group]] : [])]) {
+        setConform(host, { groups: host.userData.conform.groups.filter((other) => other !== item) });
+        setPartsHidden(item.sources.map(meshById), false);
+      }
+      commit();
+      renderOutliner();
+      setFileStatus("表面デカールを解除し、元の平面パーツを表示しました");
+    }
+
+    function conformTargetDefault(planes, candidates) {
+      const center = new THREE.Vector3();
+      for (const mesh of planes) center.add(mesh.getWorldPosition(new THREE.Vector3()));
+      center.divideScalar(planes.length);
+      let best = null;
+      let bestDistance = Infinity;
+      const box = new THREE.Box3();
+      for (const mesh of candidates) {
+        if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+        box.copy(mesh.geometry.boundingBox).applyMatrix4(mesh.matrixWorld);
+        const distance = box.distanceToPoint(center);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          best = mesh;
+        }
+      }
+      return best;
+    }
+
+    let conformOptionsKey = "";
+    function refreshConformUI() {
+      const section = document.getElementById("conform-section");
+      const planes = selection.filter((mesh) => isPlanePart(mesh) && !mesh.userData.hidden);
+      const host = selected?.userData.conform ? selected : null;
+      section.hidden = !planes.length && !host;
+      if (section.hidden) return;
+      const busy = conformBusy();
+      document.getElementById("conform-make").hidden = !planes.length;
+      if (planes.length) {
+        const candidates = editableMeshes().filter((mesh) => !isPlanePart(mesh) && !mesh.userData.hidden && !mesh.userData.isMask && !selection.includes(mesh));
+        const pick = document.getElementById("conform-target");
+        const key = `${planes.map((mesh) => mesh.uuid).join(",")}|${candidates.map((mesh) => `${mesh.uuid}:${mesh.userData.label ?? ""}`).join(",")}`;
+        if (key !== conformOptionsKey) {
+          conformOptionsKey = key;
+          const fallback = conformTargetDefault(planes, candidates);
+          pick.replaceChildren(...candidates.map((mesh) => {
+            const option = document.createElement("option");
+            option.value = mesh.userData.id;
+            option.textContent = `${sideText(mesh)}${mesh.userData.label ?? "パーツ"}`;
+            option.selected = mesh === fallback;
+            return option;
+          }));
+        }
+        document.getElementById("conform-hint").textContent = `平面パーツ ${planes.length} 枚を選んでいます。沿わせる先のパーツを選んでください（一番近いパーツが選ばれています）。`;
+        document.getElementById("conform-apply").disabled = busy || !candidates.length;
+      }
+      const list = document.getElementById("conform-list");
+      list.replaceChildren();
+      if (host) {
+        host.userData.conform.groups.forEach((group, index) => {
+          const row = document.createElement("div");
+          row.className = "wide pair conform-row";
+          const label = document.createElement("span");
+          label.className = "hint";
+          label.textContent = `デカール ${index + 1}（平面 ${group.pieces.length} 枚）`;
+          const again = document.createElement("button");
+          again.type = "button";
+          again.textContent = "沿わせ直す";
+          again.title = "元の平面パーツと、このパーツの今の形で作り直す（元の平面パーツは表示して編集できます）";
+          again.disabled = busy || Boolean(host.userData.locked);
+          again.addEventListener("click", () => reconform(host, group.id));
+          const release = document.createElement("button");
+          release.type = "button";
+          release.textContent = "解除";
+          release.title = "表面デカールを外し、元の平面パーツを表示する";
+          release.disabled = busy || Boolean(host.userData.locked);
+          release.addEventListener("click", () => releaseConform(host, group.id));
+          row.append(label, again, release);
+          list.append(row);
+        });
+      }
+    }
+
+    document.getElementById("conform-apply").addEventListener("click", applyConform);
 
     renderer.setAnimationLoop((time) => {
       if (previewMode) {
