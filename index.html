@@ -525,6 +525,21 @@
       font-weight: 650;
       letter-spacing: 0.12em;
     }
+    #face-presets { display: grid; gap: 4px; }
+    #face-banner { position: absolute; top: 36px; left: 50%; z-index: 3; transform: translateX(-50%); padding: 4px 6px 4px 12px; border: 1px solid var(--accent); border-radius: 999px; background: rgba(16, 18, 24, 0.92); color: #ffe8df; font-size: 12px; white-space: nowrap; display: flex; gap: 6px; align-items: center; }
+    #face-banner[hidden], #face-presets[hidden] { display: none; }
+    #face-banner button { padding: 2px 10px; border-radius: 999px; }
+    .decal-unit .mask-mark { margin-left: 4px; }
+    #conform-list .decal-unit-panel { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; margin-bottom: 6px; }
+    .decal-unit-panel .hint { white-space: normal; }
+    .decal-unit-panel.active .hint { color: var(--accent); }
+    .decal-actions { display: grid; grid-template-columns: 1.4fr 1fr 0.7fr; gap: 4px; }
+    .decal-moves { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; }
+    .decal-moves button { padding: 2px 0; min-width: 0; }
+    .face-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; align-items: center; }
+    .face-row span { grid-column: 1 / -1; font-size: 11px; color: var(--muted); }
+    .face-preset { padding: 2px; aspect-ratio: 1; min-width: 0; }
+    .face-preset svg { width: 100%; height: 100%; border-radius: 3px; display: block; }
     #add-section .add-block:first-of-type .add-category { margin-top: 0; }
     body.masking #outliner-tree { opacity: 0.55; }
     #mask-save, #relief-save { background: rgba(231, 181, 164, 0.18); border-color: var(--accent); }
@@ -1382,6 +1397,11 @@
           </button>
         </div>
       </div>
+      <div class="add-block" id="add-face">
+        <h3 class="add-category">顔デカール</h3>
+        <div class="wide"><button id="face-open" type="button" title="顔デカールの専用画面を開き、目・口・眉を選んで置く。終えると頭（または選んでいるパーツ）の表面に沿わせ、パーツ一覧では1つのまとまりになる">顔デカールを追加…</button></div>
+        <div id="face-presets" hidden title="目・口・眉の形を平面パーツの組み合わせで置きます。目と眉は左右対称オンなら左右1組で置かれます"></div>
+      </div>
       <div class="add-block" id="add-paths">
         <h3 class="add-category">パス</h3>
         <div class="tools">
@@ -1825,6 +1845,7 @@
   <div id="side-resizer" class="panel-resizer" role="separator" aria-orientation="vertical" aria-label="左パネルの幅" title="ドラッグで左パネルの幅を変更"></div>
   <input id="folder-color-input" type="color" tabindex="-1" aria-hidden="true" />
   <div id="viewport">
+    <div id="face-banner" hidden>顔デカール編集 · <span id="face-banner-name"></span> <button id="face-finish" type="button">編集を終える</button> <button id="face-cancel" type="button" title="変更を破棄して戻る（Esc）">キャンセル</button></div>
     <div id="mask-banner" hidden>マスク編集 · <span id="mask-banner-name"></span></div>
     <div id="path-draw-banner" hidden>パスを描く（<span id="path-draw-count"></span>） · クリックで点 · 最初の点でループ · 右クリック／Enterで確定 · Backspaceで戻す</div>
     <div id="feature-banner" hidden>顔・手・足の編集 · <span id="feature-banner-name"></span> · 右ドラッグで視点 · Escで終了</div>
@@ -1992,7 +2013,9 @@
     <p>パーツを右クリックして「法線編集」を選ぶと、そのパーツだけに光で浮き出て見える模様を描けます。編集中はほかのパーツが薄くなり、そのパーツの前を向いた面に左ドラッグで盛ります。右ドラッグで視点を回せます。左右のもう片方には付きません。「削る」で盛りを減らせます。「浮き出し」は凹凸の強さ、「厚み」は模様を載せた面から前後に広げる距離です。「法線マップ」の「読み込む」で、そのパーツの正面に画像を貼れます。緑チャンネルが下向きの画像は「法線の緑を上」を外してください。「裏面にも貼る」を入れると、描いた模様と法線マップがそのパーツの後ろを向いた面にも付き、後ろから見ても正面と同じ向きに読めるよう左右反転して貼られます。読み込んだ法線マップは「法線マップ」の横位置・縦位置・回転・大きさで動かせます。「法線マップを動かす」を押すと、パーツの上で左ドラッグで移動、Shift＋左ドラッグで回転、ホイールで拡大縮小できます（もう一度押すか「描く」で筆に戻ります）。「繰り返す」で画像を敷き詰め、「位置を戻す」で元に戻ります。回しても光の当たり方は正しく保たれます。「投影」を「巻き付け」にすると、缶のラベルのようにパーツの縦軸のまわりへ画像を巻いて貼ります。画像の横は正面を中心に軸のまわりの角度（弧の長さ）に、縦は高さに対応し、横へ行っても引き伸ばされず、後ろ側にも回り込みます。「巻く角度」で何度ぶん巻くかを決め、画像の横幅はいつもその角度ぶんに合わせ、高さは画像の縦横比で決まります（範囲より高い部分は上下が切れるので、大きさで縮めてください）。360°では継ぎ目なく一周し、横にずらすと反対側へ回り込みます。四角柱など円柱でない形にも、軸から放射状に投影して貼れます。模様はそのパーツに付いたまま動き、保存ファイルに含まれます。Escで編集を終えます。</p>
     <p>頭・手・足のパーツを右クリックして「顔・手・足の編集」を選ぶと、そのパーツの大きさと向きに合わせて部品を作れます。部位（顔・手・足）はパーツ名から自動で選ばれ、切り替えもできます。顔は目・眉・鼻・口・耳をそれぞれオン・オフでき、大きさや位置をスライダーで変えられます（部品は頭の表面に沿って置かれます）。手はミトン・指そろえ・パー・グー、足は素足・靴・ブーツから形を選び、指の長さや靴底の厚みなどを変えられます。左右対になっているパーツなら、反対側にも同じ部品が鏡写しで付きます。作った部品は元のパーツと同じ場所の「顔パーツ」などのフォルダに入り、設定はそのフォルダに保存されるので、もう一度開くと続きから調整できます（スライダーを動かすと部品は作り直されるので、手で動かした分は戻ります）。「保存」で確定、「破棄」で開いたときの状態に戻し、Escで編集を終えます。</p>
     <p>パーツを選ぶと左のパネルに「画像の投影」が出ます。「画像を選ぶ」で PNG・JPEG・WebP などの画像を読み込むと、そのパーツに画像が投影されます（透明な部分は元の色のまま）。「投影の向き」でパーツ自身の正面・背面・右・左・上・下のどこから当てるかを選び、横位置・縦位置・回転・大きさ・不透明度で調整します。大きさ 100% でパーツに収まる大きさになります。「繰り返す」で画像を敷き詰め、「裏面にも貼る」で反対側を向いた面にも、反対側から見て同じ向きに読めるように貼ります。画像はパーツと一緒に動き、カーブに沿わせて曲げても追従します。左右対称オンでは反対側のパーツにも鏡写しで投影されます。画像は保存ファイルに含まれます（長辺 1024px までに縮めて保存します）。「外す」で投影をやめます。</p>
-    <div class="modal-actions">
+
+    <p>平面パーツ（円・三角・四角）を1つ以上選ぶと（フォルダごとでも可）、左のパネルに「表面デカール」が出ます。沿わせる先のパーツを選んで「デカール（表面に沿わせる）」を押すと、平面がその向きのまま先のパーツの表面に投影され、曲面に貼り付いたシールのような形になります（重ねた平面は手前のものほど上に表示されます）。元の平面パーツは非表示のひな形として残ります。先のパーツを選ぶと一覧が出て、ひな形を動かしたあとの「沿わせ直す」や、元に戻す「解除」ができます。</p>
+    <p>「追加」の「顔デカールを追加…」を押すと、顔デカールの専用画面が開きます。正面からの平行投影で、沿わせる先のパーツ（「頭」、なければ選んでいるパーツ、一番大きいパーツ）が薄く表示され、ほかのパーツは隠れます。「顔デカール」から右目（ちびキャラ風の3種を含む8種）・口・右眉の5種類ずつと右ほおのほお紅を選んで置き、平面パーツの位置・色・大きさをいつもの道具で整えます（追加した平面パーツも中身になります。目・眉・ほおは左右対称オンなら反対側も鏡写しで置かれます）。上の「編集を終える」で自動で表面に沿わせて元の画面に戻り、「キャンセル」または Esc で変更を破棄します。元の画面のパーツ一覧では、沿わせた先のパーツの下に「顔デカール」の行が1つだけ表示され、中の平面パーツは出てきません（リンクパーツと同じく中身は専用画面で編集します。鉛筆のボタンでも開けます）。行を選ぶと左のパネルで、まとまりのまま上下左右に動かす・拡大縮小・回転・削除・「パーツに戻す」ができます。左右の組は1つとして扱われ、元に戻すも1回で戻ります。</p>    <div class="modal-actions">
       <button id="help-close" type="button">閉じる</button>
     </div>
   </dialog>
@@ -4615,6 +4638,8 @@ if (decalOn > 0.5) {
     let selection = [];
     let selected = null;
     let maskTarget = null;
+    let faceSession = null; // 顔デカールの専用編集画面
+    let activeDecal = null; // パーツ一覧で選んだ顔デカールのまとまり
     let maskGroup = [];
     let maskGroupName = "";
     let maskSession = null;
@@ -9406,6 +9431,7 @@ if (decalOn > 0.5) {
 
     function undo() {
       if (historyIndex <= 0) return;
+      if (faceSession && historyIndex <= faceSession.historyIndex) return;
       historyIndex -= 1;
       applyState(history[historyIndex]);
       saveModelSoon();
@@ -10155,11 +10181,15 @@ if (decalOn > 0.5) {
       ];
     }
 
-    function renderBranch(parentId, depth, html) {
-      for (const item of childrenOf(parentId)) renderRow(item, depth, html);
+    function renderBranch(parentId, depth, html, sourceIds = decalSourceIds()) {
+      for (const item of childrenOf(parentId)) {
+        if (item.type === "part" && sourceIds.has(item.id)) continue;
+        if (item.type === "folder" && decalOnlyFolder(item.id, sourceIds)) continue;
+        renderRow(item, depth, html, sourceIds);
+      }
     }
 
-    function renderRow(item, depth, html) {
+    function renderRow(item, depth, html, sourceIds = decalSourceIds()) {
       const pad = 8 + depth * 14;
       if (item.type === "folder") {
         const folder = item.folder;
@@ -10180,7 +10210,7 @@ if (decalOn > 0.5) {
           ${name}
           ${tools}
         </div>`);
-        if (open) renderBranch(folder.id, depth + 1, html);
+        if (open) renderBranch(folder.id, depth + 1, html, sourceIds);
       } else if (item.type === "link") {
         const link = item.link;
         const anchor = linkAnchors.get(link.id);
@@ -10253,13 +10283,16 @@ if (decalOn > 0.5) {
           ${name}
           ${tools}
         </div>`);
+        html.push(decalRowsHtml(mesh, depth + 1));
       }
     }
 
     function renderOutliner() {
       const tree = document.getElementById("outliner-tree");
       const html = [];
-      renderBranch(null, 0, html);
+      if (faceSession) {
+        for (const mesh of faceEditMembers()) renderRow({ type: "part", id: mesh.userData.id, mesh }, 0, html);
+      } else renderBranch(null, 0, html);
       tree.innerHTML = html.join("");
       drawPathLinks(tree);
       const toggleAll = document.getElementById("folder-toggle-all");
@@ -10844,6 +10877,14 @@ if (decalOn > 0.5) {
         return;
       }
       const { type, id } = row.dataset;
+      if (type === "decal") {
+        event.stopPropagation();
+        const [hostId, groupId] = id.split("|");
+        if (action?.dataset.action === "decal-edit") enterFaceEdit(hostId, groupId);
+        else pickDecal(hostId, groupId);
+        return;
+      }
+      activeDecal = null;
       if (action) {
         event.stopPropagation();
         if (action.dataset.action === "collapse" && type === "folder") {
@@ -10924,7 +10965,7 @@ if (decalOn > 0.5) {
     outlinerTree.addEventListener("dblclick", (event) => {
       if (event.target.closest("button, input")) return;
       const row = event.target.closest(".outliner-row");
-      if (!row) return;
+      if (!row || row.dataset.type === "decal") return;
       beginRename(row.dataset.type, row.dataset.id);
     });
     outlinerTree.addEventListener("focusout", (event) => {
@@ -14256,6 +14297,7 @@ if (decalOn > 0.5) {
     }, true);
 
     async function loadDocument(data) {
+      if (faceSession) dropFaceSession();
       assertDocument(data);
       applyState(baseline);
       restoring = true;
@@ -20892,6 +20934,10 @@ if (decalOn > 0.5) {
     });
 
     function createNewDocument() {
+      if (faceSession) {
+        cancelFaceEdit(true);
+        if (faceSession) return;
+      }
       if (!loadingView.hidden || maskTarget || MODEL_ID || !baseline) return;
       if (records.length || links.length || folders.length || curves.length || sketches.length) {
         if (!window.confirm("今のモデルを閉じて、新しいモデルを作ります。保存していない変更は失われます。")) return;
@@ -21958,11 +22004,284 @@ void main() {
       else enterMotionPreview();
     });
 
+    // ===== 顔デカールのプリセット（平面パーツの重ね合わせ。単位は頭の幅に対する割合） =====
+    const FACE_INK = "#2b2230";
+    const FACE_BROW = "#4a3328";
+    function faceArc(color, cx, cy, rx, ry, from, to, count, thick, thickEnd = thick) {
+      const at = (t) => {
+        const angle = THREE.MathUtils.degToRad(from + (to - from) * t);
+        return [cx + Math.cos(angle) * rx, cy + Math.sin(angle) * ry];
+      };
+      return Array.from({ length: count }, (_, index) => {
+        const [x0, y0] = at(index / count);
+        const [x1, y1] = at((index + 1) / count);
+        const width = thick + (thickEnd - thick) * ((index + 0.5) / count);
+        const length = Math.hypot(x1 - x0, y1 - y0) + width * 0.6;
+        return ["flatSquare", color, (x0 + x1) / 2, (y0 + y1) / 2, length, width, THREE.MathUtils.radToDeg(Math.atan2(y1 - y0, x1 - x0))];
+      });
+    }
+
+    function chibiEye({ dark, mid, light, sleepy = false }) {
+      const ink = "#17110f";
+      const ix = 0.02;
+      const groups = [
+        [["circle", "#ffffff", -0.004, -0.01, 0.21, 0.27]],
+        [["circle", dark, ix, -0.018, 0.17, 0.245]],
+        [["circle", mid, ix, -0.05, 0.155, 0.185]],
+        [["circle", light, ix, -0.085, 0.09, 0.065]],
+        [["circle", "#120808", ix, -0.005, 0.07, 0.115]],
+      ];
+      const top = sleepy ? 0.0 : -0.005;
+      const outer = faceArc(ink, -0.118, top, 0.05, 0.03, 70, -10, 3, 0.03, 0.012).map((layer) => {
+        layer[2] -= 0.045;
+        return layer;
+      });
+      outer.push(["flatTriangle", ink, -0.155, top + 0.035, 0.026, 0.05, 40]);
+      if (sleepy) {
+        groups.push([["flatSquare", "skin", 0, 0.125, 0.28, 0.17]]);
+        groups.push([...faceArc(ink, 0, -0.005, 0.118, 0.05, 8, 172, 14, 0.014, 0.034), ...outer]);
+      } else {
+        groups.push([...faceArc(ink, 0, -0.01, 0.118, 0.14, 15, 172, 16, 0.013, 0.036), ...outer, ...faceArc(ink, -0.02, 0.135, 0.09, 0.05, 70, 150, 6, 0.006, 0.004)]);
+      }
+      groups[groups.length - 1].push(...faceArc(ink, 0, -0.01, 0.105, 0.135, 196, 250, 5, 0.007, 0.004));
+      groups.push([["circle", "#ffffff", ix - 0.042, sleepy ? -0.02 : 0.04, 0.072, 0.072], ["circle", "#ffffff", ix + 0.04, -0.085, 0.03, 0.03]]);
+      return groups.flatMap((group, level) => group.map((layer) => [...layer.slice(0, 6), layer[6] ?? 0, level]));
+    }
+
+    function blushCheek() {
+      const layers = [["circle", "#f19aa4", 0, 0, 0.17, 0.09, 0, 0]];
+      for (const x of [-0.04, 0, 0.04]) layers.push(["flatSquare", "#e06f80", x, 0, 0.006, 0.06, -25, 1]);
+      return layers;
+    }
+
+    const FACE_PRESETS = [
+      { id: "eye-round", part: "eye", name: "丸目（ハイライト）", layers: [
+        ["circle", "#ffffff", 0, 0, 0.2, 0.21],
+        ["circle", "#4a78c8", 0.005, -0.012, 0.15, 0.17],
+        ["circle", "#1d1a2a", 0.005, -0.012, 0.075, 0.085],
+        ["flatSquare", FACE_INK, 0, 0.1, 0.22, 0.026, -4],
+        ["circle", "#ffffff", -0.03, 0.03, 0.05, 0.05],
+        ["circle", "#ffffff", 0.03, -0.045, 0.025, 0.025],
+      ] },
+      { id: "eye-sharp", part: "eye", name: "切れ長", layers: [
+        ["circle", "#ffffff", 0, 0, 0.22, 0.09],
+        ["circle", "#6b4a2f", 0.01, -0.005, 0.085, 0.085],
+        ["circle", "#1d1a2a", 0.01, -0.005, 0.04, 0.04],
+        ["flatSquare", FACE_INK, 0, 0.045, 0.25, 0.022, -8],
+        ["flatSquare", FACE_INK, -0.115, 0.06, 0.05, 0.03, -20],
+        ["circle", "#ffffff", -0.005, 0.01, 0.022, 0.022],
+      ] },
+      { id: "eye-closed", part: "eye", name: "閉じ目（にっこり）", layers: [
+        ["circle", FACE_INK, 0, 0, 0.19, 0.13],
+        ["circle", "skin", 0, -0.028, 0.2, 0.13],
+      ] },
+      { id: "eye-droopy", part: "eye", name: "たれ目", layers: [
+        ["circle", "#ffffff", 0, 0, 0.2, 0.16],
+        ["circle", "#7a5a9a", 0.01, -0.012, 0.13, 0.15],
+        ["circle", "#1d1a2a", 0.01, -0.012, 0.065, 0.075],
+        ["flatSquare", FACE_INK, 0, 0.072, 0.24, 0.024, 12],
+        ["circle", "#ffffff", -0.02, 0.02, 0.04, 0.04],
+      ] },
+      { id: "eye-sparkle", part: "eye", name: "キラキラ", layers: [
+        ["circle", "#ffffff", 0, 0, 0.22, 0.24],
+        ["circle", "#d0508a", 0, -0.01, 0.17, 0.2],
+        ["circle", "#f08ab8", 0, -0.04, 0.11, 0.12],
+        ["circle", "#3a1030", 0, 0, 0.06, 0.07],
+        ["flatSquare", FACE_INK, 0, 0.115, 0.24, 0.026, -3],
+        ["flatSquare", "#ffffff", -0.035, 0.045, 0.045, 0.045, 45],
+        ["circle", "#ffffff", 0.04, -0.055, 0.03, 0.03],
+        ["circle", "#ffffff", 0.035, 0.05, 0.02, 0.02],
+      ] },
+      { id: "eye-chibi-red", part: "eye", name: "ちびキャラ目（赤茶）", layers: chibiEye({ dark: "#3b0f0e", mid: "#5e1a18", light: "#8a2c26" }) },
+      { id: "eye-chibi-brown", part: "eye", name: "ちびキャラ目（茶）", layers: chibiEye({ dark: "#2a1810", mid: "#4a2c1a", light: "#6e4a2e" }) },
+      { id: "eye-chibi-sleepy", part: "eye", name: "ちびキャラ目（眠そう）", layers: chibiEye({ dark: "#3b0f0e", mid: "#5e1a18", light: "#8a2c26", sleepy: true }) },
+      { id: "cheek-blush", part: "cheek", name: "ほお紅", layers: blushCheek() },
+      { id: "mouth-smile", part: "mouth", name: "にっこり", layers: [
+        ["circle", FACE_INK, 0, 0, 0.22, 0.11],
+        ["circle", "skin", 0, 0.032, 0.24, 0.11],
+      ] },
+      { id: "mouth-open", part: "mouth", name: "開いた口", layers: [
+        ["circle", "#5a1f2a", 0, 0, 0.16, 0.12],
+        ["circle", "#e06a78", 0, -0.03, 0.09, 0.055],
+        ["flatSquare", "#ffffff", 0, 0.042, 0.1, 0.024],
+      ] },
+      { id: "mouth-o", part: "mouth", name: "小さい口（お）", layers: [
+        ["circle", "#6a2a33", 0, 0, 0.05, 0.062],
+        ["circle", "#c0505e", 0, -0.005, 0.03, 0.04],
+      ] },
+      { id: "mouth-flat", part: "mouth", name: "一文字", layers: [
+        ["flatSquare", FACE_INK, 0, 0, 0.14, 0.016],
+      ] },
+      { id: "mouth-cat", part: "mouth", name: "ねこ口（ω）", layers: [
+        ["circle", FACE_INK, -0.05, 0, 0.11, 0.095],
+        ["circle", "skin", -0.05, 0.02, 0.12, 0.095],
+        ["circle", FACE_INK, 0.05, 0, 0.11, 0.095],
+        ["circle", "skin", 0.05, 0.02, 0.12, 0.095],
+      ] },
+      { id: "brow-straight", part: "brow", name: "まっすぐ", layers: [
+        ["flatSquare", FACE_BROW, 0, 0, 0.2, 0.03],
+      ] },
+      { id: "brow-arch", part: "brow", name: "アーチ", layers: [
+        ["circle", FACE_BROW, 0, 0, 0.22, 0.1],
+        ["circle", "skin", 0, -0.03, 0.23, 0.1],
+      ] },
+      { id: "brow-angry", part: "brow", name: "怒り", layers: [
+        ["flatSquare", FACE_BROW, 0, 0, 0.2, 0.04, -18],
+        ["circle", FACE_BROW, 0.093, -0.03, 0.04, 0.04],
+      ] },
+      { id: "brow-worried", part: "brow", name: "困り", layers: [
+        ["flatSquare", FACE_BROW, 0, 0, 0.19, 0.03, 15],
+        ["circle", FACE_BROW, 0.092, 0.025, 0.035, 0.035],
+      ] },
+      { id: "brow-thick", part: "brow", name: "太眉", layers: [
+        ["flatSquare", FACE_BROW, 0, 0, 0.18, 0.06],
+        ["circle", FACE_BROW, -0.09, 0, 0.06, 0.06],
+        ["circle", FACE_BROW, 0.09, 0, 0.06, 0.06],
+      ] },
+    ];
+    const FACE_PART_NAMES = { eye: "右目", mouth: "口", brow: "右眉", cheek: "右ほお" };
+    const FACE_ANCHORS = { eye: [-0.2, 0.0], mouth: [0, -0.24], brow: [-0.2, 0.19], cheek: [-0.27, -0.16] };
+    const FACE_BASE = { circle: [0.18, 0.18], flatSquare: [0.16, 0.16], flatTriangle: [0.1732, 0.15] };
+
+    // 顔デカールを置く先：「頭」→ 選択中のパーツ → 体パーツの一番上 → 見えているパーツで一番大きいもの
+    function faceHead() {
+      const visible = (mesh) => mesh.visible && !mesh.userData.hidden && !mesh.userData.isMask && !isPlanePart(mesh);
+      const meshes = editableMeshes().filter(visible);
+      const boxOf = (mesh) => new THREE.Box3().setFromObject(mesh);
+      const named = meshes.filter((mesh) => mesh.userData.label === "頭");
+      if (named.length) {
+        let best = null;
+        let top = -Infinity;
+        for (const mesh of named) {
+          const box = boxOf(mesh);
+          if (box.isEmpty()) continue;
+          const score = -Math.abs(box.getCenter(new THREE.Vector3()).x - torsoCenter.x);
+          if (score > top) { top = score; best = mesh; }
+        }
+        if (best) return best;
+      }
+      if (selected && meshes.includes(selected) && !boxOf(selected).isEmpty()) return selected;
+      const pick = (pool, score) => {
+        let best = null;
+        let top = -Infinity;
+        for (const mesh of pool) {
+          const box = boxOf(mesh);
+          if (box.isEmpty()) continue;
+          const value = score(box);
+          if (value > top) { top = value; best = mesh; }
+        }
+        return best;
+      };
+      const size = new THREE.Vector3();
+      return pick(meshes.filter((mesh) => mesh.userData.kind === "body"), (box) => box.max.y)
+        ?? pick(meshes, (box) => box.getSize(size).x * size.y * size.z);
+    }
+
+    const faceDecalTargets = new WeakMap();
+
+    function faceSwatch(color, skin) {
+      return color === "skin" ? skin : color;
+    }
+
+    function facePresetSvg(preset) {
+      const size = 30;
+      const shapes = preset.layers.map(([kind, color, x0, y0, w0, h0, rot = 0]) => {
+        const [x, y, w, h] = [x0, y0, w0, h0].map((value) => +(value * 100).toFixed(2));
+        const fill = faceSwatch(color, "#f2c4ab");
+        const t = `transform="translate(${x} ${-y}) rotate(${-rot})"`;
+        if (kind === "circle") return `<ellipse ${t} rx="${w / 2}" ry="${h / 2}" style="fill:${fill};stroke:none"/>`;
+        if (kind === "flatSquare") return `<rect ${t} x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" style="fill:${fill};stroke:none"/>`;
+        return `<path ${t} d="M0 ${(-h * 2) / 3} L${w / 2} ${h / 3} L${-w / 2} ${h / 3}Z" style="fill:${fill};stroke:none"/>`;
+      });
+      return `<svg viewBox="${-size / 2} ${-size / 2} ${size} ${size}" aria-hidden="true"><rect x="${-size / 2}" y="${-size / 2}" width="${size}" height="${size}" style="fill:#f2c4ab;stroke:none"/>${shapes.join("")}</svg>`;
+    }
+
+    function insertFacePreset(id) {
+      const preset = FACE_PRESETS.find((item) => item.id === id);
+      if (!preset || conformBusy()) return;
+      const head = faceSession ? meshById(faceSession.targetId) : faceHead();
+      let box;
+      if (head) {
+        head.updateWorldMatrix(true, false);
+        box = new THREE.Box3().setFromObject(head);
+      } else {
+        box = new THREE.Box3(new THREE.Vector3(-0.25, -0.25, -0.25), new THREE.Vector3(0.25, 0.25, 0.25));
+      }
+      const center = box.getCenter(new THREE.Vector3());
+      const span = box.getSize(new THREE.Vector3());
+      const unit = span.x;
+      const skin = head ? `#${head.material.color.getHexString()}` : "#f2c4ab";
+      const paired = preset.part !== "mouth" && placeSymmetric;
+      const [ax, ay] = FACE_ANCHORS[preset.part];
+      const folder = { id: `folder-${nextFolderId++}`, name: `${FACE_PART_NAMES[preset.part]}：${preset.name}`, parentId: null, order: nextPartOrder() };
+      if (faceSession) (faceSession.names ??= []).push(folder.name);
+      else folders.push(folder);
+      const made = [];
+      preset.layers.forEach(([kind, color, x, y, w, h, rot = 0, level = null], index) => {
+        const layer = level ?? index;
+        const mesh = createMesh(kind);
+        const [bw, bh] = FACE_BASE[kind];
+        const world = new THREE.Vector3(center.x + (ax + x) * unit, center.y + (ay + y) * unit, box.max.z + 0.012 + layer * 0.002);
+        mesh.position.copy(edits.worldToLocal(world));
+        mesh.rotation.set(0, 0, THREE.MathUtils.degToRad(rot));
+        mesh.scale.set((w * unit) / bw, (h * unit) / bh, 1);
+        mesh.userData.home = mesh.position.toArray();
+        if (!faceSession) mesh.userData.folderId = folder.id;
+        mesh.userData.label = color === "skin" ? "肌色" : mesh.userData.label;
+        setPartColor(mesh, faceSwatch(color, skin));
+        edits.add(mesh);
+        const record = { mesh, mirror: null, kind, solo: !paired };
+        records.push(record);
+        if (paired) syncFrom(mesh, true);
+        made.push(mesh);
+        if (record.mirror) made.push(record.mirror);
+      });
+      if (head) for (const mesh of made) faceDecalTargets.set(mesh, head);
+      if (!faceSession) {
+        collapsedFolders.delete(folder.id);
+        focusedFolder = folder.id;
+      }
+      setSelection(made, made[0]);
+      commit();
+      if (faceSession) {
+        refreshFaceEditUI();
+        renderOutliner();
+        setFileStatus(`「${folder.name}」を置きました。形を整えたら「編集を終える」で表面に沿わせます`);
+        return;
+      }
+      if (head) setFileStatus(`「${folder.name}」を「${head.userData.label ?? "パーツ"}」の前に置きました。位置を整えて「表面デカール」で沿わせてください`);
+      else setFileStatus(`沿わせる先のパーツがないため「${folder.name}」を原点に置きました。球などのパーツを追加してから「表面デカール」で沿わせてください`);
+    }
+
+    function buildFacePresetUI() {
+      const host = document.getElementById("face-presets");
+      for (const part of ["eye", "mouth", "brow", "cheek"]) {
+        const row = document.createElement("div");
+        row.className = "face-row";
+        const label = document.createElement("span");
+        label.textContent = FACE_PART_NAMES[part];
+        row.append(label);
+        for (const preset of FACE_PRESETS.filter((item) => item.part === part)) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "face-preset";
+          button.dataset.preset = preset.id;
+          button.title = `${FACE_PART_NAMES[part]}：${preset.name}`;
+          button.innerHTML = facePresetSvg(preset);
+          button.addEventListener("click", () => insertFacePreset(preset.id));
+          row.append(button);
+        }
+        host.append(row);
+      }
+    }
+    buildFacePresetUI();
+
     // ===== 表面デカール（平面パーツを別のパーツの表面に沿わせる） =====
     // 沿わせた形は「沿わせる先」のパーツの userData.conform に、先のパーツから見た座標で持つ。
     // 先のパーツの子として描くので、先のパーツの移動・ボーンの動き・モーション確認モードの焼き込みにそのまま付いていく。
     // 元の平面パーツは消さずに非表示にして残し、「沿わせ直す」で作り直し、「解除」で元に戻す。
     const CONFORM_OFFSET = 0.0006;
+    const CONFORM_LAYER = 0.0004;
     const CONFORM_REACH = 0.6;
     const CONFORM_STEP = 0.003;
     let nextConformId = 0;
@@ -22012,6 +22331,7 @@ void main() {
           id: group.id,
           sources: Array.isArray(group.sources) ? group.sources.filter((id) => typeof id === "string") : [],
           pair: typeof group.pair === "string" ? group.pair : null,
+          name: typeof group.name === "string" ? group.name.slice(0, 80) : undefined,
           pieces,
         });
       }
@@ -22025,6 +22345,7 @@ void main() {
           id: group.id,
           sources: [...group.sources],
           pair: group.pair ?? undefined,
+          name: group.name || undefined,
           pieces: group.pieces.map((piece) => ({
             source: piece.source ?? undefined,
             color: piece.color,
@@ -22202,7 +22523,7 @@ void main() {
     }
 
     // 1 枚の平面パーツを、パーツの向き（法線）に沿って先の表面へ写す。当たらない所は一番近い表面の点に寄せる。
-    function conformPiece(source, surface, targetInverse) {
+    function conformPiece(source, surface, targetInverse, lift = CONFORM_OFFSET) {
       source.updateWorldMatrix(true, false);
       const matrix = source.matrixWorld;
       const inverse = matrix.clone().invert();
@@ -22311,7 +22632,7 @@ void main() {
           if (!(nearest <= CONFORM_REACH * CONFORM_REACH)) continue;
           if (faceNormal.dot(tv.subVectors(origin, result)) < 0) faceNormal.negate();
         }
-        result.addScaledVector(faceNormal, CONFORM_OFFSET).applyMatrix4(targetInverse);
+        result.addScaledVector(faceNormal, lift).applyMatrix4(targetInverse);
         result.toArray(out, p * 3);
         ok[p] = 1;
       }
@@ -22332,8 +22653,16 @@ void main() {
       const surface = conformSurface(target);
       const targetInverse = target.matrixWorld.clone().invert();
       const pieces = [];
+      const center = new THREE.Box3().setFromObject(target).getCenter(new THREE.Vector3());
+      const height = (mesh) => new THREE.Vector3(0, 0, 1).transformDirection(mesh.matrixWorld).dot(mesh.getWorldPosition(new THREE.Vector3()).sub(center));
+      const levels = [];
+      for (const value of sources.map(height).sort((a, b) => a - b)) if (!levels.length || value - levels.at(-1) > 0.0002) levels.push(value);
+      const rank = new Map(sources.map((source) => {
+        const value = height(source);
+        return [source, Math.min(levels.findIndex((level) => Math.abs(level - value) <= 0.0002 || level > value), 12)];
+      }));
       for (const source of sources) {
-        const piece = conformPiece(source, surface, targetInverse);
+        const piece = conformPiece(source, surface, targetInverse, CONFORM_OFFSET + rank.get(source) * CONFORM_LAYER);
         if (piece.index.length) pieces.push(piece);
       }
       return { pieces, rendered: surface.rendered };
@@ -22361,6 +22690,7 @@ void main() {
         id: groupId ?? `${ID_PREFIX}conform-${Date.now().toString(36)}-${nextConformId++}`,
         sources: sources.map((mesh) => mesh.userData.id),
         pair: pair ?? previous?.pair ?? null,
+        name: previous?.name,
         rev: (previous?.rev ?? 0) + 1,
         pieces,
       };
@@ -22465,6 +22795,8 @@ void main() {
     }
 
     function conformTargetDefault(planes, candidates) {
+      const remembered = planes.map((mesh) => faceDecalTargets.get(mesh)).find((mesh) => mesh && candidates.includes(mesh));
+      if (remembered) return remembered;
       const center = new THREE.Vector3();
       for (const mesh of planes) center.add(mesh.getWorldPosition(new THREE.Vector3()));
       center.divideScalar(planes.length);
@@ -22488,7 +22820,7 @@ void main() {
       const section = document.getElementById("conform-section");
       const planes = selection.filter((mesh) => isPlanePart(mesh) && !mesh.userData.hidden);
       const host = selected?.userData.conform ? selected : null;
-      section.hidden = !planes.length && !host;
+      section.hidden = Boolean(faceSession) || (!planes.length && !host);
       if (section.hidden) return;
       const busy = conformBusy();
       document.getElementById("conform-make").hidden = !planes.length;
@@ -22513,31 +22845,411 @@ void main() {
       const list = document.getElementById("conform-list");
       list.replaceChildren();
       if (host) {
-        host.userData.conform.groups.forEach((group, index) => {
+        host.userData.conform.groups.filter(decalGroupShown).forEach((group) => {
+          const hostId = host.userData.id;
+          const locked = busy || Boolean(host.userData.locked);
+          const button = (text, title, run) => {
+            const item = document.createElement("button");
+            item.type = "button";
+            item.textContent = text;
+            item.title = title;
+            item.disabled = locked;
+            item.addEventListener("click", run);
+            return item;
+          };
           const row = document.createElement("div");
-          row.className = "wide pair conform-row";
+          row.className = "decal-unit-panel";
+          if (activeDecal?.host === hostId && activeDecal.group === group.id) row.classList.add("active");
           const label = document.createElement("span");
           label.className = "hint";
-          label.textContent = `デカール ${index + 1}（平面 ${group.pieces.length} 枚）`;
-          const again = document.createElement("button");
-          again.type = "button";
-          again.textContent = "沿わせ直す";
-          again.title = "元の平面パーツと、このパーツの今の形で作り直す（元の平面パーツは表示して編集できます）";
-          again.disabled = busy || Boolean(host.userData.locked);
-          again.addEventListener("click", () => reconform(host, group.id));
-          const release = document.createElement("button");
-          release.type = "button";
-          release.textContent = "解除";
-          release.title = "表面デカールを外し、元の平面パーツを表示する";
-          release.disabled = busy || Boolean(host.userData.locked);
-          release.addEventListener("click", () => releaseConform(host, group.id));
-          row.append(label, again, release);
+          label.textContent = `${decalName(group)}（${group.pair ? "左右・" : ""}平面 ${group.sources.length} 枚）`;
+          const actions = document.createElement("div");
+          actions.className = "decal-actions";
+          actions.append(
+            button("顔デカールを編集", "専用の画面で中の平面パーツを編集する（終えると自動で沿わせ直す）", () => enterFaceEdit(hostId, group.id)),
+            button("パーツに戻す", "まとまりを外し、元の平面パーツを表示して普通のパーツに戻す", () => releaseConform(host, group.id)),
+            button("削除", "この顔デカールと中の平面パーツを削除する", () => deleteDecal(hostId, group.id)),
+          );
+          const moves = document.createElement("div");
+          moves.className = "decal-moves";
+          const move = (text, title, change) => button(text, title, () => transformDecal(hostId, group.id, change));
+          moves.append(
+            move("←", "左へ", { dx: -1 }), move("→", "右へ", { dx: 1 }), move("↑", "上へ", { dy: 1 }), move("↓", "下へ", { dy: -1 }),
+            move("＋", "大きく", { scale: 1.1 }), move("－", "小さく", { scale: 1 / 1.1 }),
+            move("⟲", "左に回す", { turn: Math.PI / 36 }), move("⟳", "右に回す", { turn: -Math.PI / 36 }),
+          );
+          row.append(label, actions, moves);
           list.append(row);
         });
       }
     }
 
     document.getElementById("conform-apply").addEventListener("click", applyConform);
+
+    // ===== 顔デカールのまとまり（ユニット）と専用の編集画面 =====
+    // 表面デカールの組（conform group）を 1 つのまとまりとして扱う。元の平面パーツはメインのパーツ一覧に出さず、
+    // 一覧では沿わせ先のパーツの下に「顔デカール」の行を 1 つだけ出す（リンクパーツと同じく中身は専用画面で編集する）。
+    // 左右対称で反対側のパーツに沿わせた組（pair）は、片側の行だけを出して 1 つとして扱う。
+    function decalGroupShown(group) {
+      return !group.pair || group.id < group.pair;
+    }
+
+    function decalSourceIds() {
+      const ids = new Set();
+      for (const mesh of editableMeshes()) for (const group of mesh.userData.conform?.groups ?? []) for (const id of group.sources) ids.add(id);
+      return ids;
+    }
+
+    function decalOnlyFolder(folderId, sourceIds) {
+      const ids = descendantFolderIds(folderId);
+      const meshes = editableMeshes().filter((mesh) => ids.has(mesh.userData.folderId));
+      if (!meshes.length || !meshes.every((mesh) => sourceIds.has(mesh.userData.id))) return false;
+      return !links.some((link) => ids.has(link.parentId)) && !curves.some((curve) => ids.has(curve.userData.folderId)) && !sketches.some((sketch) => ids.has(sketch.folderId));
+    }
+
+    function decalName(group) {
+      return group.name || "表面デカール";
+    }
+
+    function decalRowsHtml(mesh, depth) {
+      if (faceSession) return "";
+      const pad = 8 + depth * 14;
+      return (mesh.userData.conform?.groups ?? []).filter(decalGroupShown).map((group) => {
+        const active = activeDecal && activeDecal.host === mesh.userData.id && activeDecal.group === group.id && selected === mesh;
+        return `<div class="outliner-row part decal-unit${active ? " selected active" : ""}" data-type="decal" data-id="${escapeHtml(`${mesh.userData.id}|${group.id}`)}" style="padding-left:${pad}px" title="顔デカール（中身は「顔デカールを編集」で専用画面を開いて編集します）">
+          <span class="link-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="9" cy="10" r="1.2"/><circle cx="15" cy="10" r="1.2"/><path d="M9 15c2 1.5 4 1.5 6 0"/></svg></span>
+          <span class="name">${escapeHtml(decalName(group))}${group.pair ? `<span class="mask-mark">左右</span>` : ""}</span>
+          <span></span>
+          <button class="icon" type="button" data-action="decal-edit" aria-label="顔デカールを編集" title="顔デカールを編集"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13 7 4 4"/></svg></button>
+        </div>`;
+      }).join("");
+    }
+
+    function decalGroupOf(hostId, groupId) {
+      const host = meshById(hostId);
+      const group = host?.userData.conform?.groups.find((item) => item.id === groupId);
+      return group ? { host, group } : null;
+    }
+
+    function pickDecal(hostId, groupId) {
+      const found = decalGroupOf(hostId, groupId);
+      if (!found) return;
+      activeDecal = { host: hostId, group: groupId };
+      select(found.host);
+      renderOutliner();
+    }
+
+    // まとまりの中の平面パーツ（反対側の組の分も含む）
+    function decalMembers(host, group) {
+      const ids = new Set(group.sources);
+      const pair = conformPairOf(host, group);
+      if (pair) for (const id of pair.group.sources) ids.add(id);
+      return [...ids].map(meshById).filter(Boolean);
+    }
+
+    // まとまりを表面の上で動かす・拡縮・回す（正面から見た平面の上で）。元の平面パーツを動かしてから沿わせ直す。
+    async function transformDecal(hostId, groupId, { dx = 0, dy = 0, scale = 1, turn = 0 }) {
+      if (conformBusy() || faceSession) return;
+      const found = decalGroupOf(hostId, groupId);
+      if (!found || found.host.userData.locked) return;
+      const members = decalMembers(found.host, found.group);
+      const memberSet = new Set(members);
+      // 左右の組になっている平面は片側（record.mesh）だけ動かし、反対側は鏡写しで合わせる
+      const leads = members.filter((mesh) => {
+        const record = recordOf(mesh);
+        return !(record && record.mirror === mesh && memberSet.has(record.mesh));
+      });
+      if (!leads.length) return;
+      const step = new THREE.Box3();
+      for (const mesh of leads) step.expandByObject(mesh);
+      const pivot = step.getCenter(new THREE.Vector3());
+      const unit = Math.max(step.getSize(new THREE.Vector3()).x, 0.02) * 0.1;
+      const axis = new THREE.Vector3(0, 0, 1);
+      for (const mesh of leads) {
+        const world = mesh.getWorldPosition(new THREE.Vector3()).sub(pivot);
+        world.x *= scale;
+        world.y *= scale;
+        world.applyAxisAngle(axis, turn);
+        world.add(pivot);
+        world.x += dx * unit;
+        world.y += dy * unit;
+        mesh.position.copy(mesh.parent.worldToLocal(world));
+        mesh.scale.x *= scale;
+        mesh.scale.y *= scale;
+        mesh.rotation.z += turn;
+        mesh.updateMatrixWorld(true);
+        const record = recordOf(mesh);
+        if (record?.mesh === mesh && record.mirror && memberSet.has(record.mirror)) applyMirror(mesh, record.mirror);
+      }
+      await reconform(found.host, groupId);
+    }
+
+    function deleteDecal(hostId, groupId) {
+      if (conformBusy() || faceSession) return;
+      const found = decalGroupOf(hostId, groupId);
+      if (!found) return;
+      const pair = conformPairOf(found.host, found.group);
+      const drop = new Set(decalMembers(found.host, found.group));
+      setConform(found.host, { groups: found.host.userData.conform.groups.filter((item) => item !== found.group) });
+      if (pair) setConform(pair.mesh, { groups: pair.mesh.userData.conform.groups.filter((item) => item !== pair.group) });
+      for (let index = records.length - 1; index >= 0; index -= 1) {
+        const record = records[index];
+        const dropMesh = drop.has(record.mesh);
+        const dropMirror = Boolean(record.mirror && drop.has(record.mirror));
+        if (!dropMesh && !dropMirror) continue;
+        if (dropMesh) discard(record.mesh);
+        if (dropMirror) discard(record.mirror);
+        if (dropMesh && (dropMirror || !record.mirror)) records.splice(index, 1);
+        else if (dropMesh) {
+          record.mesh = record.mirror;
+          record.mirror = null;
+        } else record.mirror = null;
+      }
+      activeDecal = null;
+      select(found.host);
+      commit();
+      renderOutliner();
+      setFileStatus(`「${decalName(found.group)}」を削除しました`);
+    }
+
+    // ----- 専用の編集画面 -----
+    const faceBanner = document.getElementById("face-banner");
+
+    function faceEditMembers() {
+      if (!faceSession) return [];
+      return editableMeshes().filter((mesh) => FLAT_KINDS.has(mesh.userData.kind) && !mesh.userData.isMask
+        && (faceSession.members.has(mesh.userData.id) || !faceSession.before.has(mesh.userData.id)));
+    }
+
+    // 編集画面では、まとまりの平面パーツと（薄く）沿わせ先のパーツだけを見せる。毎フレーム描く前に合わせる。
+    function applyFaceEditView() {
+      if (!faceSession) return;
+      const target = meshById(faceSession.targetId);
+      if (!target) {
+        dropFaceSession();
+        setFileStatus("顔デカールの編集を終了しました（沿わせ先のパーツがなくなりました）");
+        return;
+      }
+      const shown = new Set(faceEditMembers());
+      for (const mesh of editableMeshes()) {
+        const guide = mesh === target || mesh === faceSession.twin;
+        mesh.visible = guide || (shown.has(mesh) && !mesh.userData.hidden);
+        setMaskLook(mesh, guide);
+        if (mesh.userData.conformObject) mesh.userData.conformObject.visible = false;
+      }
+      for (const anchor of activeAnchors()) anchor.visible = false;
+    }
+
+    function restoreFaceView() {
+      for (const mesh of editableMeshes()) {
+        mesh.visible = !mesh.userData.hidden;
+        setMaskLook(mesh, false);
+        if (mesh.userData.conformObject) mesh.userData.conformObject.visible = true;
+      }
+      for (const link of links) {
+        const anchor = linkAnchors.get(link.id);
+        if (anchor) anchor.visible = !link.hidden;
+      }
+    }
+
+    function focusFaceCamera(target) {
+      target.updateWorldMatrix(true, false);
+      const box = new THREE.Box3().setFromObject(target);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const radius = Math.max(size.x, size.y) * 0.75 + 0.02;
+      controls.target.copy(center);
+      camera.position.set(center.x, center.y, box.max.z + Math.max(2, radius * 4));
+      orthoCamera.zoom = orthoHalfHeight / radius;
+      orthoCamera.updateProjectionMatrix();
+      controls.update();
+    }
+
+    function refreshFaceEditUI() {
+      const editing = Boolean(faceSession);
+      document.body.classList.toggle("face-editing", editing);
+      faceBanner.hidden = !editing;
+      document.getElementById("face-presets").hidden = !editing;
+      document.getElementById("face-open").hidden = editing;
+      if (editing) {
+        const target = meshById(faceSession.targetId);
+        document.getElementById("face-banner-name").textContent = `${target?.userData.label ?? "パーツ"}・平面 ${faceEditMembers().length} 枚`;
+      }
+    }
+
+    function enterFaceEdit(targetId, groupId = null) {
+      if (faceSession || conformBusy()) return;
+      const target = meshById(targetId);
+      if (!target) {
+        setFileStatus("顔デカール：沿わせる先のパーツがありません。球などのパーツを追加してください");
+        return;
+      }
+      finishPathDraw();
+      endSketchDraw(false);
+      const snapshot = packState();
+      const record = recordOf(target);
+      const found = groupId ? decalGroupOf(targetId, groupId) : null;
+      const members = found ? decalMembers(found.host, found.group) : [];
+      const pair = found ? conformPairOf(found.host, found.group) : null;
+      faceSession = {
+        snapshot,
+        historyIndex,
+        targetId,
+        twin: symmetric && record ? otherOf(record, target) : pair?.mesh ?? null,
+        groupId: found?.group.id ?? null,
+        pairHost: pair?.mesh.userData.id ?? null,
+        pairId: pair?.group.id ?? null,
+        name: found ? found.group.name ?? "" : "",
+        members: new Set(members.map((mesh) => mesh.userData.id)),
+        before: new Set(editableMeshes().map((mesh) => mesh.userData.id)),
+        view: { camera, position: camera.position.clone(), target: controls.target.clone(), zoom: camera.zoom, perspective: camera === perspectiveCamera },
+      };
+      // 編集のあいだは元の平面パーツを表示し、フォルダの外に出して一覧にそのまま並べる
+      setPartsHidden(members, false);
+      faceSession.folders = new Set(members.map((mesh) => mesh.userData.folderId).filter(Boolean));
+      for (const mesh of members) delete mesh.userData.folderId;
+      setPerspective(false);
+      focusFaceCamera(target);
+      applyFaceEditView();
+      faceSession.start = packState().signature;
+      setSelection(members.filter((mesh) => recordOf(mesh)?.mesh === mesh || !recordOf(mesh)?.mirror), undefined);
+      refreshFaceEditUI();
+      renderOutliner();
+      setFileStatus(found ? `「${decalName(found.group)}」を編集しています。終わったら「編集を終える」で表面に沿わせ直します` : "顔デカールの専用画面です。「顔デカール」から目・口・眉を選んで置き、平面パーツで形を整えてください");
+      requestRender();
+    }
+
+    function dropFaceSession() {
+      if (!faceSession) return;
+      const view = faceSession.view;
+      faceSession = null;
+      restoreFaceView();
+      setPerspective(view.perspective);
+      if (view.camera === camera) {
+        camera.position.copy(view.position);
+        camera.zoom = view.zoom;
+        camera.updateProjectionMatrix();
+        controls.target.copy(view.target);
+        controls.update();
+      }
+      refreshFaceEditUI();
+      renderOutliner();
+      requestRender();
+    }
+
+    function faceEditDirty() {
+      return Boolean(faceSession) && packState().signature !== faceSession.start;
+    }
+
+    function cancelFaceEdit(ask = true) {
+      if (!faceSession) return;
+      if (ask && faceEditDirty() && !window.confirm("顔デカールの変更を破棄して戻りますか？")) return;
+      const { snapshot, historyIndex: index } = faceSession;
+      dropFaceSession();
+      applyState(snapshot);
+      if (index >= 0 && index < history.length) {
+        history.splice(index + 1);
+        historyIndex = index;
+      }
+      select(null);
+      refreshChrome();
+      setFileStatus("顔デカールの編集を取り消しました");
+    }
+
+    function removeEmptyFolders(candidates) {
+      let removed = true;
+      while (removed) {
+        removed = false;
+        for (const folder of [...folders]) {
+          const empty = !folders.some((item) => item.parentId === folder.id)
+            && !editableMeshes().some((mesh) => mesh.userData.folderId === folder.id)
+            && !links.some((link) => link.parentId === folder.id)
+            && !curves.some((curve) => curve.userData.folderId === folder.id)
+            && !sketches.some((sketch) => sketch.folderId === folder.id);
+          if (empty && candidates.has(folder.id)) {
+            folders.splice(folders.indexOf(folder), 1);
+            removed = true;
+          }
+        }
+      }
+    }
+
+    async function finishFaceEdit() {
+      if (!faceSession || loadingBusy) return;
+      const session = faceSession;
+      const target = meshById(session.targetId);
+      const sources = faceEditMembers().filter((mesh) => !mesh.userData.hidden);
+      const before = packState();
+      const twin = session.twin && editableMeshes().includes(session.twin) ? session.twin : null;
+      const center = torsoCenter.x;
+      const sideOf = (mesh) => Math.sign(mesh.getWorldPosition(new THREE.Vector3()).x - center);
+      const targetSide = target ? sideOf(target) : 0;
+      const main = twin ? sources.filter((mesh) => sideOf(mesh) === targetSide || sideOf(mesh) === 0) : sources;
+      const others = twin ? sources.filter((mesh) => !main.includes(mesh)) : [];
+      const name = session.name || session.names?.join("・") || "顔デカール";
+      const result = await withConformLoading(`平面パーツ ${sources.length} 枚を表面に沿わせています`, () => {
+        // 古い組を外してから作り直す
+        for (const [hostId, groupId] of [[session.targetId, session.groupId], [session.pairHost, session.pairId]]) {
+          const host = hostId && meshById(hostId);
+          if (host && groupId) setConform(host, { groups: (host.userData.conform?.groups ?? []).filter((group) => group.id !== groupId) });
+        }
+        if (!sources.length || !target) return { empty: true };
+        target.updateWorldMatrix(true, true);
+        const made = main.length ? conformGroupOnto(target, main) : null;
+        if (main.length && !made) return null;
+        if (others.length) {
+          const mirrored = conformGroupOnto(twin, others, null, made?.group.id ?? null);
+          if (!mirrored) return null;
+          if (made) setConform(target, { groups: target.userData.conform.groups.map((group) => (group === made.group ? { ...group, pair: mirrored.group.id } : group)) });
+          const host = made ? target : twin;
+          const id = (made ?? mirrored).group.id;
+          setConform(host, { groups: host.userData.conform.groups.map((group) => (group.id === id ? { ...group, name } : group)) });
+          if (made) setConform(twin, { groups: twin.userData.conform.groups.map((group) => (group.id === mirrored.group.id ? { ...group, name } : group)) });
+        } else if (made) {
+          setConform(target, { groups: target.userData.conform.groups.map((group) => (group.id === made.group.id ? { ...group, name } : group)) });
+        }
+        return { made };
+      });
+      if (!result) {
+        applyState(before);
+        applyFaceEditView();
+        setFileStatus("顔デカール：沿わせる先の表面が見つかりませんでした（平面パーツを先のパーツの正面に重ねてください）");
+        return;
+      }
+      for (const mesh of sources) delete mesh.userData.folderId;
+      removeEmptyFolders(session.folders);
+      const index = session.historyIndex;
+      dropFaceSession();
+      activeDecal = null;
+      if (target) select(target);
+      commit();
+      // 編集画面の途中の履歴はまとめ、元に戻す 1 回で編集前に戻るようにする
+      if (index >= 0 && index < historyIndex) {
+        history.splice(index + 1, historyIndex - index - 1);
+        historyIndex = index + 1;
+      }
+      refreshChrome();
+      renderOutliner();
+      setFileStatus(result.empty ? "平面パーツがないため顔デカールを外しました" : `「${name}」を${target.userData.label ?? "パーツ"}の表面に沿わせました`);
+    }
+
+    document.getElementById("face-finish").addEventListener("click", finishFaceEdit);
+    document.getElementById("face-cancel").addEventListener("click", () => cancelFaceEdit(true));
+    document.getElementById("face-open").addEventListener("click", () => {
+      const target = faceHead();
+      if (!target) {
+        setFileStatus("顔デカール：沿わせる先のパーツがありません。球などのパーツを追加してから開いてください");
+        return;
+      }
+      enterFaceEdit(target.userData.id);
+    });
+    window.addEventListener("keydown", (event) => {
+      if (!faceSession || event.key !== "Escape" || event.target.closest?.("input, textarea, select")) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      cancelFaceEdit(true);
+    }, true);
+    refreshFaceEditUI();
 
     renderer.setAnimationLoop((time) => {
       if (previewMode) {
@@ -22590,6 +23302,7 @@ void main() {
       for (const mesh of maskMeshes) if (shownInScene(mesh)) updateDecal(mesh);
       updateLoftOverlay();
       updateRigGuide();
+      applyFaceEditView();
       sagMoving = sagSettling;
       sagSettling = false;
       scene.updateMatrixWorld();
