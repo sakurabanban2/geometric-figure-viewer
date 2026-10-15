@@ -9317,6 +9317,7 @@ if (decalOn > 0.5) {
     }
 
     function applyState(state) {
+      if (previewMode) exitMotionPreview();
       try {
         restoreState(state);
       } finally {
