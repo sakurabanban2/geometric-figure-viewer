@@ -22108,21 +22108,41 @@ void main() {
     const FACE_ANCHORS = { eye: [-0.2, 0.0], mouth: [0, -0.24], brow: [-0.2, 0.19], cheek: [-0.27, -0.16] };
     const FACE_BASE = { circle: [0.18, 0.18], flatSquare: [0.16, 0.16], flatTriangle: [0.1732, 0.15] };
 
+    // 顔デカールを置く先：「頭」→ 選択中のパーツ → 体パーツの一番上 → 見えているパーツで一番大きいもの
     function faceHead() {
-      const visible = (mesh) => mesh.visible && !mesh.userData.hidden;
+      const visible = (mesh) => mesh.visible && !mesh.userData.hidden && !mesh.userData.isMask && !isPlanePart(mesh);
       const meshes = editableMeshes().filter(visible);
+      const boxOf = (mesh) => new THREE.Box3().setFromObject(mesh);
       const named = meshes.filter((mesh) => mesh.userData.label === "頭");
-      const pool = named.length ? named : meshes.filter((mesh) => mesh.userData.kind === "body");
-      let best = null;
-      let top = -Infinity;
-      for (const mesh of pool) {
-        const box = new THREE.Box3().setFromObject(mesh);
-        if (box.isEmpty()) continue;
-        const score = named.length ? -Math.abs(box.getCenter(new THREE.Vector3()).x - torsoCenter.x) : box.max.y;
-        if (score > top) { top = score; best = mesh; }
+      if (named.length) {
+        let best = null;
+        let top = -Infinity;
+        for (const mesh of named) {
+          const box = boxOf(mesh);
+          if (box.isEmpty()) continue;
+          const score = -Math.abs(box.getCenter(new THREE.Vector3()).x - torsoCenter.x);
+          if (score > top) { top = score; best = mesh; }
+        }
+        if (best) return best;
       }
-      return best;
+      if (selected && meshes.includes(selected) && !boxOf(selected).isEmpty()) return selected;
+      const pick = (pool, score) => {
+        let best = null;
+        let top = -Infinity;
+        for (const mesh of pool) {
+          const box = boxOf(mesh);
+          if (box.isEmpty()) continue;
+          const value = score(box);
+          if (value > top) { top = value; best = mesh; }
+        }
+        return best;
+      };
+      const size = new THREE.Vector3();
+      return pick(meshes.filter((mesh) => mesh.userData.kind === "body"), (box) => box.max.y)
+        ?? pick(meshes, (box) => box.getSize(size).x * size.y * size.z);
     }
+
+    const faceDecalTargets = new WeakMap();
 
     function faceSwatch(color, skin) {
       return color === "skin" ? skin : color;
@@ -22145,16 +22165,17 @@ void main() {
       const preset = FACE_PRESETS.find((item) => item.id === id);
       if (!preset || conformBusy()) return;
       const head = faceHead();
-      if (!head) {
-        setFileStatus("顔デカール：頭のパーツが見つかりません");
-        return;
+      let box;
+      if (head) {
+        head.updateWorldMatrix(true, false);
+        box = new THREE.Box3().setFromObject(head);
+      } else {
+        box = new THREE.Box3(new THREE.Vector3(-0.25, -0.25, -0.25), new THREE.Vector3(0.25, 0.25, 0.25));
       }
-      head.updateWorldMatrix(true, false);
-      const box = new THREE.Box3().setFromObject(head);
       const center = box.getCenter(new THREE.Vector3());
       const span = box.getSize(new THREE.Vector3());
       const unit = span.x;
-      const skin = `#${head.material.color.getHexString()}`;
+      const skin = head ? `#${head.material.color.getHexString()}` : "#f2c4ab";
       const paired = preset.part !== "mouth" && placeSymmetric;
       const [ax, ay] = FACE_ANCHORS[preset.part];
       const folder = { id: `folder-${nextFolderId++}`, name: `${FACE_PART_NAMES[preset.part]}：${preset.name}`, parentId: null, order: nextPartOrder() };
@@ -22179,11 +22200,13 @@ void main() {
         made.push(mesh);
         if (record.mirror) made.push(record.mirror);
       });
+      if (head) for (const mesh of made) faceDecalTargets.set(mesh, head);
       collapsedFolders.delete(folder.id);
       focusedFolder = folder.id;
       setSelection(made, made[0]);
       commit();
-      setFileStatus(`「${folder.name}」を顔の前に置きました。位置を整えて「表面デカール」で頭に沿わせてください`);
+      if (head) setFileStatus(`「${folder.name}」を「${head.userData.label ?? "パーツ"}」の前に置きました。位置を整えて「表面デカール」で沿わせてください`);
+      else setFileStatus(`沿わせる先のパーツがないため「${folder.name}」を原点に置きました。球などのパーツを追加してから「表面デカール」で沿わせてください`);
     }
 
     function buildFacePresetUI() {
@@ -22725,6 +22748,8 @@ void main() {
     }
 
     function conformTargetDefault(planes, candidates) {
+      const remembered = planes.map((mesh) => faceDecalTargets.get(mesh)).find((mesh) => mesh && candidates.includes(mesh));
+      if (remembered) return remembered;
       const center = new THREE.Vector3();
       for (const mesh of planes) center.add(mesh.getWorldPosition(new THREE.Vector3()));
       center.divideScalar(planes.length);
