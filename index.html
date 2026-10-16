@@ -245,7 +245,6 @@
     #feature-banner,
     #soft-banner,
     #rig-banner,
-    #preview-banner,
     #path-draw-banner {
       position: absolute;
       top: 36px;
@@ -267,8 +266,6 @@
     #feature-banner[hidden],
     #soft-banner[hidden],
     #rig-banner[hidden],
-    #preview-banner[hidden],
-    #preview-overlay[hidden],
     #path-draw-banner[hidden] { display: none; }
     body.path-drawing #viewport { box-shadow: inset 0 0 0 2px rgba(53, 214, 255, 0.55); }
     body.path-drawing #viewport canvas { cursor: crosshair; }
@@ -729,13 +726,6 @@
     }
 
 
-    #preview-overlay { position: absolute; inset: 0; z-index: 1; touch-action: none; }
-    body.motion-preview #menubar,
-    body.motion-preview #outliner,
-    body.motion-preview #view-dock,
-    body.motion-preview #sidebar > section:not(#rig-motion-section),
-    body.motion-preview #rig-load { pointer-events: none; opacity: 0.45; }
-    body.motion-preview #rig-preview { border-color: var(--accent); }
 
     .modal-actions {
       display: flex;
@@ -1689,7 +1679,6 @@
         <button id="rig-play" type="button" title="再生と一時停止を切り替える（Space）">再生</button>
         <button id="rig-stop" type="button" title="再生をやめて元の姿勢に戻す">停止</button>
       </div>
-      <div class="wide"><button id="rig-preview" type="button" aria-pressed="false" title="見えている形を軽い 1 つの形に焼き込み、モーションだけを滑らかに確認する（Escで終了）">モーション確認モード</button></div>
       <div class="slider-row" title="再生している位置"><span>位置</span><input id="rig-time" type="range" min="0" max="1000" value="0" step="1" aria-label="再生位置" /><span id="rig-time-label" class="rig-time">0.0 秒</span></div>
       <div class="slider-row" title="再生の速さ"><span>速さ</span><input id="rig-speed" type="range" min="10" max="200" value="100" step="5" aria-label="再生の速さ" /><span class="num-field"><input id="rig-speed-num" class="num" type="number" aria-label="再生の速さ（%）" /><span class="unit">%</span></span></div>
       <div class="slider-row" title="再生中、すべての柔らかいパーツの揺れに掛ける倍率。パーツごとの差は「柔らかさ」の「揺れやすさ」で付ける"><span>全体の揺れ</span><input id="rig-sway" type="range" min="0" max="500" value="100" step="10" aria-label="再生中の揺れの大きさ" /><span class="num-field"><input id="rig-sway-num" class="num" type="number" aria-label="再生中の揺れの大きさ（%）" /><span class="unit">%</span></span></div>
@@ -1852,8 +1841,6 @@
     <div id="mask-banner" hidden>マスク編集 · <span id="mask-banner-name"></span></div>
     <div id="path-draw-banner" hidden>パスを描く（<span id="path-draw-count"></span>） · クリックで点 · 最初の点でループ · 右クリック／Enterで確定 · Backspaceで戻す</div>
     <div id="feature-banner" hidden>顔・手・足の編集 · <span id="feature-banner-name"></span> · 右ドラッグで視点 · Escで終了</div>
-    <div id="preview-banner" hidden>モーション確認モード · Spaceで再生/一時停止 · ドラッグで視点 · Escで終了</div>
-    <div id="preview-overlay" hidden></div>
     <div id="rig-banner" hidden>ボーンとモーション · 点をドラッグで関節を動かす · 左ドラッグで視点 · Spaceで再生/一時停止 · Escで終了</div>
     <div id="soft-banner" hidden>柔らかさの編集 · <span id="soft-banner-name"></span> · 左ドラッグで揺らす · 右ドラッグで視点 · Escで終了</div>
     <div id="relief-banner" hidden>法線編集 · <span id="relief-banner-name"></span> · <span id="relief-banner-hint">左ドラッグで描く</span> · 右ドラッグで視点 · Escで終了</div>
@@ -1966,16 +1953,6 @@
     <div class="modal-actions">
       <button id="import-cancel" type="button">キャンセル</button>
       <button id="import-apply" type="button">インポート</button>
-    </div>
-  </dialog>
-  <dialog id="preview-modal" aria-labelledby="preview-title">
-    <h2 id="preview-title">モーション確認モード</h2>
-    <p>前回モーション確認モードの形を作ったあとに、モデルが変更されています。今の形で作り直しますか？</p>
-    <p class="relink-note">作り直すには少し時間がかかります。前回の形を使うと、すぐに始められますが、その後の変更は反映されません。</p>
-    <div class="modal-actions">
-      <button id="preview-cancel" type="button">キャンセル</button>
-      <button id="preview-reuse" type="button">前回の形を使う</button>
-      <button id="preview-rebake" type="button">作り直す</button>
     </div>
   </dialog>
   <dialog id="relink-modal" aria-labelledby="relink-title">
@@ -2852,8 +2829,6 @@ if (decalOn > 0.5) {
     let rigLookActive = false;
     let rigMirror = true;
     const rigPlayer = { playing: false, showing: false, time: 0, speed: 1, loop: true, travel: true, sway: 1 };
-    let previewMode = false;
-    let previewBake = null;
     const RIG_BONES = [
       { name: "hips", label: "腰", tail: "spine", parent: null },
       { name: "spine", label: "背骨", tail: "chest", parent: "hips", fromRoot: true },
@@ -9514,7 +9489,6 @@ self.onmessage = (event) => {
     }
 
     function applyState(state) {
-      if (previewMode) exitMotionPreview();
       try {
         restoreState(state);
       } finally {
@@ -19893,9 +19867,8 @@ self.onmessage = (event) => {
 
     function updateRigChrome() {
       document.body.classList.toggle("rig-edit", rigEditing);
-      document.getElementById("rig-banner").hidden = !rigEditing || previewMode;
+      document.getElementById("rig-banner").hidden = !rigEditing;
       updateRigLook();
-      updatePreviewButton();
       if (!rigEditing) return;
       const focusText = document.getElementById("rig-focus");
       if (rigPart) {
@@ -19961,7 +19934,6 @@ self.onmessage = (event) => {
     }
 
     function leaveRigEdit() {
-      if (previewMode) exitMotionPreview();
       if (!rigEditing) return;
       dropRigMode();
       refreshChrome();
@@ -21324,7 +21296,6 @@ self.onmessage = (event) => {
     });
 
     function leaveEditModes() {
-      if (previewMode) exitMotionPreview();
       if (faceSession) cancelFaceEdit(true);
       if (faceSession) return false;
       if (maskTarget) leaveMaskEdit();
@@ -21829,19 +21800,12 @@ self.onmessage = (event) => {
       return controls.autoRotate || pivotPan || softTarget || (rigEditing && rigPlayer.showing && rigPlayer.playing) || sagMoving;
     }
 
-    // ===== モーション確認モード =====
-    // 見えているパーツを今の見た目（マスク・押し込み・結合など）のまま 1 つの形に焼き込み、
-    // ボーンで動く SkinnedMesh として GPU だけで再生する。編集中のモデルには一切書き込まない。
-    let previewHidden = [];
-    let previewLast = 0;
-    let previewControls = null;
+    // ===== 描かれた形の取り出し（表面デカールの沿わせで使う） =====
+    // 見えているパーツを今の見た目（マスク・押し込み・結合など）のまま取り出す。編集中のモデルには一切書き込まない。
     const previewTfPrograms = new Map();
     const previewClassifiers = new Map();
     const PREVIEW_SPLIT_LEVELS = 3;
 
-    function previewSignature() {
-      return `${history[historyIndex]?.signature ?? ""}|${JSON.stringify(rig?.joints ?? null)}`;
-    }
 
     function previewCompile(gl, vertex, fragment, varyings) {
       const make = (type, source) => {
@@ -22146,10 +22110,6 @@ void main() {
       return { positions: new Float32Array(packed), index: outIndex };
     }
 
-    function previewHost(object) {
-      for (let cursor = object; cursor; cursor = cursor.parent) if (cursor.isMesh && cursor.material?.userData?.maskUniforms && !cursor.userData.isMask) return cursor;
-      return object;
-    }
 
     // 指定したパーツを 1 つずつ描き、描いた直後に頂点シェーダーを回して、画面に出ている形（ワールド座標）を取り出す。
     // パーツごとに区切ってブラウザへ処理を返す（呼び出し側で busyJob.gpu を立て、描画ループを止めておくこと）。
@@ -22209,292 +22169,6 @@ void main() {
       }
       return captured;
     }
-
-    async function bakePreview() {
-      const gl = renderer.getContext();
-      const targets = rigPoseTargets();
-      const boneOf = (object) => {
-        for (let cursor = object; cursor; cursor = cursor.parent) if (targets.has(cursor)) return targets.get(cursor);
-        return "none";
-      };
-      const sources = [];
-      scene.traverseVisible((object) => {
-        if (!object.isMesh || Array.isArray(object.material) || !object.layers.test(camera.layers)) return;
-        const data = object.material?.userData;
-        if (data?.maskUniforms || data?.capUniforms || object.userData.conformPiece) sources.push(object);
-      });
-      showLoading("モーション確認モードの準備", `パーツの形を焼き込んでいます（${sources.length}個）`, 0.1);
-      await nextPaint();
-      const started = performance.now();
-      const captured = await captureRendered(sources, (ratio) => showLoading("モーション確認モードの準備", `パーツの形を焼き込んでいます（${Math.round(ratio * sources.length)} / ${sources.length}）`, 0.1 + ratio * 0.7));
-      showLoading("モーション確認モードの準備", "ボーンにつないでいます", 0.8);
-      await nextPaint();
-      const boneNames = [...RIG_BONES.map((bone) => bone.name), "none"];
-      const boneIndex = new Map(boneNames.map((name, index) => [name, index]));
-      const groups = new Map();
-      for (const [object, part] of captured) {
-        if (!part || !part.index.length) continue;
-        const material = object.material;
-        const key = `${material.transparent}|${material.opacity}|${material.side}|${material.depthWrite}`;
-        if (!groups.has(key)) groups.set(key, { material, parts: [] });
-        const color = material.color;
-        groups.get(key).parts.push({ part, color, bone: boneIndex.get(boneOf(previewHost(object))) ?? boneIndex.get("none") });
-      }
-      const bones = boneNames.map((name) => {
-        const bone = new THREE.Bone();
-        bone.name = name;
-        bone.matrixAutoUpdate = false;
-        return bone;
-      });
-      const root = new THREE.Group();
-      root.name = "motion-preview";
-      for (const bone of bones) root.add(bone);
-      const skeleton = new THREE.Skeleton(bones, bones.map(() => new THREE.Matrix4()));
-      let triangles = 0;
-      for (const { material: sourceMaterial, parts } of groups.values()) {
-        const vertexCount = parts.reduce((sum, { part }) => sum + part.positions.length / 3, 0);
-        const indexCount = parts.reduce((sum, { part }) => sum + part.index.length, 0);
-        const position = new Float32Array(vertexCount * 3);
-        const color = new Float32Array(vertexCount * 3);
-        const skinIndex = new Uint16Array(vertexCount * 4);
-        const skinWeight = new Float32Array(vertexCount * 4);
-        const index = vertexCount > 65535 ? new Uint32Array(indexCount) : new Uint16Array(indexCount);
-        let v = 0;
-        let n = 0;
-        for (const { part, color: tint, bone } of parts) {
-          position.set(part.positions, v * 3);
-          const count = part.positions.length / 3;
-          for (let i = 0; i < count; i += 1) {
-            color[(v + i) * 3] = tint.r;
-            color[(v + i) * 3 + 1] = tint.g;
-            color[(v + i) * 3 + 2] = tint.b;
-            skinIndex[(v + i) * 4] = bone;
-            skinWeight[(v + i) * 4] = 1;
-          }
-          for (const i of part.index) index[n++] = i + v;
-          v += count;
-        }
-        triangles += indexCount / 3;
-        const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute("position", new THREE.BufferAttribute(position, 3));
-        geometry.setAttribute("color", new THREE.BufferAttribute(color, 3));
-        geometry.setAttribute("skinIndex", new THREE.BufferAttribute(skinIndex, 4));
-        geometry.setAttribute("skinWeight", new THREE.BufferAttribute(skinWeight, 4));
-        geometry.setIndex(new THREE.BufferAttribute(index, 1));
-        geometry.computeVertexNormals();
-        geometry.computeBoundingSphere();
-        const material = skin.clone();
-        material.vertexColors = true;
-        material.color.set(0xffffff);
-        material.transparent = sourceMaterial.transparent;
-        material.opacity = sourceMaterial.opacity;
-        material.side = sourceMaterial.side;
-        material.depthWrite = sourceMaterial.depthWrite;
-        const mesh = new THREE.SkinnedMesh(geometry, material);
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-        mesh.frustumCulled = false;
-        mesh.bind(skeleton, new THREE.Matrix4());
-        root.add(mesh);
-      }
-      return { root, bones, boneIndex, skeleton, triangles, parts: captured.size, meshes: groups.size, ms: performance.now() - started, signature: previewSignature() };
-    }
-
-    function disposePreviewBake(bake) {
-      if (!bake) return;
-      bake.root.removeFromParent();
-      bake.root.traverse((object) => {
-        if (object.isMesh) {
-          object.geometry.dispose();
-          object.material.dispose();
-        }
-      });
-      bake.skeleton.dispose();
-    }
-
-    function askPreviewReuse() {
-      const modal = document.getElementById("preview-modal");
-      return new Promise((resolve) => {
-        const finish = (value) => {
-          modal.removeEventListener("close", onClose);
-          for (const [id, handler] of handlers) document.getElementById(id).removeEventListener("click", handler);
-          if (modal.open) modal.close();
-          resolve(value);
-        };
-        const onClose = () => finish("cancel");
-        const handlers = [
-          ["preview-reuse", () => finish("reuse")],
-          ["preview-rebake", () => finish("rebake")],
-          ["preview-cancel", () => finish("cancel")],
-        ];
-        for (const [id, handler] of handlers) document.getElementById(id).addEventListener("click", handler);
-        modal.addEventListener("close", onClose);
-        modal.showModal();
-      });
-    }
-
-    function waitFrames(count) {
-      return new Promise((resolve) => {
-        const step = () => (count-- <= 0 ? resolve() : requestAnimationFrame(step));
-        requestAnimationFrame(step);
-      });
-    }
-
-    async function enterMotionPreview() {
-      if (previewMode || !rigEditing || !rig || !loadingView.hidden) return;
-      const signature = previewSignature();
-      let rebake = !previewBake;
-      if (previewBake && previewBake.signature !== signature) {
-        const answer = await askPreviewReuse();
-        if (answer === "cancel") return;
-        rebake = answer === "rebake";
-      }
-      if (rebake) {
-        // 焼き込みは止まった姿勢で行う。再生の状態は覚えておいて戻す。
-        const saved = { playing: rigPlayer.playing, showing: rigPlayer.showing };
-        rigPlayer.playing = false;
-        rigPlayer.showing = false;
-        rigPart = null;
-        rigBone = null;
-        updateRigChrome();
-        loadingBusy = true;
-        showLoading("モーション確認モードの準備", "止まった姿勢で描き直しています", 0);
-        try {
-          requestRender();
-          await waitFrames(3);
-          beginJob({ cancellable: true, gpu: true });
-          const bake = await bakePreview();
-          disposePreviewBake(previewBake);
-          previewBake = bake;
-          showLoading("モーション確認モードの準備", "完了しました", 1);
-          await nextPaint();
-        } catch (error) {
-          if (error instanceof JobCancelled) {
-            setFileStatus("モーション確認モードの準備をキャンセルしました");
-            return;
-          }
-          console.warn(error);
-          setFileStatus("モーション確認モードの準備に失敗しました");
-          return;
-        } finally {
-          endJob();
-          requestRender();
-          rigPlayer.playing = saved.playing;
-          rigPlayer.showing = saved.showing;
-          loadingView.hidden = true;
-          loadingBusy = false;
-        }
-      }
-      previewMode = true;
-      previewHidden = [];
-      for (const object of scene.children) {
-        if (object.isLight || object === floor || object === floorShadow || !object.visible) continue;
-        previewHidden.push(object);
-        object.visible = false;
-      }
-      scene.add(previewBake.root);
-      if (!previewControls) {
-        previewControls = new OrbitControls(camera, document.getElementById("preview-overlay"));
-        previewControls.addEventListener("change", () => requestRender());
-      }
-      previewControls.target = controls.target;
-      previewControls.enableDamping = controls.enableDamping;
-      previewControls.dampingFactor = controls.dampingFactor;
-      previewControls.enabled = true;
-      controls.enabled = false;
-      previewLast = 0;
-      document.body.classList.add("motion-preview");
-      document.getElementById("preview-overlay").hidden = false;
-      document.getElementById("preview-banner").hidden = false;
-      document.getElementById("rig-banner").hidden = true;
-      updatePreviewButton();
-      renderer.shadowMap.needsUpdate = true;
-      requestRender();
-    }
-
-    function exitMotionPreview() {
-      if (!previewMode) return;
-      previewMode = false;
-      previewBake.root.removeFromParent();
-      for (const object of previewHidden) object.visible = true;
-      previewHidden = [];
-      previewControls.enabled = false;
-      controls.enabled = true;
-      controls.update();
-      document.body.classList.remove("motion-preview");
-      document.getElementById("preview-overlay").hidden = true;
-      document.getElementById("preview-banner").hidden = true;
-      document.getElementById("rig-banner").hidden = !rigEditing;
-      shadowSignature = null;
-      frameSignature = null;
-      lastFrameTime = 0;
-      updatePreviewButton();
-      requestRender();
-    }
-
-    function updatePreviewButton() {
-      const button = document.getElementById("rig-preview");
-      if (!button) return;
-      button.textContent = previewMode ? "確認モードを終える" : "モーション確認モード";
-      button.setAttribute("aria-pressed", String(previewMode));
-      button.disabled = !rig;
-    }
-
-    function previewFrame(time) {
-      const now = performance.now();
-      const dt = previewLast ? (time - previewLast) / 1000 : 0;
-      previewLast = time;
-      previewControls.update();
-      const playing = Boolean(rigMotion && rigPlayer.showing && rigPlayer.playing);
-      if (!playing && now > renderUntil) return;
-      if (playing) {
-        rigPlayer.time += Math.min(dt, 0.5) * rigPlayer.speed;
-        if (rigPlayer.time >= rigMotion.duration) {
-          if (rigPlayer.loop) rigPlayer.time %= rigMotion.duration;
-          else {
-            rigPlayer.time = rigMotion.duration;
-            rigPlayer.playing = false;
-            updateRigChrome();
-          }
-        }
-        showRigTime();
-      }
-      if (!playing) showRigTime();
-      const pose = rigMotion && rigPlayer.showing ? computeRigPose(rigMotion.sample(rigPlayer.time)).matrices : null;
-      for (const bone of previewBake.bones) {
-        const matrix = pose?.get(bone.name);
-        if (matrix) bone.matrix.copy(matrix);
-        else bone.matrix.identity();
-        bone.matrixWorldNeedsUpdate = true;
-      }
-      renderer.shadowMap.needsUpdate = true;
-      renderer.render(scene, camera);
-    }
-
-    window.addEventListener("keydown", (event) => {
-      if (!previewMode || !loadingView.hidden) return;
-      const typing = (event.target instanceof HTMLInputElement && event.target.type !== "file" && event.target.type !== "checkbox" && event.target.type !== "range")
-        || event.target instanceof HTMLTextAreaElement;
-      if (event.key === "Escape") {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        exitMotionPreview();
-        return;
-      }
-      if (typing) return;
-      if (event.code === "Space") {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        toggleRigPlay();
-        return;
-      }
-      event.stopImmediatePropagation();
-    }, true);
-
-    document.getElementById("rig-preview").addEventListener("click", () => {
-      if (previewMode) exitMotionPreview();
-      else enterMotionPreview();
-    });
 
     // ===== 顔デカールのプリセット（平面パーツの重ね合わせ。単位は頭の幅に対する割合） =====
     const FACE_INK = "#2b2230";
@@ -22770,7 +22444,7 @@ void main() {
 
     // ===== 表面デカール（平面パーツを別のパーツの表面に沿わせる） =====
     // 沿わせた形は「沿わせる先」のパーツの userData.conform に、先のパーツから見た座標で持つ。
-    // 先のパーツの子として描くので、先のパーツの移動・ボーンの動き・モーション確認モードの焼き込みにそのまま付いていく。
+    // 先のパーツの子として描くので、先のパーツの移動・ボーンの動きにそのまま付いていく。
     // 元の平面パーツは消さずに非表示にして残し、「沿わせ直す」で作り直し、「解除」で元に戻す。
     const CONFORM_OFFSET = 0.0006;
     const CONFORM_LAYER = 0.0004;
@@ -23173,7 +22847,7 @@ void main() {
     }
 
     function conformBusy() {
-      return rigEditing || previewMode || maskTarget || reliefTarget || featureTarget || softTarget || !loadingView.hidden;
+      return rigEditing || maskTarget || reliefTarget || featureTarget || softTarget || !loadingView.hidden;
     }
 
     // 1 つの先のパーツへ、平面パーツのまとまりを沿わせる（groupId があれば、その組を作り直す）。
@@ -23767,10 +23441,6 @@ void main() {
 
     renderer.setAnimationLoop((time) => {
       if (busyJob?.gpu) return;
-      if (previewMode) {
-        previewFrame(time);
-        return;
-      }
       const now = performance.now();
       if (!animating() && now > renderUntil && now - lastFullFrame < 1000) {
         lastFrameTime = 0;
