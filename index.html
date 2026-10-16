@@ -21807,12 +21807,14 @@ self.onmessage = (event) => {
     const PREVIEW_SPLIT_LEVELS = 3;
 
 
-    function previewCompile(gl, vertex, fragment, varyings) {
+    // シェーダーのコンパイル・リンクは、KHR_parallel_shader_compile があれば終わるまでブラウザへ処理を返しながら待つ。
+    // 状態の確認（COMPILE_STATUS など）は終わってから行う（途中で確認すると、そこで止まって待つため）。
+    async function previewCompile(gl, vertex, fragment, varyings) {
+      const parallel = gl.getExtension("KHR_parallel_shader_compile");
       const make = (type, source) => {
         const shader = gl.createShader(type);
         gl.shaderSource(shader, source);
         gl.compileShader(shader);
-        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error(`bake shader: ${gl.getShaderInfoLog(shader)}`);
         return shader;
       };
       const program = gl.createProgram();
@@ -21822,9 +21824,25 @@ self.onmessage = (event) => {
       gl.attachShader(program, fs);
       gl.transformFeedbackVaryings(program, varyings, gl.SEPARATE_ATTRIBS);
       gl.linkProgram(program);
+      if (parallel) {
+        while (!gl.getProgramParameter(program, parallel.COMPLETION_STATUS_KHR)) {
+          await new Promise((resolve) => setTimeout(resolve, 4));
+          if (busyJob?.cancelled) {
+            gl.deleteShader(vs);
+            gl.deleteShader(fs);
+            gl.deleteProgram(program);
+            throw new JobCancelled();
+          }
+        }
+      }
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        const log = gl.getShaderInfoLog(vs) || gl.getShaderInfoLog(fs) || gl.getProgramInfoLog(program);
+        gl.deleteShader(vs);
+        gl.deleteShader(fs);
+        throw new Error(`bake link: ${log}`);
+      }
       gl.deleteShader(vs);
       gl.deleteShader(fs);
-      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(`bake link: ${gl.getProgramInfoLog(program)}`);
       return program;
     }
 
@@ -21840,6 +21858,7 @@ self.onmessage = (event) => {
       const close = text.lastIndexOf("}");
       text = `${text.slice(0, close)}\nbakePos = gl_Position.xyz / gl_Position.w;\n}\n`;
       const program = previewCompile(gl, text, PREVIEW_FRAGMENT, ["bakePos"]);
+      program.catch(() => previewTfPrograms.delete(source));
       previewTfPrograms.set(source, program);
       return program;
     }
@@ -21866,6 +21885,7 @@ void main() {
   gl_PointSize = 1.0;
 }`;
       const program = previewCompile(gl, text, PREVIEW_FRAGMENT, ["bakeCut"]);
+      program.catch(() => previewClassifiers.delete(cap));
       previewClassifiers.set(cap, program);
       return program;
     }
@@ -21896,7 +21916,10 @@ void main() {
           const t = info.type;
           // 元のプログラムの値は 1 回だけ読む（読み戻しは重いので、分類用のプログラムにも使い回す）
           const read = () => {
-            if (!cache.has(name)) cache.set(name, gl.getUniform(from, src));
+            if (!cache.has(name)) {
+              const known = PREVIEW_SAMPLERS.has(t) ? undefined : cache.known?.(name);
+              cache.set(name, known !== undefined ? known : gl.getUniform(from, src));
+            }
             return cache.get(name);
           };
           if (PREVIEW_SAMPLERS.has(t)) {
@@ -21926,8 +21949,9 @@ void main() {
     const PREVIEW_CHUNK = 1 << 20;
     // フェンスの完了通知が極端に遅い環境（SwiftShader など）があるので、少し待っても終わらなければ
     // 以後はフェンスを使わず、そのまま読み戻す（その場合も、パーツや段階の区切りではブラウザへ返す）。
-    const FENCE_PATIENCE = 60;
+    const FENCE_PATIENCE = 250;
     let fenceUsable = true;
+    let fenceMisses = 0;
     async function gpuSettle(gl) {
       if (!fenceUsable) return;
       const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
@@ -21937,9 +21961,14 @@ void main() {
       try {
         for (;;) {
           const status = gl.clientWaitSync(sync, 0, 0);
-          if (status === gl.ALREADY_SIGNALED || status === gl.CONDITION_SATISFIED || status === gl.WAIT_FAILED) return;
+          if (status === gl.ALREADY_SIGNALED || status === gl.CONDITION_SATISFIED || status === gl.WAIT_FAILED) {
+            fenceMisses = 0;
+            return;
+          }
           if (performance.now() - began > FENCE_PATIENCE) {
-            fenceUsable = false;
+            // 3 回続けて間に合わなければ、この環境ではフェンスを使わない
+            fenceMisses += 1;
+            if (fenceMisses >= 3) fenceUsable = false;
             return;
           }
           await new Promise((resolve) => setTimeout(resolve, 1));
@@ -22028,15 +22057,51 @@ void main() {
     }
 
     // 1 つのパーツ（描いた直後に呼ぶ）: 頂点の最終位置を取り、切り抜かれる三角形を除き、境目の三角形は細かく割って判定する。
-    async function previewCapture(object, geometry, material) {
+    // GL から uniform を 1 つずつ読み戻すと、そのたびに GPU を待つので遅い。three.js が渡した値（材質の uniforms と
+    // 物体・カメラの行列）から分かるものはそれを使い、分からないものだけ読み戻す（値は同じものになる）。
+    function previewKnownValue(name, object, camera, material) {
+      const match = /^(\w+)(?:\[(\d+)\])?$/.exec(name);
+      if (!match) return undefined;
+      const [, base, slot] = match;
+      const builtin = {
+        modelMatrix: object.matrixWorld,
+        modelViewMatrix: object.modelViewMatrix,
+        normalMatrix: object.normalMatrix,
+        viewMatrix: camera?.matrixWorldInverse,
+        projectionMatrix: camera?.projectionMatrix,
+      };
+      let value;
+      if (base in builtin) value = builtin[base];
+      else {
+        const uniform = renderer.properties.get(material).uniforms?.[base];
+        if (!uniform) return undefined;
+        value = uniform.value;
+      }
+      if (value == null) return undefined;
+      if (slot !== undefined) {
+        if (!Array.isArray(value) && !ArrayBuffer.isView(value)) return undefined;
+        value = value[Number(slot)];
+        if (value == null) return undefined;
+      }
+      if (typeof value === "number" || typeof value === "boolean") return value;
+      if (value.isMatrix4 || value.isMatrix3) return new Float32Array(value.elements);
+      if (value.isVector2) return new Float32Array([value.x, value.y]);
+      if (value.isVector3) return new Float32Array([value.x, value.y, value.z]);
+      if (value.isVector4 || value.isQuaternion) return new Float32Array([value.x, value.y, value.z, value.w]);
+      if (value.isColor) return new Float32Array([value.r, value.g, value.b]);
+      return undefined;
+    }
+
+    async function previewCapture(object, geometry, material, camera = null) {
       const gl = renderer.getContext();
       const source = renderer.properties.get(material).currentProgram?.program;
       if (!source || !geometry.attributes.position) return null;
       const count = geometry.attributes.position.count;
       const columns = {};
       for (const [name, attribute] of Object.entries(geometry.attributes)) columns[name] = previewColumn(attribute);
-      const tf = previewTfProgram(gl, source);
+      const tf = await previewTfProgram(gl, source);
       const uniforms = new Map();
+      uniforms.known = (name) => previewKnownValue(name, object, camera, material);
       await previewCopyUniforms(gl, source, tf, uniforms);
       let [positions] = await previewRun(gl, tf, columns, count, [3]);
       let points = Array.from({ length: count }, (_, i) => i);
@@ -22048,7 +22113,7 @@ void main() {
       const masks = material.userData.maskUniforms;
       const cutting = cap || (masks && (masks.peerCount.value > 0 || Array.from({ length: masks.maskCount.value }, (_, i) => masks.maskMode.value[i]).includes(0)));
       if (!cutting) return { positions: new Float32Array(positions), index };
-      const classifier = previewClassifier(gl, cap);
+      const classifier = await previewClassifier(gl, cap);
       await previewCopyUniforms(gl, source, classifier, uniforms);
       const world = Array.from(positions);
       const classify = async (from) => {
@@ -22114,6 +22179,28 @@ void main() {
     // 指定したパーツを 1 つずつ描き、描いた直後に頂点シェーダーを回して、画面に出ている形（ワールド座標）を取り出す。
     // パーツごとに区切ってブラウザへ処理を返す（呼び出し側で busyJob.gpu を立て、描画ループを止めておくこと）。
     const CAPTURE_LAYER = 29;
+    function previewPlainCapture(object) {
+      const material = object.material;
+      const geometry = object.geometry;
+      const masks = material?.userData?.maskUniforms;
+      if (!masks || material.userData.capUniforms || Array.isArray(material) || !geometry?.attributes.position) return null;
+      if (object.isSkinnedMesh || object.isInstancedMesh || Object.keys(geometry.morphAttributes ?? {}).length) return null;
+      if (masks.maskCount.value > 0 || masks.peerCount.value > 0 || (masks.sagOn && masks.sagOn.value > 0.5)) return null;
+      const uniforms = renderer.properties.get(material).uniforms;
+      if (uniforms?.sagOn && uniforms.sagOn.value > 0.5) return null;
+      if (object.layers.mask & (1 << PUSH_HIDDEN_LAYER)) return null;
+      object.updateWorldMatrix(true, false);
+      const position = geometry.attributes.position;
+      const positions = new Float32Array(position.count * 3);
+      const point = new THREE.Vector3();
+      for (let i = 0; i < position.count; i += 1) point.fromBufferAttribute(position, i).applyMatrix4(object.matrixWorld).toArray(positions, i * 3);
+      let index = geometry.index ? Array.from(geometry.index.array) : Array.from({ length: position.count }, (_, i) => i);
+      const start = geometry.drawRange.start;
+      const end = Math.min(index.length, start + geometry.drawRange.count);
+      index = index.slice(start, end - ((end - start) % 3));
+      return { positions, index };
+    }
+
     async function captureRendered(sources, progress = null) {
       const captured = new Map();
       const culled = [];
@@ -22132,11 +22219,19 @@ void main() {
       try {
         for (let i = 0; i < sources.length; i += 1) {
           const object = sources[i];
+          // マスク・押し込み・たるみが効いていないパーツは、頂点シェーダーが位置を変えないので、GPU を使わずに元の形から求める
+          const plain = previewPlainCapture(object);
+          if (plain) {
+            captured.set(object, plain);
+            progress?.((i + 1) / sources.length);
+            await jobYield();
+            continue;
+          }
           let drawn = null;
           const hook = Object.prototype.hasOwnProperty.call(object, "onAfterRender") ? object.onAfterRender : undefined;
           const layers = object.layers.mask;
-          object.onAfterRender = (_renderer, _scene, _camera, geometry, material) => {
-            if (!drawn) drawn = { geometry, material };
+          object.onAfterRender = (_renderer, _scene, drawCamera, geometry, material) => {
+            if (!drawn) drawn = { geometry, material, camera: drawCamera };
           };
           object.layers.enable(CAPTURE_LAYER);
           try {
@@ -22152,7 +22247,7 @@ void main() {
             try {
               // 描いた結果を GPU が終えるまで待つ（その間は画面が動く）。終わっていれば後の読み戻しは待たずに済む
               await gpuSettle(renderer.getContext());
-              captured.set(object, await previewCapture(object, drawn.geometry, drawn.material));
+              captured.set(object, await previewCapture(object, drawn.geometry, drawn.material, drawn.camera));
             } finally {
               renderer.resetState();
             }
@@ -22816,6 +22911,8 @@ void main() {
     }
 
     async function conformPieces(target, sources) {
+      // 色は描画ループで反映されるので、追加した直後に沿わせても色が付いているように先に反映しておく
+      syncFolderColors();
       target.updateWorldMatrix(true, true);
       const surface = await conformSurface(target, (ratio) => conformProgress(ratio * 0.5));
       const targetInverse = target.matrixWorld.clone().invert();
