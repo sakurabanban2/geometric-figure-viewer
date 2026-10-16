@@ -18680,7 +18680,6 @@ self.onmessage = (event) => {
     }
 
     function openPublishDialog() {
-      if (!leaveEditModes()) return;
       const config = workshopConfig();
       const modal = document.getElementById("publish-modal");
       const motionRadio = document.querySelector('input[name="publish-kind"][value="motion"]');
@@ -18697,6 +18696,7 @@ self.onmessage = (event) => {
       } catch { /* 覚えたトークンを読めない */ }
       document.getElementById("publish-token").value = token;
       document.getElementById("publish-remember").checked = Boolean(token);
+      document.querySelector(".publish-settings").open = !token;
       publishThumb = captureThumbnail();
       document.getElementById("publish-thumb").src = publishThumb;
       setPublishStatus("");
