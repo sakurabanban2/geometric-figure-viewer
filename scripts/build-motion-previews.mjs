@@ -70,6 +70,11 @@ for (const file of await findMotions(motionsDir)) {
   await page.waitForTimeout(1500);
   await page.locator(".menu-button", { hasText: "ファイル" }).click();
   await page.click("#workshop-publish");
+  await page.evaluate(() => {
+    const radio = document.querySelector('input[name="publish-kind"][value="motion"]');
+    radio.checked = true;
+    radio.dispatchEvent(new Event("change"));
+  });
   await page.waitForFunction(() => /コマ|作れません/.test(document.getElementById("publish-preview-note").textContent), null, { timeout: 300000 });
   const shot = await page.evaluate(async () => {
     const sprite = document.getElementById("publish-preview").style.backgroundImage.slice(5, -2);

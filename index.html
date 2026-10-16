@@ -18599,8 +18599,15 @@ self.onmessage = (event) => {
     function captureThumbnail() {
       const guide = rigGuide.visible;
       rigGuide.visible = false;
-      renderer.render(scene, camera);
-      rigGuide.visible = guide;
+      // 描画ループは毎フレーム「姿勢を当てる → 描く → 戻す」ので、ここでも同じ順で描く
+      applyRigPose();
+      renderer.shadowMap.needsUpdate = true;
+      try {
+        renderer.render(scene, camera);
+      } finally {
+        restoreRigPose();
+        rigGuide.visible = guide;
+      }
       const source = renderer.domElement;
       const canvas = document.createElement("canvas");
       canvas.width = 480;
@@ -18646,8 +18653,14 @@ self.onmessage = (event) => {
       const [width, height] = PREVIEW_SIZE;
       const guide = rigGuide.visible;
       rigGuide.visible = false;
-      renderer.render(scene, camera);
-      rigGuide.visible = guide;
+      applyRigPose();
+      renderer.shadowMap.needsUpdate = true;
+      try {
+        renderer.render(scene, camera);
+      } finally {
+        restoreRigPose();
+        rigGuide.visible = guide;
+      }
       const source = renderer.domElement;
       const scale = Math.max(width / source.width, height / source.height);
       const drawWidth = source.width * scale;
@@ -18683,7 +18696,7 @@ self.onmessage = (event) => {
             rigPlayer.time = (rigMotion.duration * index) / PREVIEW_FRAMES;
             requestRender(1000);
             await waitFrame();
-            await waitFrame();
+            updateRigMotion(0); // 描画ループを待たずに、この時刻の姿勢を確実に求める
             drawPreviewFrame(context, index);
           }
         } finally {
@@ -18822,6 +18835,7 @@ self.onmessage = (event) => {
       motionRadio.disabled = !rigMotionSource;
       document.getElementById("publish-motion-name").textContent = rigMotionSource ? `（${rigMotionSource.name}）` : "（読み込んだモーションがありません）";
       if (!rigMotionSource) document.querySelector('input[name="publish-kind"][value="model"]').checked = true;
+      else if (rigEditing) motionRadio.checked = true;
       const titleInput = document.getElementById("publish-title-input");
       if (!titleInput.value) titleInput.value = modelName || "";
       document.getElementById("publish-author").value ||= config.author ?? "";
