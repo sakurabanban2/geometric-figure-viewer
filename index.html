@@ -1159,6 +1159,11 @@
         border-bottom: 1px solid var(--line);
       }
     }
+    body.path-picking canvas { cursor: crosshair; }
+    dialog.path-picker { width: min(360px, 90vw); }
+    .path-picker-search { width: 100%; box-sizing: border-box; margin: 8px 0; }
+    .path-picker-list { display: flex; flex-direction: column; gap: 2px; max-height: 50vh; overflow: auto; }
+    .path-picker-item { text-align: left; }
   </style>
   <script type="importmap">
   {
@@ -10280,7 +10285,7 @@ self.onmessage = (event) => {
 
     function insertItems(items, parentId, ref = null) {
       const moving = items.filter((item) => item.type !== "folder" || (parentId !== item.id && !folderContains(item.id, parentId)));
-      if (!moving.length) return;
+      if (!moving.length) return false;
       const keys = new Set(moving.map((item) => `${item.type}:${item.id}`));
       const siblings = childrenOf(parentId).filter((item) => !keys.has(`${item.type}:${item.id}`));
       let index = siblings.length;
@@ -10293,6 +10298,7 @@ self.onmessage = (event) => {
       siblings.forEach((item, order) => setItemParent(item.type, item.id, parentId, order));
       if (parentId) collapsedFolders.delete(parentId);
       commit();
+      return true;
     }
 
     function sideText(mesh) {
@@ -10366,7 +10372,7 @@ self.onmessage = (event) => {
       if (item.type === "folder") {
         const folder = item.folder;
         const open = !collapsedFolders.has(folder.id);
-        const descendants = descendantMeshes(folder.id);
+        const descendants = [...descendantMeshes(folder.id), ...folderCurves(folder.id)];
         const allLocked = descendants.length > 0 && descendants.every((mesh) => mesh.userData.locked);
         const hiddenFlags = folderHiddenFlags(folder.id);
         const allHidden = hiddenFlags.length > 0 && hiddenFlags.every(Boolean);
@@ -10598,11 +10604,18 @@ self.onmessage = (event) => {
       commit();
     }
 
+    function folderCurves(folderId) {
+      const ids = descendantFolderIds(folderId);
+      return curves.filter((curve) => ids.has(curve.userData.folderId));
+    }
+
     function toggleFolderLock(folderId) {
       const meshes = descendantMeshes(folderId);
-      if (!meshes.length) return;
-      const next = meshes.some((mesh) => !mesh.userData.locked);
+      const paths = folderCurves(folderId);
+      if (!meshes.length && !paths.length) return;
+      const next = [...meshes, ...paths].some((item) => !item.userData.locked);
       for (const mesh of withTwins(meshes)) mesh.userData.locked = next;
+      for (const curve of paths) curve.userData.locked = next;
       setSelection(selection, selected);
       commit();
     }
@@ -10797,6 +10810,14 @@ self.onmessage = (event) => {
           },
         },
         {
+          label: "切り取り",
+          disabled: masking || !targets.length || targets.some((item) => (curveOf(item) ?? item).userData.locked),
+          run: () => {
+            focus();
+            if (copySelection()) removeSelected();
+          },
+        },
+        {
           label: masking ? "マスク範囲として貼り付け" : "貼り付け",
           disabled: !localStorage.getItem(CLIPBOARD_KEY),
           run: () => {
@@ -10804,6 +10825,42 @@ self.onmessage = (event) => {
             pasteClipboard();
           },
         },
+        {
+          label: "複製",
+          disabled: masking || (!targets.length && !folderId),
+          run: () => {
+            focus();
+            duplicateSelection();
+          },
+        },
+      ];
+    }
+
+    // パス・パーツ共通：フォルダにまとめる／フォルダから出す
+    function folderItems(item, masking) {
+      const folderId = item.userData.folderId ?? null;
+      return [
+        {
+          label: "新しいフォルダにまとめる",
+          disabled: masking,
+          run: () => {
+            if (!selection.includes(item)) select(item);
+            focusedFolder = null;
+            folderPick = null;
+            addFolder();
+          },
+        },
+        ...(folderId
+          ? [{
+            label: "フォルダから出す",
+            disabled: masking,
+            run: () => {
+              const type = isCurve(item) ? "curve" : "part";
+              const parent = folders.find((folder) => folder.id === folderId)?.parentId ?? null;
+              insertItems([{ type, id: item.userData.id }], parent, { type: "folder", id: folderId, after: true });
+            },
+          }]
+          : []),
       ];
     }
 
@@ -10822,15 +10879,8 @@ self.onmessage = (event) => {
           { label: link.hidden ? "表示" : "非表示", disabled: masking, run: () => toggleLinkHidden(link) },
           { label: link.mirror ? "左右対称を解除" : "左右対称に配置", disabled: masking, run: () => toggleLinkMirror(link) },
           null,
-          ...(link.curveBind
-            ? [{ label: `${curveById(link.curveBind.curveId)?.userData.closed ? "ループ" : "カーブ"}から外す`, disabled: masking || !anchor, run: () => unbindFromCurve(anchor) }]
-            : curves.length
-              ? curves.map((curve) => ({
-                label: `${curve.userData.closed ? "ループ" : "カーブ"}「${curve.userData.label}」に沿わせる`,
-                disabled: masking || !anchor,
-                run: () => bindToCurve(anchor, curve),
-              }))
-              : [{ label: "パスに沿わせる（パスがありません）", disabled: true }]),
+          ...(anchor ? bindMenuItems(anchor, masking) : [{ label: "パスに沿わせる", disabled: true }]),
+          null,
           null,
           { label: "リンクを解除（パーツに戻す）", disabled: masking, run: () => unlinkModel(link.id) },
           {
@@ -10859,14 +10909,7 @@ self.onmessage = (event) => {
         return {
           title: `マスク範囲「${shape.userData.label ?? ""}」`,
           items: [
-            ...(bind
-              ? [{ label: `${curveById(bind.curveId)?.userData.closed ? "ループ" : "カーブ"}から外す`, run: () => unbindFromCurve(shape) }]
-              : curves.length
-                ? curves.map((curve) => ({
-                  label: `${curve.userData.closed ? "ループ" : "カーブ"}「${curve.userData.label}」に沿わせる`,
-                  run: () => bindToCurve(shape, curve),
-                }))
-                : [{ label: "パスに沿わせる（パスがありません）", disabled: true }]),
+            ...bindMenuItems(shape, false),
             null,
             ...clipItems([shape]),
             null,
@@ -10900,17 +10943,11 @@ self.onmessage = (event) => {
             },
             { label: "ラスタライズ", disabled: !canRasterize(mesh), run: () => rasterizePart(mesh) },
             null,
-            ...(mesh.userData.curveBind
-              ? [{ label: `${curveById(mesh.userData.curveBind.curveId)?.userData.closed ? "ループ" : "カーブ"}から外す`, disabled: masking || locked, run: () => unbindFromCurve(mesh) }]
-              : curves.length
-                ? curves.map((curve) => ({
-                  label: `${curve.userData.closed ? "ループ" : "カーブ"}「${curve.userData.label}」に沿わせる`,
-                  disabled: masking || locked,
-                  run: () => bindToCurve(mesh, curve),
-                }))
-                : [{ label: "パスに沿わせる（パスがありません）", disabled: true }]),
+            ...bindMenuItems(mesh, masking || locked),
             null,
             ...clipItems([mesh]),
+            null,
+            ...folderItems(mesh, masking),
             null,
             { label: "名前の変更", disabled: masking, run: () => beginRename("part", mesh.userData.id) },
             { label: "色を設定…", disabled: masking, run: () => pickPartColor(mesh, subject.x ?? 0, subject.y ?? 0) },
@@ -11049,6 +11086,11 @@ self.onmessage = (event) => {
         return;
       }
       const { type, id } = row.dataset;
+      if (pathPick && type === "curve" && curveById(id)) {
+        event.stopPropagation();
+        finishPathPick(curveById(id));
+        return;
+      }
       if (type === "decal") {
         event.stopPropagation();
         const [hostId, groupId] = id.split("|");
@@ -11107,6 +11149,7 @@ self.onmessage = (event) => {
         const meshes = [
           ...descendantMeshes(id).filter((mesh) => !mesh.userData.hidden),
           ...descendantLinks(id).filter((link) => !link.hidden).map((link) => linkAnchors.get(link.id)).filter(Boolean),
+          ...folderCurves(id).filter((curve) => !curve.userData.hidden),
         ];
         if (event.shiftKey || event.ctrlKey || event.metaKey) {
           setSelection([...selection, ...meshes], meshes[0] ?? selected);
@@ -11119,7 +11162,7 @@ self.onmessage = (event) => {
         return;
       }
       const mesh = type === "link" ? linkAnchors.get(id) : type === "curve" ? curveById(id) : meshById(id);
-      if (!mesh || (type === "curve" && mesh.userData.hidden)) return;
+      if (!mesh) return;
       focusedFolder = null;
       if (event.shiftKey && !event.ctrlKey && !event.metaKey) {
         if (selection.includes(mesh)) setSelection(selection, mesh);
@@ -11167,10 +11210,27 @@ self.onmessage = (event) => {
       const rows = row.classList.contains("selected") ? [...outlinerTree.querySelectorAll(".outliner-row.selected")] : [row];
       event.dataTransfer.setData("text/plain", rows.map((item) => `${item.dataset.type}:${item.dataset.id}`).join("\n"));
       event.dataTransfer.effectAllowed = "move";
+      dragTypes = rows.map((item) => item.dataset.type);
     });
+    // ドラッグ中の行の種類（dragover では dataTransfer の中身が読めないため）
+    let dragTypes = [];
+    const canBindDrag = () => dragTypes.length > 0 && dragTypes.every((type) => type === "part" || type === "link");
+
+    function dragBindTarget(type, id) {
+      if (type === "link") return linkAnchors.get(id) ?? null;
+      if (type !== "part") return null;
+      const mesh = meshById(id);
+      return mesh && !mesh.userData.locked ? mesh : null;
+    }
     function dropZone(row, event) {
       const rect = row.getBoundingClientRect();
       const ratio = (event.clientY - rect.top) / Math.max(rect.height, 1);
+      if (row.dataset.type === "curve" && canBindDrag()) {
+        // パスの行: 中央に落とすと沿わせる、上下の端は並べ替え
+        if (ratio < 0.25) return "before";
+        if (ratio > 0.75) return "after";
+        return "bind";
+      }
       if (row.dataset.type !== "folder") return ratio < 0.5 ? "before" : "after";
       if (ratio < 0.3) return "before";
       if (ratio > 0.7) return collapsedFolders.has(row.dataset.id) ? "after" : "first";
@@ -11202,12 +11262,15 @@ self.onmessage = (event) => {
       const row = event.target.closest(".outliner-row");
       if (!row) return;
       const zone = dropZone(row, event);
-      row.classList.add(zone === "into" ? "drop" : zone === "before" ? "drop-before" : "drop-after");
+      row.classList.add(zone === "into" || zone === "bind" ? "drop" : zone === "before" ? "drop-before" : "drop-after");
     });
     outlinerTree.addEventListener("dragleave", (event) => {
       if (!outlinerTree.contains(event.relatedTarget)) clearDropMarks();
     });
-    outlinerTree.addEventListener("dragend", clearDropMarks);
+    outlinerTree.addEventListener("dragend", () => {
+      clearDropMarks();
+      dragTypes = [];
+    });
     outlinerTree.addEventListener("drop", (event) => {
       event.preventDefault();
       clearDropMarks();
@@ -11223,16 +11286,46 @@ self.onmessage = (event) => {
       if (!items.length) return;
       const row = event.target.closest(".outliner-row");
       if (row && items.some((item) => item.type === row.dataset.type && item.id === row.dataset.id)) return;
+      const zone = row ? dropZone(row, event) : null;
+      dragTypes = [];
+      if (zone === "bind") {
+        // パーツ・リンクをパスの行の中央に落とした: パスに沿わせる（まとめて 1 回で元に戻せる）
+        const curve = curveById(row.dataset.id);
+        const targets = items.map((item) => dragBindTarget(item.type, item.id)).filter(Boolean);
+        const messages = curve ? targets.map((target) => attachToCurve(target, curve)).filter(Boolean) : [];
+        if (!messages.length) return;
+        setSelection(targets, targets[0]);
+        commit();
+        setFileStatus(messages.length === 1 ? messages[0] : `${messages.length}個を${pathNoun(curve)}「${curve.userData.label}」に沿わせました`);
+        return;
+      }
+      // パスに沿わせているパーツ・リンクをパス以外へドラッグした: パスから外す（並べ替えと同じ 1 回の操作）
+      let unbound = 0;
+      if (row?.dataset.type !== "curve") {
+        for (const item of items) {
+          const target = dragBindTarget(item.type, item.id);
+          if (target && curveBindTargetOf(target)) {
+            detachFromCurve(target);
+            unbound += 1;
+          }
+        }
+      }
+      const move = (...args) => {
+        if (!insertItems(...args) && unbound) {
+          setSelection(selection, selected);
+          commit();
+        }
+      };
+      if (unbound) setFileStatus(`${unbound}個をパスから外しました（元に戻すで取り消せます）`);
       if (!row) {
-        insertItems(items, null);
+        move(items, null);
         return;
       }
-      const zone = dropZone(row, event);
       if (row.dataset.type === "folder" && (zone === "into" || zone === "first")) {
-        insertItems(items, row.dataset.id, zone === "first" ? { first: true } : null);
+        move(items, row.dataset.id, zone === "first" ? { first: true } : null);
         return;
       }
-      insertItems(items, rowParent(row), { type: row.dataset.type, id: row.dataset.id, after: zone === "after" });
+      move(items, rowParent(row), { type: row.dataset.type, id: row.dataset.id, after: zone === "after" });
     });
 
     document.getElementById("undo").addEventListener("click", undo);
@@ -15738,7 +15831,7 @@ self.onmessage = (event) => {
     // パスは、パス自身か、それに沿わせたパーツ・マスク範囲を選んでいるときだけ表示する。
     function curveShown(curve) {
       if (curve.userData.hidden) return false;
-      if (softTarget === curve) return true;
+      if (softTarget === curve || pathPick) return true;
       const id = curve.userData.id;
       return selection.some((item) => curveOf(item) === curve || item.userData?.curveBind?.curveId === id);
     }
@@ -15748,7 +15841,7 @@ self.onmessage = (event) => {
         const active = selection.some((item) => curveOf(item) === curve);
         curve.visible = curveShown(curve);
         curve.userData.line.material.color.setHex(curve === selected ? CURVE_COLORS.lineSelected : active ? CURVE_COLORS.lineActive : CURVE_COLORS.line);
-        curve.userData.line.material.linewidth = active ? 4 : 3;
+        curve.userData.line.material.linewidth = pathPick ? 7 : active ? 4 : 3;
         curve.userData.handles.visible = active;
         const points = curve.userData.points;
         const closed = Boolean(curve.userData.closed);
@@ -15916,6 +16009,34 @@ self.onmessage = (event) => {
       ];
     }
 
+    // 新しく作ったものを、開いているフォルダ（なければ選択中のものの隣）に置く
+    function newItemDestination() {
+      if (focusedFolder && folders.some((folder) => folder.id === focusedFolder)) return { parentId: focusedFolder, after: null };
+      const picked = selection.includes(selected) ? selected : selection.at(-1);
+      const target = isCurvePart(picked) ? curveOf(picked) : picked;
+      if (!target || target.userData.isMask) return null;
+      if (isCurve(target)) return { parentId: target.userData.folderId ?? null, after: { type: "curve", id: target.userData.id } };
+      if (isLinkAnchor(target)) {
+        const link = linkById(target.userData.linkId);
+        return link ? { parentId: link.parentId ?? null, after: { type: "link", id: link.id } } : null;
+      }
+      if (!editableMeshes().includes(target)) return null;
+      return { parentId: target.userData.folderId ?? null, after: { type: "part", id: target.userData.id } };
+    }
+
+    function placeNewItem(type, id, dest) {
+      if (!dest) return;
+      const siblings = childrenOf(dest.parentId).filter((item) => !(item.type === type && item.id === id));
+      let index = siblings.length;
+      if (dest.after) {
+        const found = siblings.findIndex((item) => item.type === dest.after.type && item.id === dest.after.id);
+        if (found >= 0) index = found + 1;
+      }
+      siblings.splice(index, 0, { type, id });
+      siblings.forEach((item, order) => setItemParent(item.type, item.id, dest.parentId, order));
+      if (dest.parentId) collapsedFolders.delete(dest.parentId);
+    }
+
     function addPath(closed) {
       const shape = maskTarget ? addMaskShape("box", null, false) : null;
       if (maskTarget && !shape) return;
@@ -15965,6 +16086,7 @@ self.onmessage = (event) => {
         setFileStatus(`${closed ? "ループ" : "カーブ"}「${curve.userData.label}」に沿ったマスク範囲を追加しました。パスの点を動かすと範囲も曲がります`);
         return;
       }
+      placeNewItem("curve", id, newItemDestination());
       select(curve);
       commit();
     }
@@ -16155,6 +16277,7 @@ self.onmessage = (event) => {
         })),
       });
       curves.push(curve);
+      placeNewItem("curve", id, newItemDestination());
       select(curve);
       commit();
       setFileStatus(`${closed ? "ループ" : "カーブ"}「${curve.userData.label}」を点 ${points.length} 個で作成しました`);
@@ -17533,33 +17656,195 @@ self.onmessage = (event) => {
       return twin && twin.userData.curveBind?.curveId === mesh.userData.curveBind?.curveId ? [mesh, twin] : [mesh];
     }
 
-    function bindToCurve(mesh, curve) {
+    // 沿わせるだけ（履歴には積まない）。成功したら表示用のメッセージを返す
+    function attachToCurve(mesh, curve) {
       const bind = defaultCurveBind(curve.userData.id);
+      rememberCurve(curve);
       if (isLinkAnchor(mesh)) {
         const link = linkById(mesh.userData.linkId);
-        if (!link) return;
+        if (!link) return null;
         link.curveBind = withCurveRest(readCurveBind(bind), mesh.quaternion);
         syncLinkCurve(mesh);
-        select(mesh);
-        commit();
-        setFileStatus(`リンク「${link.name}」を${pathNoun(curve)}「${curve.userData.label}」に沿わせました`);
-        return;
+        return `リンク「${link.name}」を${pathNoun(curve)}「${curve.userData.label}」に沿わせました`;
       }
       if (mesh.userData.isMask) {
         setCurveBind(mesh, bind);
         syncMaskShapes(mesh, symmetric);
-        select(mesh);
-        commit();
-        setFileStatus(`マスク範囲を${pathNoun(curve)}「${curve.userData.label}」に沿わせました`);
-        return;
+        return `マスク範囲を${pathNoun(curve)}「${curve.userData.label}」に沿わせました`;
       }
+      if (mesh.userData.locked) return null;
       setCurveBind(mesh, bind);
       const twin = symmetric ? otherOf(recordOf(mesh), mesh) : null;
       if (twin) setCurveBind(twin, { ...bind, mirror: true });
+      return `「${mesh.userData.label ?? "パーツ"}」を${pathNoun(curve)}「${curve.userData.label}」に沿わせました`;
+    }
+
+    function bindToCurve(mesh, curve) {
+      const message = attachToCurve(mesh, curve);
+      if (!message) return;
       select(mesh);
       commit();
-      setFileStatus(`「${mesh.userData.label ?? "パーツ"}」を${pathNoun(curve)}「${curve.userData.label}」に沿わせました`);
+      setFileStatus(message);
     }
+
+    // 外すだけ（履歴には積まない）
+    function detachFromCurve(mesh) {
+      if (isLinkAnchor(mesh)) {
+        const link = linkById(mesh.userData.linkId);
+        if (link) delete link.curveBind;
+        syncLinkCurve(mesh);
+      } else if (mesh.userData.isMask) {
+        setCurveBind(mesh, null);
+        syncMaskShapes(mesh, symmetric);
+      } else {
+        for (const target of bindTargets(mesh)) setCurveBind(target, null);
+      }
+    }
+
+    // ===== パスに沿わせる先の選び方 =====
+    // メニューには最近使ったパス・近いパスを 5 つまで出し、残りは検索できる一覧か、画面でクリックして選ぶ。
+    const recentCurveIds = [];
+    function rememberCurve(curve) {
+      const id = curve.userData.id;
+      const at = recentCurveIds.indexOf(id);
+      if (at >= 0) recentCurveIds.splice(at, 1);
+      recentCurveIds.unshift(id);
+      recentCurveIds.length = Math.min(recentCurveIds.length, 20);
+    }
+
+    function curveBindTargetOf(target) {
+      return isLinkAnchor(target) ? linkById(target.userData.linkId)?.curveBind : target.userData.curveBind;
+    }
+
+    function rankedCurves(target) {
+      const here = new THREE.Vector3();
+      target.getWorldPosition(here);
+      const box = new THREE.Box3();
+      const center = new THREE.Vector3();
+      const scored = curves.map((curve) => {
+        curve.updateWorldMatrix(true, false);
+        curveBounds(curve, curve.matrixWorld, box.makeEmpty());
+        const distance = box.isEmpty() ? Infinity : box.getCenter(center).distanceTo(here);
+        const recent = recentCurveIds.indexOf(curve.userData.id);
+        return { curve, distance, recent: recent < 0 ? Infinity : recent };
+      });
+      scored.sort((a, b) => a.recent - b.recent || a.distance - b.distance);
+      return scored.map((item) => item.curve);
+    }
+
+    const BIND_MENU_LIMIT = 5;
+    function bindMenuItems(target, disabled) {
+      const bind = curveBindTargetOf(target);
+      if (bind) {
+        return [{ label: `${curveById(bind.curveId)?.userData.closed ? "ループ" : "カーブ"}から外す`, disabled, run: () => unbindFromCurve(target) }];
+      }
+      if (!curves.length) return [{ label: "パスに沿わせる（パスがありません）", disabled: true }];
+      const ranked = rankedCurves(target);
+      return [
+        { label: "パスに沿わせる…（画面でパスをクリック）", disabled, run: () => beginPathPick(target) },
+        ...ranked.slice(0, BIND_MENU_LIMIT).map((curve) => ({
+          label: `${pathNoun(curve)}「${curve.userData.label}」に沿わせる`,
+          disabled,
+          run: () => bindToCurve(target, curve),
+        })),
+        ...(ranked.length > BIND_MENU_LIMIT
+          ? [{ label: `ほかのパスから選ぶ…（全${ranked.length}個）`, disabled, run: () => openPathPicker(target) }]
+          : []),
+      ];
+    }
+
+    function openPathPicker(target) {
+      const dialog = document.createElement("dialog");
+      dialog.className = "path-picker";
+      dialog.innerHTML = `<h2>沿わせるパスを選ぶ</h2>
+        <input type="search" class="path-picker-search" placeholder="名前で絞り込む" aria-label="パスの名前で絞り込む" />
+        <div class="path-picker-list" role="listbox"></div>
+        <div class="modal-actions"><button type="button" data-close>キャンセル</button></div>`;
+      const search = dialog.querySelector("input");
+      const list = dialog.querySelector(".path-picker-list");
+      const ranked = rankedCurves(target);
+      const render = () => {
+        const word = search.value.trim().toLowerCase();
+        const shown = ranked.filter((curve) => !word || curve.userData.label.toLowerCase().includes(word));
+        list.replaceChildren(...shown.map((curve) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "path-picker-item";
+          button.textContent = `${pathNoun(curve)}「${curve.userData.label}」`;
+          button.addEventListener("click", () => {
+            dialog.close();
+            bindToCurve(target, curve);
+          });
+          return button;
+        }));
+        if (!shown.length) list.textContent = "見つかりません";
+      };
+      search.addEventListener("input", render);
+      search.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        list.querySelector("button")?.click();
+      });
+      dialog.querySelector("[data-close]").addEventListener("click", () => dialog.close());
+      dialog.addEventListener("close", () => dialog.remove());
+      document.body.append(dialog);
+      render();
+      dialog.showModal();
+      search.focus();
+    }
+
+    // 画面でパスをクリックして沿わせるモード（Esc・右クリックでやめる）。パスはすべて太く表示する。
+    let pathPick = null;
+    function beginPathPick(target) {
+      if (!curves.some((curve) => !curve.userData.hidden)) {
+        setFileStatus("表示されているパスがありません");
+        return;
+      }
+      pathPick = { target };
+      document.body.classList.add("path-picking");
+      paintCurves();
+      requestRender();
+      setFileStatus("沿わせるパスを画面でクリックしてください（パーツ一覧のパスでも可。Escでやめる）");
+    }
+
+    function endPathPick(message = null) {
+      if (!pathPick) return;
+      pathPick = null;
+      document.body.classList.remove("path-picking");
+      paintCurves();
+      requestRender();
+      if (message) setFileStatus(message);
+    }
+
+    function finishPathPick(curve) {
+      const { target } = pathPick;
+      endPathPick();
+      bindToCurve(target, curve);
+    }
+
+    window.addEventListener("pointerdown", (event) => {
+      if (!pathPick || event.target !== renderer.domElement) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (event.button !== 0) {
+        endPathPick("パスに沿わせるのをやめました");
+        return;
+      }
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hit = pickCurve();
+      const curve = hit ? curveOf(hit) : null;
+      if (curve) finishPathPick(curve);
+      else setFileStatus("パスの線をクリックしてください（Escでやめる）");
+    }, true);
+    window.addEventListener("keydown", (event) => {
+      if (!pathPick || event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      endPathPick("パスに沿わせるのをやめました");
+    }, true);
 
     function unbindFromCurve(mesh) {
       if (isLinkAnchor(mesh)) {
@@ -17707,6 +17992,10 @@ self.onmessage = (event) => {
             run: () => toggleCurveMirror(curve, point),
           },
           null,
+          ...clipItems([curve]),
+          null,
+          ...folderItems(curve, masking),
+          null,
           { label: "名前の変更", disabled: masking, run: () => beginRename("curve", curve.userData.id) },
           { label: curve.userData.locked ? "ロック解除" : "ロック", disabled: masking, run: () => toggleCurveLock(curve) },
           { label: curve.userData.hidden ? "表示" : "非表示", disabled: masking, run: () => toggleCurveHidden(curve) },
@@ -17733,13 +18022,52 @@ self.onmessage = (event) => {
       return maskTarget ? [] : selection.filter((item) => !item.userData.isMask && !isCurve(item) && !isCurvePart(item));
     }
 
+    // 選択中のパス（点や取っ手を選んでいるときはそのパス）
+    function copyCurves(folderId = null) {
+      if (maskTarget) return [];
+      if (folderId) {
+        const ids = descendantFolderIds(folderId);
+        return curves.filter((curve) => ids.has(curve.userData.folderId));
+      }
+      return [...new Set(selection.map((item) => (isCurve(item) ? item : isCurvePart(item) ? curveOf(item) : null)).filter(Boolean))];
+    }
+
     function copySelection() {
+      const built = buildClip();
+      if (!built) return false;
+      const { clip, count, folderId } = built;
+      try {
+        localStorage.setItem(CLIPBOARD_KEY, JSON.stringify(clip));
+      } catch {
+        setFileStatus("コピーできませんでした");
+        return false;
+      }
+      pasteCount = 0;
+      const folderName = folderId ? folders.find((folder) => folder.id === folderId)?.name : null;
+      setFileStatus(folderId ? `フォルダ「${folderName}」をコピーしました` : `${count}個をコピーしました`);
+      return true;
+    }
+
+    // クリップボードを使わずに、選択中のものをその場で複製する
+    function duplicateSelection() {
+      const built = buildClip();
+      if (!built) {
+        setFileStatus("複製できるものがありません");
+        return;
+      }
+      const clip = JSON.parse(JSON.stringify(built.clip));
+      clip.folders = sanitizeFolders(clip.folders ?? []);
+      pasteClip(clip, 1);
+    }
+
+    function buildClip() {
       const folderId = maskTarget ? null : pickedFolder();
       const chosen = folderId
         ? descendantMeshes(folderId).filter((mesh) => !mesh.userData.isMask && !isCurvePart(mesh))
         : copyTargets();
-      if (!chosen.length && !folderId) return false;
-      const clip = { version: 1, records: [], links: [] };
+      const pathList = copyCurves(folderId);
+      if (!chosen.length && !pathList.length && !folderId) return null;
+      const clip = { version: 1, records: [], links: [], curves: pathList.map((curve) => curveData(curve)) };
       const packed = serializeLinks();
       if (folderId) {
         const ids = descendantFolderIds(folderId);
@@ -17765,18 +18093,9 @@ self.onmessage = (event) => {
           clip.records.push({ kind: record.kind, solo: Boolean(record.solo || other), mesh: serializeMesh(item), mirror: null });
         }
       }
-      const count = clip.records.reduce((sum, record) => sum + (record.mirror ? 2 : 1), 0) + clip.links.length;
-      if (!count && !folderId) return false;
-      try {
-        localStorage.setItem(CLIPBOARD_KEY, JSON.stringify(clip));
-      } catch {
-        setFileStatus("コピーできませんでした");
-        return false;
-      }
-      pasteCount = 0;
-      const folderName = folderId ? folders.find((folder) => folder.id === folderId)?.name : null;
-      setFileStatus(folderId ? `フォルダ「${folderName}」をコピーしました` : `${count}個をコピーしました`);
-      return true;
+      const count = clip.records.reduce((sum, record) => sum + (record.mirror ? 2 : 1), 0) + clip.links.length + clip.curves.length;
+      if (!count && !folderId) return null;
+      return { clip, count, folderId };
     }
 
     function pasteDestination() {
@@ -17786,8 +18105,10 @@ self.onmessage = (event) => {
         const folder = folders.find((item) => item.id === folderId);
         return { parentId: folder.parentId ?? null, after: { type: "folder", id: folderId } };
       }
-      const target = selection.includes(selected) ? selected : selection.at(-1);
-      if (!target || target.userData.isMask || isCurve(target) || isCurvePart(target)) return null;
+      const picked = selection.includes(selected) ? selected : selection.at(-1);
+      const target = isCurvePart(picked) ? curveOf(picked) : picked;
+      if (!target || target.userData.isMask) return null;
+      if (isCurve(target)) return { parentId: target.userData.folderId ?? null, after: { type: "curve", id: target.userData.id } };
       if (isLinkAnchor(target)) {
         const link = linkById(target.userData.linkId);
         return link ? { parentId: link.parentId ?? null, after: { type: "link", id: link.id } } : null;
@@ -17802,6 +18123,9 @@ self.onmessage = (event) => {
         if (!clip) return null;
         assertDocument({ version: 1, records: clip.records, links: clip.links ?? [] });
         clip.folders = sanitizeFolders(Array.isArray(clip.folders) ? clip.folders : []);
+        clip.curves = Array.isArray(clip.curves)
+          ? clip.curves.filter((curve) => curve && typeof curve.id === "string" && isVector(curve.position, 3) && Array.isArray(curve.points) && curve.points.length >= 2)
+          : [];
         return clip;
       } catch {
         return null;
@@ -17884,7 +18208,11 @@ self.onmessage = (event) => {
         return;
       }
       pasteCount += 1;
-      const offset = new THREE.Vector3(0, 0.05, 0.05).multiplyScalar(pasteCount);
+      pasteClip(clip, pasteCount);
+    }
+
+    function pasteClip(clip, shift) {
+      const offset = new THREE.Vector3(0, 0.05, 0.05).multiplyScalar(shift);
       const dest = pasteDestination();
       const remap = new Map(clip.folders.map((folder) => [folder.id, `folder-${nextFolderId++}`]));
       const existing = (id) => (id && folders.some((folder) => folder.id === id) ? id : null);
@@ -17892,7 +18220,8 @@ self.onmessage = (event) => {
       const allowedLinks = MODEL_ID ? [] : clip.links ?? [];
       const topCount = clip.folders.filter((folder) => !remap.has(folder.parentId)).length
         + clip.records.flatMap((record) => [record.mesh, record.mirror]).filter((part) => part && !remap.has(part.folderId)).length
-        + allowedLinks.filter((link) => !remap.has(link.parentId)).length;
+        + allowedLinks.filter((link) => !remap.has(link.parentId)).length
+        + (clip.curves ?? []).filter((curve) => !remap.has(curve.folderId)).length;
       let base = nextPartOrder() - 1;
       let step = 1;
       if (dest && dest.after != null) {
@@ -17922,12 +18251,41 @@ self.onmessage = (event) => {
         });
         if (root && !pastedRoot) pastedRoot = remap.get(folder.id);
       }
+      // パスは新しい ID で作り、一緒に貼り付けたパーツ・リンクの沿わせ先をつけかえる
+      const curveRemap = new Map();
+      const pastedCurves = [];
+      for (const source of clip.curves ?? []) {
+        const id = `${ID_PREFIX}curve-${nextCurveId++}`;
+        curveRemap.set(source.id, id);
+        const inside = remap.has(source.folderId);
+        const curve = createCurve(id);
+        writeCurve(curve, {
+          ...source,
+          id,
+          folderId: inside ? remap.get(source.folderId) : topParent(source.folderId),
+          order: inside ? source.order ?? 0 : topOrder(source.order),
+          hidden: false,
+          locked: false,
+          position: new THREE.Vector3().fromArray(source.position).add(offset).toArray().map(roundNumber),
+          home: isVector(source.home, 3) ? new THREE.Vector3().fromArray(source.home).add(offset).toArray().map(roundNumber) : undefined,
+        });
+        curves.push(curve);
+        pastedCurves.push(curve);
+      }
+      if (pastedCurves.length) paintCurves();
+      const rebindCurve = (object, bind) => {
+        const curveId = bind && curveRemap.get(bind.curveId);
+        if (curveId) setCurveBind(object, { ...bind, curveId });
+      };
       const pasted = [];
       const reliefs = [];
       for (const record of clip.records) {
         const first = pastePart(record.mesh, record.mirror, offset, folderOf, orderOf);
         const second = record.mirror ? pastePart(record.mirror, record.mesh, offset, folderOf, orderOf) : null;
         reliefs.push([first, record.mesh], [second, record.mirror]);
+        for (const [made, part] of [[first, record.mesh], [second, record.mirror]]) {
+          if (made && part) rebindCurve(made, readCurveBind(part.curve));
+        }
         const mesh = first ?? second;
         if (!mesh) continue;
         const mirror = first ? second : null;
@@ -17950,18 +18308,22 @@ self.onmessage = (event) => {
           hidden: false,
           position: new THREE.Vector3().fromArray(start).add(offset).toArray().map(roundNumber),
         };
+        if (source.curveBind) {
+          const curveId = curveRemap.get(source.curveBind.curveId);
+          if (curveId) link.curveBind = { ...source.curveBind, curveId };
+        }
         links.push(link);
         added.push(link);
       }
       if (added.length) refreshLinks();
       const anchors = added.map((link) => linkAnchors.get(link.id)).filter(Boolean);
-      if (!pasted.length && !anchors.length && !pastedRoot) {
+      if (!pasted.length && !anchors.length && !pastedRoot && !pastedCurves.length) {
         setFileStatus(skipped ? "リンクモデルの中にはリンクを貼り付けられません" : "貼り付けられませんでした");
         return;
       }
       if (dest?.parentId) collapsedFolders.delete(dest.parentId);
       scene.updateMatrixWorld();
-      const chosen = [...pasted, ...anchors];
+      const chosen = [...pasted, ...anchors, ...pastedCurves];
       setSelection(chosen);
       if (pastedRoot) {
         focusedFolder = pastedRoot;
