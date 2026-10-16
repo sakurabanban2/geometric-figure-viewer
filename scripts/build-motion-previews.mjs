@@ -10,6 +10,14 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const motionsDir = path.join(root, "motions");
 const previewDir = path.join(motionsDir, "previews");
 const MAX_BYTES = 300 * 1024;
+// 新しく見つけたモーションの既定タグ（index.json に既にあればそちらを残す）
+const DEFAULT_TAGS = {
+  "all-fours-rocking": ["標準", "nsfw", "女性"],
+  "bridge-hip-thrust-lying": ["標準", "nsfw", "男性"],
+  "hip-thrust-standing": ["標準", "nsfw", "男性"],
+  "riding-grind": ["標準", "nsfw", "女性"],
+  "riding-up-down": ["標準", "nsfw", "女性"],
+};
 const DEFAULT_TITLES = {
   "all-fours-rocking": "四つん這いで揺れる",
   "bridge-hip-thrust-lying": "ブリッジで腰を突き上げる",
@@ -101,7 +109,7 @@ for (const file of await findMotions(motionsDir)) {
     file: rel,
     title: old.title ?? DEFAULT_TITLES[stem] ?? stem,
     author: old.author ?? "標準",
-    tags: old.tags ?? ["標準"],
+    tags: old.tags ?? DEFAULT_TAGS[stem] ?? ["標準", "nsfw"],
     description: old.description ?? "",
     thumbnail: `previews/${thumbName}`,
     preview: { file: `previews/${previewName}`, frames: 12, fps: 8 },

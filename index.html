@@ -660,6 +660,9 @@
     .publish-form { display: grid; gap: 8px; }
     .publish-form > label, .publish-settings label { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
     .publish-form input[type="text"], .publish-form input[type="password"], .publish-form textarea { padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg, #15171c); color: var(--text); font: inherit; }
+    .publish-tag-chips { display: flex; gap: 6px; margin-top: -4px; }
+    .publish-tag-chips button { font-size: 12px; padding: 2px 10px; border-radius: 999px; }
+    .publish-tag-chips button[aria-pressed="true"] { background: var(--accent, #e8a87c); color: #111; }
     .publish-kind { display: flex; gap: 16px; border: 0; padding: 0; margin: 0; font-size: 13px; }
     .publish-kind small { color: var(--muted); }
     .publish-thumb { display: flex; align-items: center; gap: 10px; }
@@ -2014,6 +2017,7 @@
       <label>タイトル<input id="publish-title-input" type="text" maxlength="80" required /></label>
       <label>作者<input id="publish-author" type="text" maxlength="60" required /></label>
       <label>タグ（, 区切り）<input id="publish-tags" type="text" maxlength="200" placeholder="例: 人物, 立ちポーズ" /></label>
+      <div class="publish-tag-chips" aria-label="よく使うタグ"><button type="button" data-tag="nsfw">nsfw</button><button type="button" data-tag="男性">男性</button><button type="button" data-tag="女性">女性</button></div>
       <label>説明<textarea id="publish-description" rows="3" maxlength="2000"></textarea></label>
       <div class="publish-thumb">
         <img id="publish-thumb" alt="サムネイル" />
@@ -18850,6 +18854,7 @@ self.onmessage = (event) => {
       publishThumb = captureThumbnail();
       document.getElementById("publish-thumb").src = publishThumb;
       setPublishStatus("");
+      syncPublishTagChips();
       modal.showModal();
       refreshPublishPreview();
     }
@@ -19067,6 +19072,21 @@ self.onmessage = (event) => {
       refreshPublishPreview();
     });
     for (const radio of document.querySelectorAll('input[name="publish-kind"]')) radio.addEventListener("change", refreshPublishPreview);
+    // よく使うタグ（nsfw / 男性 / 女性）をボタンで付け外しする
+    const publishTagList = () => document.getElementById("publish-tags").value.split(/[,、，]/).map((tag) => tag.trim()).filter(Boolean);
+    function syncPublishTagChips() {
+      const tags = publishTagList();
+      for (const chip of document.querySelectorAll(".publish-tag-chips button")) chip.setAttribute("aria-pressed", String(tags.includes(chip.dataset.tag)));
+    }
+    for (const chip of document.querySelectorAll(".publish-tag-chips button")) {
+      chip.addEventListener("click", () => {
+        const tags = publishTagList();
+        const next = tags.includes(chip.dataset.tag) ? tags.filter((tag) => tag !== chip.dataset.tag) : [...tags, chip.dataset.tag];
+        document.getElementById("publish-tags").value = next.join(", ");
+        syncPublishTagChips();
+      });
+    }
+    document.getElementById("publish-tags").addEventListener("input", syncPublishTagChips);
     document.getElementById("publish-modal").addEventListener("close", () => {
       previewToken += 1;
       previewAnimation?.cancel();

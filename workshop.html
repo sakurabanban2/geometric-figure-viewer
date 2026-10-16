@@ -39,6 +39,7 @@
     .actions button { flex: 1; }
     details { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
     details label { display: inline-flex; gap: 6px; align-items: center; margin: 8px 12px 0 0; }
+    .nsfw-toggle { display: inline-flex; gap: 4px; align-items: center; font-size: 13px; color: var(--muted); white-space: nowrap; }
   </style>
 </head>
 <body>
@@ -52,6 +53,7 @@
         <option value="model">モデル</option>
         <option value="motion">モーション</option>
       </select>
+      <label class="nsfw-toggle"><input id="show-nsfw" type="checkbox" /> nsfwを表示</label>
       <button id="reload" type="button">更新</button>
     </div>
   </header>
@@ -80,6 +82,11 @@
     const FILE_PATTERN = /^[\w.-]+$/;
     let entries = [];
     let activeTag = "";
+    // nsfw タグの付いたものは既定で隠す。「nsfwを表示」の状態はこのブラウザに覚える
+    const NSFW_KEY = "gfv-workshop-nsfw";
+    const isNsfw = (entry) => entry.tags.some((tag) => tag.toLowerCase() === "nsfw");
+    let showNsfw = false;
+    try { showNsfw = localStorage.getItem(NSFW_KEY) === "1"; } catch { /* 読めないときは隠す */ }
 
     function config() {
       try {
@@ -191,6 +198,7 @@
       const type = document.getElementById("type").value;
       const pick = (list) => list
         .filter((entry) => !type || entry.type === type)
+        .filter((entry) => showNsfw || !isNsfw(entry))
         .filter((entry) => !activeTag || entry.tags.includes(activeTag))
         .filter((entry) => !word || [entry.title, entry.author, ...entry.tags].some((text) => text.toLowerCase().includes(word)));
       const shownBuiltin = pick(builtin);
@@ -201,7 +209,8 @@
       document.getElementById("repo-status").textContent = repoMessage || (entries.length ? "" : "まだ公開されたものはありません。エディターの「ファイル → ワークショップに公開…」から公開できます。");
       const total = builtin.length + entries.length;
       const filters = [type && (type === "model" ? "モデル" : "モーション"), activeTag && `タグ「${activeTag}」`, word && `「${word}」`].filter(Boolean);
-      setStatus(`${shownBuiltin.length + shown.length} / ${total} 件${filters.length ? `（${filters.join("・")}）` : ""}`);
+      const hiddenNsfw = showNsfw ? 0 : [...builtin, ...entries].filter(isNsfw).length;
+      setStatus(`${shownBuiltin.length + shown.length} / ${total} 件${filters.length ? `（${filters.join("・")}）` : ""}${hiddenNsfw ? `・nsfw ${hiddenNsfw} 件を非表示` : ""}`);
     }
 
     function thumbBox(entry) {
@@ -337,6 +346,13 @@
 
     document.getElementById("search").addEventListener("input", render);
     document.getElementById("type").addEventListener("change", render);
+    const nsfwBox = document.getElementById("show-nsfw");
+    nsfwBox.checked = showNsfw;
+    nsfwBox.addEventListener("change", () => {
+      showNsfw = nsfwBox.checked;
+      try { localStorage.setItem(NSFW_KEY, showNsfw ? "1" : "0"); } catch { /* 覚えられなくても表示は切り替える */ }
+      render();
+    });
     document.getElementById("reload").addEventListener("click", reload);
     document.getElementById("repo-apply").addEventListener("click", () => {
       const repo = document.getElementById("repo").value.trim();
