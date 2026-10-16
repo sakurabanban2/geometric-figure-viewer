@@ -653,6 +653,28 @@
       line-height: 1.55;
     }
 
+    #publish-modal { border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 10px; padding: 16px; width: min(460px, calc(100vw - 32px)); }
+    #publish-modal::backdrop { background: rgba(8, 9, 12, 0.62); }
+    #publish-modal h2 { margin: 0 0 6px; font-size: 15px; font-weight: 650; }
+    #publish-modal p { margin: 0 0 10px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .publish-form { display: grid; gap: 8px; }
+    .publish-form > label, .publish-settings label { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
+    .publish-form input[type="text"], .publish-form input[type="password"], .publish-form textarea { padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg, #15171c); color: var(--text); font: inherit; }
+    .publish-tag-chips { display: flex; gap: 6px; margin-top: -4px; }
+    .publish-tag-chips button { font-size: 12px; padding: 2px 10px; border-radius: 999px; }
+    .publish-tag-chips button[aria-pressed="true"] { background: var(--accent, #e8a87c); color: #111; }
+    .publish-kind { display: flex; gap: 16px; border: 0; padding: 0; margin: 0; font-size: 13px; }
+    .publish-kind small { color: var(--muted); }
+    .publish-thumb { display: flex; align-items: center; gap: 10px; }
+    .publish-preview { width: 160px; height: 120px; border: 1px solid var(--line); border-radius: 6px; background: #000 no-repeat; }
+    .publish-thumb-actions { display: grid; gap: 6px; font-size: 11px; color: var(--muted); }
+    .publish-thumb img { width: 160px; height: 120px; object-fit: cover; border: 1px solid var(--line); border-radius: 6px; background: #000; }
+    .publish-settings { font-size: 12px; color: var(--muted); }
+    .publish-settings[open] { display: grid; gap: 8px; }
+    .publish-remember { display: flex !important; align-items: center; gap: 6px; }
+    .publish-status { min-height: 1.5em; white-space: pre-wrap; }
+    .publish-status a { color: var(--accent); }
+
     #scale-modal,
     #import-modal,
     #relink-modal {
@@ -1211,6 +1233,20 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16v3h16v-3"/><path d="M12 4v12"/><path d="m7 11 5 5 5-5"/></svg>
             読み込み
           </button>
+          <button id="export-motion" type="button" role="menuitem" data-main-only>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16v3h16v-3"/><path d="M12 14V4"/><path d="m7 9 5-5 5 5"/></svg>
+            モーションを書き出す
+          </button>
+          <hr />
+          <button id="workshop-open" type="button" role="menuitem" data-main-only>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10l9-6 9 6v10H3z"/><path d="M9 20v-6h6v6"/></svg>
+            ワークショップを開く
+          </button>
+          <button id="workshop-publish" type="button" role="menuitem" data-main-only>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 14v6h14v-6"/></svg>
+            ワークショップに公開…
+          </button>
+          <hr />
           <button id="import" type="button" role="menuitem" data-main-only>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14v6h16v-6"/><path d="M12 3v11"/><path d="m8 10 4 4 4-4"/><path d="M4 8h3M17 8h3"/></svg>
             インポート
@@ -1970,9 +2006,45 @@
     </div>
     <input id="relink-input" type="file" accept="application/json,.json" hidden />
   </dialog>
+  <dialog id="publish-modal" aria-labelledby="publish-title">
+    <h2 id="publish-title">ワークショップに公開</h2>
+    <p>モデルやモーションを、ワークショップのデータ置き場（GitHub リポジトリ）に公開します。公開は Pull Request として送られ、リポジトリの持ち主が取り込むと一覧に載ります。</p>
+    <form id="publish-form" class="publish-form" method="dialog">
+      <fieldset class="publish-kind">
+        <label><input type="radio" name="publish-kind" value="model" checked /> モデル</label>
+        <label><input type="radio" name="publish-kind" value="motion" /> モーション <small id="publish-motion-name"></small></label>
+      </fieldset>
+      <label>タイトル<input id="publish-title-input" type="text" maxlength="80" required /></label>
+      <label>作者<input id="publish-author" type="text" maxlength="60" required /></label>
+      <label>タグ（, 区切り）<input id="publish-tags" type="text" maxlength="200" placeholder="例: 人物, 立ちポーズ" /></label>
+      <div class="publish-tag-chips" aria-label="よく使うタグ"><button type="button" data-tag="nsfw">nsfw</button><button type="button" data-tag="男性">男性</button><button type="button" data-tag="女性">女性</button></div>
+      <label>説明<textarea id="publish-description" rows="3" maxlength="2000"></textarea></label>
+      <div class="publish-thumb">
+        <img id="publish-thumb" alt="サムネイル" />
+        <div id="publish-preview" class="publish-preview" role="img" aria-label="動くプレビュー"></div>
+        <div class="publish-thumb-actions">
+          <button id="publish-rethumb" type="button">今の画面で撮り直す</button>
+          <small id="publish-preview-note">動くプレビューを作っています…</small>
+        </div>
+      </div>
+      <details class="publish-settings">
+        <summary>公開先とトークン</summary>
+        <label>データ置き場（owner/repo）<input id="publish-repo" type="text" spellcheck="false" /></label>
+        <label>GitHub トークン（fine-grained、このリポジトリの Contents と Pull requests の書き込み）<input id="publish-token" type="password" autocomplete="off" spellcheck="false" /></label>
+        <label class="publish-remember"><input id="publish-remember" type="checkbox" /> このブラウザにトークンを覚える（localStorage）</label>
+      </details>
+      <p id="publish-status" class="publish-status" role="status"></p>
+      <div class="modal-actions">
+        <button id="publish-cancel" type="button">閉じる</button>
+        <button id="publish-download" type="button">パッケージをダウンロード</button>
+        <button id="publish-send" type="submit">公開する</button>
+      </div>
+    </form>
+  </dialog>
   <div id="context-menu" class="menu-list" role="menu" hidden></div>
   <dialog id="help-modal" aria-labelledby="help-title">
     <h2 id="help-title">操作ガイド</h2>
+    <p>「ファイル → ワークショップを開く」で、みんなが公開したモデルやモーションの一覧を見られます。種類やタグで絞り込み、「エディターで開く」か「ダウンロード」で使えます。「ファイル → ワークショップに公開…」では、今のモデル、または「ボーンとモーション」で読み込んだモーションを、タイトル・作者・タグ・サムネイル付きで公開できます。公開先は GitHub のリポジトリで、GitHub のトークン（fine-grained、そのリポジトリの Contents と Pull requests の書き込み権限）が必要です。トークンはこのブラウザの中だけに保存されます。トークンがないときは「パッケージをダウンロード」で 1 つのファイルにまとめて渡せ、受け取った人は「読み込み」で開けます。「ファイル → モーションを書き出す」で読み込んだモーションのファイルだけを書き出せます。</p>
     <p>クリックで選択し、Shift+クリックで追加します。移動・回転・拡縮はボタンで重ねて選べます。移動と拡縮を同時に選ぶと、拡縮のハンドルは外側に出ます。Shift を押しながらドラッグすると、移動はつかんだ矢印以外の方向（面をつかんだ場合はその面に垂直な方向）に動き、回転は45度刻みになり、拡縮はつかんだ側の反対の面を固定して伸び縮みします。ロックしたパーツは動きません。Ctrl+C でコピー、Ctrl+V で少しずらした位置に貼り付けます。フォルダを選んでコピーすると、中のフォルダやパーツごとフォルダをまるごとコピーします。貼り付け先は、フォルダを選んでいればそのフォルダの中、パーツを選んでいればそのパーツのすぐ下になります。リンクパーツを貼り付けると、同じリンク先モデルを共有するリンクが増えます。Ctrl+D で選んだものをその場に複製します（クリップボードは変わりません）。パスもパーツと同じようにコピー・貼り付け・複製でき、パーツとそのパスを一緒にコピーすると、貼り付けたパーツは新しいパスに沿います。</p>
     <p>パーツをパスに沿わせるには、パーツ一覧でパーツの行をパスの行の中央にドラッグするか、右クリックの「パスに沿わせる…」を選んで画面のパスをクリックします（Esc でやめる）。メニューには最近使ったパス・近いパスが 5 つまで並び、ほかのパスは「ほかのパスから選ぶ…」で名前を検索して選べます。沿わせたパーツをパス以外の場所へドラッグするとパスから外れます。</p>
     <p>画面右下のアイコンでワイヤーフレーム・自動回転・パースを切り替えられます。パースをオフにすると遠近感のない平行投影になり、形の比率や左右のずれを確かめやすくなります。平行投影中もホイールで拡大縮小できます。視点を回す中心は、パーツを選ぶとそのパーツの中心（複数なら最初に選んだパーツの中心）に移ります。選択を外しても視点の中心はその場所にとどまります。</p>
@@ -2830,6 +2902,8 @@ if (decalOn > 0.5) {
     let rigBone = null;
     let rigPart = null;
     let rigMotion = null;
+    // 読み込んだモーションの元ファイル（ワークショップへの公開・書き出し用。モデルには保存しない）
+    let rigMotionSource = null;
     let rigPoseFrame = null;
     let rigPosedJoints = null;
     let rigLookActive = false;
@@ -18483,6 +18557,545 @@ self.onmessage = (event) => {
       }
     }
 
+    // ===== ワークショップ（GitHub リポジトリに置いたモデル・モーションの共有） =====
+    // データ置き場の構成: entries/<id>/meta.json（タイトルなど）、entries/<id>/<データ>、entries/<id>/thumb.png
+    const WORKSHOP_CONFIG_KEY = "gfv-workshop";
+    const WORKSHOP_TOKEN_KEY = "gfv-workshop-token";
+    const WORKSHOP_DEFAULT_REPO = "sakurabanban2/geometric-figure-viewer-workshop";
+    const GITHUB_API = "https://api.github.com";
+
+    function workshopConfig() {
+      let config = {};
+      try {
+        config = JSON.parse(localStorage.getItem(WORKSHOP_CONFIG_KEY) || "{}") || {};
+      } catch { /* 壊れた設定は既定値に戻す */ }
+      const repo = /^[\w.-]+\/[\w.-]+$/.test(config.repo ?? "") ? config.repo : WORKSHOP_DEFAULT_REPO;
+      return { ...config, repo };
+    }
+
+    function saveWorkshopConfig(patch) {
+      try {
+        localStorage.setItem(WORKSHOP_CONFIG_KEY, JSON.stringify({ ...workshopConfig(), ...patch }));
+      } catch { /* 設定を覚えられなくても公開はできる */ }
+    }
+
+    function isWorkshopPackage(data) {
+      return data?.workshop === 1 && data.meta && data.payload && (data.payload.kind === "model" || data.payload.kind === "motion");
+    }
+
+    function bytesToBase64(bytes) {
+      let binary = "";
+      for (let index = 0; index < bytes.length; index += 0x8000) binary += String.fromCharCode(...bytes.subarray(index, index + 0x8000));
+      return btoa(binary);
+    }
+
+    function base64ToBytes(text) {
+      const binary = atob(text);
+      const bytes = new Uint8Array(binary.length);
+      for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+      return bytes;
+    }
+
+    function textToBase64(text) {
+      return bytesToBase64(new TextEncoder().encode(text));
+    }
+
+    function captureThumbnail() {
+      const guide = rigGuide.visible;
+      rigGuide.visible = false;
+      // 描画ループは毎フレーム「姿勢を当てる → 描く → 戻す」ので、ここでも同じ順で描く
+      applyRigPose();
+      renderer.shadowMap.needsUpdate = true;
+      try {
+        renderer.render(scene, camera);
+      } finally {
+        restoreRigPose();
+        rigGuide.visible = guide;
+      }
+      const source = renderer.domElement;
+      const canvas = document.createElement("canvas");
+      canvas.width = 480;
+      canvas.height = 360;
+      const context = canvas.getContext("2d");
+      const scale = Math.max(canvas.width / source.width, canvas.height / source.height);
+      const width = source.width * scale;
+      const height = source.height * scale;
+      context.fillStyle = "#101216";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(source, (canvas.width - width) / 2, (canvas.height - height) / 2, width, height);
+      return canvas.toDataURL("image/png");
+    }
+
+    function motionExtension(name) {
+      return /\.vmd$/i.test(name) ? "vmd" : "bvh";
+    }
+
+    function modelPayloadText() {
+      let models;
+      try {
+        models = linkedModelDocs();
+      } catch {
+        models = undefined;
+      }
+      return JSON.stringify({ ...serialize(), models });
+    }
+
+    function workshopSlug(text) {
+      const base = String(text).normalize("NFKC").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 32);
+      const stamp = new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14);
+      const random = Math.random().toString(36).slice(2, 6);
+      return `${base || "entry"}-${stamp}-${random}`;
+    }
+
+    // 動くプレビュー: 横に並べたコマ画像（スプライト）。モデルは周りを一周、モーションは再生を等間隔に撮る。
+    const PREVIEW_FRAMES = 12;
+    const PREVIEW_FPS = 8;
+    const PREVIEW_SIZE = [200, 150];
+    const waitFrame = () => new Promise((resolve) => requestAnimationFrame(() => resolve()));
+
+    function drawPreviewFrame(context, index) {
+      const [width, height] = PREVIEW_SIZE;
+      const guide = rigGuide.visible;
+      rigGuide.visible = false;
+      applyRigPose();
+      renderer.shadowMap.needsUpdate = true;
+      try {
+        renderer.render(scene, camera);
+      } finally {
+        restoreRigPose();
+        rigGuide.visible = guide;
+      }
+      const source = renderer.domElement;
+      const scale = Math.max(width / source.width, height / source.height);
+      const drawWidth = source.width * scale;
+      const drawHeight = source.height * scale;
+      context.save();
+      context.beginPath();
+      context.rect(index * width, 0, width, height);
+      context.clip();
+      context.fillStyle = "#101216";
+      context.fillRect(index * width, 0, width, height);
+      context.drawImage(source, index * width + (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
+      context.restore();
+    }
+
+    function spriteDataUrl(canvas) {
+      const webp = canvas.toDataURL("image/webp", 0.72);
+      return webp.startsWith("data:image/webp") ? webp : canvas.toDataURL("image/jpeg", 0.8);
+    }
+
+    async function capturePreviewSprite(kind) {
+      const [width, height] = PREVIEW_SIZE;
+      const canvas = document.createElement("canvas");
+      canvas.width = width * PREVIEW_FRAMES;
+      canvas.height = height;
+      const context = canvas.getContext("2d");
+      if (kind === "motion") {
+        if (!rigEditing || !rigMotion) return null;
+        const saved = { time: rigPlayer.time, playing: rigPlayer.playing, showing: rigPlayer.showing };
+        rigPlayer.playing = false;
+        rigPlayer.showing = true;
+        try {
+          for (let index = 0; index < PREVIEW_FRAMES; index += 1) {
+            rigPlayer.time = (rigMotion.duration * index) / PREVIEW_FRAMES;
+            requestRender(1000);
+            await waitFrame();
+            updateRigMotion(0); // 描画ループを待たずに、この時刻の姿勢を確実に求める
+            drawPreviewFrame(context, index);
+          }
+        } finally {
+          Object.assign(rigPlayer, saved);
+          requestRender();
+        }
+      } else {
+        const position = camera.position.clone();
+        const quaternion = camera.quaternion.clone();
+        const center = controls.target.clone();
+        const offset = position.clone().sub(center);
+        const turn = new THREE.Quaternion();
+        const up = new THREE.Vector3(0, 1, 0);
+        try {
+          for (let index = 0; index < PREVIEW_FRAMES; index += 1) {
+            turn.setFromAxisAngle(up, (Math.PI * 2 * index) / PREVIEW_FRAMES);
+            camera.position.copy(center).add(offset.clone().applyQuaternion(turn));
+            camera.lookAt(center);
+            camera.updateMatrixWorld();
+            drawPreviewFrame(context, index);
+          }
+        } finally {
+          camera.position.copy(position);
+          camera.quaternion.copy(quaternion);
+          camera.updateMatrixWorld();
+          requestRender();
+        }
+      }
+      const dataUrl = spriteDataUrl(canvas);
+      return { dataUrl, frames: PREVIEW_FRAMES, fps: PREVIEW_FPS, width, height, type: dataUrl.startsWith("data:image/webp") ? "webp" : "jpg" };
+    }
+
+    let publishPreview = null;
+    let previewAnimation = null;
+    let previewToken = 0;
+
+    function showPreviewSprite(element, preview) {
+      previewAnimation?.cancel();
+      previewAnimation = null;
+      if (!preview) {
+        element.style.backgroundImage = "";
+        return;
+      }
+      element.style.backgroundImage = `url("${preview.dataUrl}")`;
+      element.style.backgroundSize = `${preview.frames * 100}% 100%`;
+      previewAnimation = element.animate(
+        [{ backgroundPosition: "0% 0" }, { backgroundPosition: "100% 0" }],
+        { duration: (preview.frames / preview.fps) * 1000, iterations: Infinity, easing: `steps(${preview.frames - 1}, jump-none)` },
+      );
+    }
+
+    async function refreshPublishPreview() {
+      const token = ++previewToken;
+      const note = document.getElementById("publish-preview-note");
+      const kind = readPublishForm().kind;
+      publishPreview = null;
+      showPreviewSprite(document.getElementById("publish-preview"), null);
+      if (kind === "motion" && !rigEditing && canRigEdit()) beginRigEdit();
+      if (kind === "motion" && !(rigEditing && rigMotion)) {
+        note.textContent = "モーションの動くプレビューは「ボーンとモーション」で再生できるときに作れます";
+        return;
+      }
+      note.textContent = "動くプレビューを作っています…";
+      try {
+        const preview = await capturePreviewSprite(kind);
+        if (token !== previewToken) return;
+        publishPreview = preview;
+        showPreviewSprite(document.getElementById("publish-preview"), preview);
+        note.textContent = preview ? `動くプレビュー（${preview.frames}コマ）` : "動くプレビューを作れませんでした";
+      } catch {
+        if (token === previewToken) note.textContent = "動くプレビューを作れませんでした";
+      }
+    }
+
+    let publishThumb = null;
+
+    function readPublishForm() {
+      const kind = document.querySelector('input[name="publish-kind"]:checked')?.value === "motion" ? "motion" : "model";
+      const title = document.getElementById("publish-title-input").value.trim();
+      const author = document.getElementById("publish-author").value.trim();
+      const tags = document.getElementById("publish-tags").value.split(/[,、，]/).map((tag) => tag.trim()).filter(Boolean).slice(0, 12);
+      const description = document.getElementById("publish-description").value.trim();
+      return { kind, title, author, tags, description };
+    }
+
+    function buildPublishPackage() {
+      const form = readPublishForm();
+      if (!form.title || !form.author) throw new Error("タイトルと作者を入れてください");
+      if (form.kind === "motion" && !rigMotionSource) throw new Error("公開するモーションがありません。ボーンとモーションの編集でモーションを読み込んでください");
+      const id = workshopSlug(form.title);
+      const meta = {
+        id,
+        type: form.kind,
+        title: form.title,
+        author: form.author,
+        tags: form.tags,
+        description: form.description,
+        created: new Date().toISOString(),
+        app: "geometric-figure-viewer",
+      };
+      const preview = publishPreview && { file: `preview.${publishPreview.type}`, frames: publishPreview.frames, fps: publishPreview.fps };
+      if (preview) meta.preview = preview;
+      if (form.kind === "model") {
+        meta.file = "model.json";
+        return { meta, thumbnail: publishThumb, preview: publishPreview, payload: { kind: "model", text: modelPayloadText() } };
+      }
+      meta.file = `motion.${motionExtension(rigMotionSource.name)}`;
+      meta.sourceName = rigMotionSource.name;
+      return { meta, thumbnail: publishThumb, preview: publishPreview, payload: { kind: "motion", name: rigMotionSource.name, bytes: rigMotionSource.bytes } };
+    }
+
+    function packageJson(pack) {
+      const payload = pack.payload.kind === "model"
+        ? { kind: "model", data: JSON.parse(pack.payload.text) }
+        : { kind: "motion", name: pack.payload.name, base64: bytesToBase64(pack.payload.bytes) };
+      return JSON.stringify({ workshop: 1, meta: pack.meta, thumbnail: pack.thumbnail, preview: pack.preview?.dataUrl ?? null, payload });
+    }
+
+    function setPublishStatus(text, link = null) {
+      const status = document.getElementById("publish-status");
+      status.textContent = text;
+      if (link) {
+        const anchor = document.createElement("a");
+        anchor.href = link;
+        anchor.target = "_blank";
+        anchor.rel = "noopener";
+        anchor.textContent = link;
+        status.append("\n", anchor);
+      }
+    }
+
+    function openPublishDialog() {
+      const config = workshopConfig();
+      const modal = document.getElementById("publish-modal");
+      const motionRadio = document.querySelector('input[name="publish-kind"][value="motion"]');
+      motionRadio.disabled = !rigMotionSource;
+      document.getElementById("publish-motion-name").textContent = rigMotionSource ? `（${rigMotionSource.name}）` : "（読み込んだモーションがありません）";
+      if (!rigMotionSource) document.querySelector('input[name="publish-kind"][value="model"]').checked = true;
+      else if (rigEditing) motionRadio.checked = true;
+      const titleInput = document.getElementById("publish-title-input");
+      if (!titleInput.value) titleInput.value = modelName || "";
+      document.getElementById("publish-author").value ||= config.author ?? "";
+      document.getElementById("publish-repo").value = config.repo;
+      let token = "";
+      try {
+        token = localStorage.getItem(WORKSHOP_TOKEN_KEY) || "";
+      } catch { /* 覚えたトークンを読めない */ }
+      document.getElementById("publish-token").value = token;
+      document.getElementById("publish-remember").checked = Boolean(token);
+      document.querySelector(".publish-settings").open = !token;
+      publishThumb = captureThumbnail();
+      document.getElementById("publish-thumb").src = publishThumb;
+      setPublishStatus("");
+      syncPublishTagChips();
+      modal.showModal();
+      refreshPublishPreview();
+    }
+
+    function rememberPublishSettings() {
+      const repo = document.getElementById("publish-repo").value.trim();
+      const author = document.getElementById("publish-author").value.trim();
+      saveWorkshopConfig({ ...(/^[\w.-]+\/[\w.-]+$/.test(repo) ? { repo } : {}), author });
+      const token = document.getElementById("publish-token").value.trim();
+      try {
+        if (document.getElementById("publish-remember").checked && token) localStorage.setItem(WORKSHOP_TOKEN_KEY, token);
+        else localStorage.removeItem(WORKSHOP_TOKEN_KEY);
+      } catch { /* 覚えられなくても公開はできる */ }
+    }
+
+    async function githubRequest(token, method, path, body) {
+      const response = await fetch(`${GITHUB_API}${path}`, {
+        method,
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: `Bearer ${token}`,
+          "X-GitHub-Api-Version": "2022-11-28",
+          ...(body ? { "Content-Type": "application/json" } : {}),
+        },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const text = await response.text();
+      let data = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch { /* JSON 以外の応答 */ }
+      if (!response.ok) {
+        const error = new Error(data?.message || `HTTP ${response.status}`);
+        error.status = response.status;
+        throw error;
+      }
+      return data;
+    }
+
+    function githubErrorText(error) {
+      if (error?.status === 401) return "トークンが正しくないか、期限が切れています";
+      if (error?.status === 403) return "トークンにこのリポジトリへの書き込み権限がありません（Contents と Pull requests を Read and write にしてください）";
+      if (error?.status === 404) return "データ置き場のリポジトリが見つかりません（名前と、トークンの対象リポジトリを確かめてください）";
+      return error?.message || String(error);
+    }
+
+    // ブランチを作り、ファイルを置いて、Pull Request を開く
+    async function publishToGithub(pack, repo, token) {
+      const [owner, name] = repo.split("/");
+      const base = `/repos/${owner}/${name}`;
+      const info = await githubRequest(token, "GET", base);
+      const baseBranch = info.default_branch || "main";
+      const head = await githubRequest(token, "GET", `${base}/git/ref/heads/${encodeURIComponent(baseBranch)}`);
+      const branch = `workshop/${pack.meta.id}`;
+      await githubRequest(token, "POST", `${base}/git/refs`, { ref: `refs/heads/${branch}`, sha: head.object.sha });
+      const dir = `entries/${pack.meta.id}`;
+      const files = [
+        [`${dir}/${pack.meta.file}`, pack.payload.kind === "model" ? textToBase64(pack.payload.text) : bytesToBase64(pack.payload.bytes)],
+        ...(pack.thumbnail ? [[`${dir}/thumb.png`, pack.thumbnail.split(",")[1]]] : []),
+        ...(pack.preview && pack.meta.preview ? [[`${dir}/${pack.meta.preview.file}`, pack.preview.dataUrl.split(",")[1]]] : []),
+        [`${dir}/meta.json`, textToBase64(`${JSON.stringify({ ...pack.meta, thumbnail: pack.thumbnail ? "thumb.png" : null }, null, 2)}\n`)],
+      ];
+      for (const [path, content] of files) {
+        await githubRequest(token, "PUT", `${base}/contents/${path.split("/").map(encodeURIComponent).join("/")}`, {
+          message: `ワークショップ: ${pack.meta.title} を追加`,
+          content,
+          branch,
+        });
+      }
+      const pull = await githubRequest(token, "POST", `${base}/pulls`, {
+        title: `ワークショップ: ${pack.meta.title}（${pack.meta.type === "motion" ? "モーション" : "モデル"}）`,
+        head: branch,
+        base: baseBranch,
+        body: `作者: ${pack.meta.author}\nタグ: ${pack.meta.tags.join(", ") || "なし"}\n\n${pack.meta.description || ""}`,
+      });
+      return pull;
+    }
+
+    let publishing = false;
+    async function sendPublish() {
+      if (publishing) return;
+      let pack;
+      try {
+        pack = buildPublishPackage();
+      } catch (error) {
+        setPublishStatus(error.message);
+        return;
+      }
+      const repo = document.getElementById("publish-repo").value.trim();
+      const token = document.getElementById("publish-token").value.trim();
+      if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) {
+        setPublishStatus("データ置き場を owner/repo の形で入れてください");
+        return;
+      }
+      if (!token) {
+        document.querySelector(".publish-settings").open = true;
+        setPublishStatus("GitHub トークンを入れてください（トークンなしで共有するときは「パッケージをダウンロード」）");
+        return;
+      }
+      rememberPublishSettings();
+      publishing = true;
+      document.getElementById("publish-send").disabled = true;
+      setPublishStatus("公開しています…");
+      try {
+        const pull = await publishToGithub(pack, repo, token);
+        setPublishStatus("Pull Request を作りました。リポジトリの持ち主が取り込むとワークショップに載ります。", pull?.html_url ?? null);
+        setFileStatus("ワークショップに公開しました（取り込み待ち）");
+      } catch (error) {
+        setPublishStatus(`公開できませんでした：${githubErrorText(error)}`);
+      } finally {
+        publishing = false;
+        document.getElementById("publish-send").disabled = false;
+      }
+    }
+
+    function downloadPublishPackage() {
+      let pack;
+      try {
+        pack = buildPublishPackage();
+      } catch (error) {
+        setPublishStatus(error.message);
+        return;
+      }
+      rememberPublishSettings();
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(new Blob([packageJson(pack)], { type: "application/json" }));
+      link.href = url;
+      link.download = `${pack.meta.id}.workshop.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setPublishStatus("パッケージをダウンロードしました。ワークショップのリポジトリに手で追加するか、相手に渡して「読み込み」で開いてもらえます。");
+    }
+
+    function exportMotion() {
+      if (!rigMotionSource) {
+        setFileStatus("書き出すモーションがありません（ボーンとモーションの編集でモーションを読み込んでください）");
+        return;
+      }
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(new Blob([rigMotionSource.bytes], { type: "application/octet-stream" }));
+      link.href = url;
+      link.download = rigMotionSource.name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setFileStatus(`モーション「${rigMotionSource.name}」を書き出しました`);
+    }
+
+    async function openMotionBytes(bytes, name) {
+      if (!rigEditing) {
+        if (!canRigEdit()) {
+          setFileStatus("モーションを使うには、ボーンとモーションの編集ができるモデル（体のパーツがあるモデル）を開いてください");
+          return false;
+        }
+        if (!leaveEditModes()) return false;
+        beginRigEdit();
+      }
+      if (!rigEditing) return false;
+      await loadRigMotion(new File([bytes], name));
+      return true;
+    }
+
+    async function openWorkshopPackage(data, fileName) {
+      if (data.payload.kind === "model") {
+        assertDocument(data.payload.data);
+        return openDocumentData(data.payload.data, data.meta.title || fileName);
+      }
+      const name = /\.(bvh|vmd)$/i.test(data.payload.name ?? "") ? data.payload.name : `${data.meta.id || "motion"}.${motionExtension(data.meta.file ?? "")}`;
+      return openMotionBytes(base64ToBytes(data.payload.base64), name);
+    }
+
+    // workshop.html の「エディターで開く」から ?workshop=<データのURL>&kind=model|motion で開かれたとき
+    async function openWorkshopParam() {
+      const params = new URLSearchParams(location.search);
+      const source = params.get("workshop");
+      if (!source) return;
+      window.history.replaceState(null, "", location.pathname);
+      let url;
+      try {
+        url = new URL(source, location.href);
+      } catch {
+        setFileStatus("ワークショップのデータを開けませんでした");
+        return;
+      }
+      if (!["https:", "http:"].includes(url.protocol)) return;
+      const kind = params.get("kind") === "motion" ? "motion" : "model";
+      const title = params.get("title") || url.pathname.split("/").pop();
+      try {
+        const response = await fetch(url.href);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (kind === "model") {
+          const data = await response.json();
+          assertDocument(data);
+          await openDocumentData(data, title);
+        } else {
+          const bytes = new Uint8Array(await response.arrayBuffer());
+          await openMotionBytes(bytes, url.pathname.split("/").pop());
+        }
+      } catch {
+        setFileStatus("ワークショップのデータを開けませんでした");
+      }
+    }
+
+    document.getElementById("workshop-open").addEventListener("click", () => window.open("workshop.html", "_blank", "noopener"));
+    document.getElementById("workshop-publish").addEventListener("click", openPublishDialog);
+    document.getElementById("export-motion").addEventListener("click", exportMotion);
+    document.getElementById("publish-cancel").addEventListener("click", () => document.getElementById("publish-modal").close());
+    document.getElementById("publish-download").addEventListener("click", downloadPublishPackage);
+    document.getElementById("publish-rethumb").addEventListener("click", () => {
+      publishThumb = captureThumbnail();
+      document.getElementById("publish-thumb").src = publishThumb;
+      refreshPublishPreview();
+    });
+    for (const radio of document.querySelectorAll('input[name="publish-kind"]')) radio.addEventListener("change", refreshPublishPreview);
+    // よく使うタグ（nsfw / 男性 / 女性）をボタンで付け外しする
+    const publishTagList = () => document.getElementById("publish-tags").value.split(/[,、，]/).map((tag) => tag.trim()).filter(Boolean);
+    function syncPublishTagChips() {
+      const tags = publishTagList();
+      for (const chip of document.querySelectorAll(".publish-tag-chips button")) chip.setAttribute("aria-pressed", String(tags.includes(chip.dataset.tag)));
+    }
+    for (const chip of document.querySelectorAll(".publish-tag-chips button")) {
+      chip.addEventListener("click", () => {
+        const tags = publishTagList();
+        const next = tags.includes(chip.dataset.tag) ? tags.filter((tag) => tag !== chip.dataset.tag) : [...tags, chip.dataset.tag];
+        document.getElementById("publish-tags").value = next.join(", ");
+        syncPublishTagChips();
+      });
+    }
+    document.getElementById("publish-tags").addEventListener("input", syncPublishTagChips);
+    document.getElementById("publish-modal").addEventListener("close", () => {
+      previewToken += 1;
+      previewAnimation?.cancel();
+    });
+    document.getElementById("publish-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      sendPublish();
+    });
+
     function applyOverallFactor(factor) {
       for (const mesh of editableMeshes()) {
         if (mesh.userData.locked) continue;
@@ -20057,6 +20670,7 @@ self.onmessage = (event) => {
         if (!(motion.duration > 0)) throw new Error("動きの長さが 0 のモーションです");
         motion.sample(0);
         rigMotion = motion;
+        rigMotionSource = { name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) };
         rigPlayer.time = 0;
         rigPlayer.playing = true;
         rigPlayer.showing = true;
@@ -21897,19 +22511,27 @@ self.onmessage = (event) => {
       let data;
       try {
         data = JSON.parse(await file.text());
+        if (isWorkshopPackage(data)) {
+          await openWorkshopPackage(data, file.name);
+          return;
+        }
         assertDocument(data);
       } catch {
         setFileStatus("読み込めませんでした");
         return;
       }
-      if (!leaveEditModes()) return;
-      if (hasUnsavedChanges() && !window.confirm(`「${file.name}」を開くと、今のモデルの保存していない変更は失われます。開きますか？`)) return;
+      await openDocumentData(data, file.name);
+    });
+
+    async function openDocumentData(data, name) {
+      if (!leaveEditModes()) return false;
+      if (hasUnsavedChanges() && !window.confirm(`「${name}」を開くと、今のモデルの保存していない変更は失われます。開きますか？`)) return false;
       try {
         restoreLinkedModels(data);
-        if (!(await withLoading("ファイルを開いています", data, () => loadDocument(data)))) return;
+        if (!(await withLoading("ファイルを開いています", data, () => loadDocument(data)))) return false;
       } catch {
         setFileStatus("読み込めませんでした");
-        return;
+        return false;
       }
       markSaved();
       let stored = true;
@@ -21923,7 +22545,8 @@ self.onmessage = (event) => {
       if (missing) notes.push(`中身が見つからないリンクが${missing}個あります。リンク先を含めて保存し直したファイルが必要です`);
       if (!stored) notes.push("ブラウザ内への保存はできませんでした");
       setFileStatus(notes.length ? `読み込みました（${notes.join("。")}）` : "読み込みました");
-    });
+      return true;
+    }
 
     const hasDraggedFiles = (event) => [...(event.dataTransfer?.types ?? [])].includes("Files");
     window.addEventListener("dragover", (event) => {
@@ -22058,6 +22681,7 @@ self.onmessage = (event) => {
       }
       markSaved();
       if (MODEL_ID) showModelTitle();
+      else openWorkshopParam();
     })();
 
     // 影はライト固定なので、影を落とす物の状態が変わったときだけ描き直す。

@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "motions": [
+    {
+      "file": "procedural/all-fours-rocking.bvh",
+      "title": "四つん這いで揺れる",
+      "author": "標準",
+      "tags": [
+        "標準",
+        "nsfw",
+        "女性"
+      ],
+      "description": "",
+      "thumbnail": "previews/all-fours-rocking.thumb.webp",
+      "preview": {
+        "file": "previews/all-fours-rocking.webp",
+        "frames": 12,
+        "fps": 8
+      }
+    },
+    {
+      "file": "procedural/bridge-hip-thrust-lying.bvh",
+      "title": "ブリッジで腰を突き上げる",
+      "author": "標準",
+      "tags": [
+        "標準",
+        "nsfw",
+        "男性"
+      ],
+      "description": "",
+      "thumbnail": "previews/bridge-hip-thrust-lying.thumb.webp",
+      "preview": {
+        "file": "previews/bridge-hip-thrust-lying.webp",
+        "frames": 12,
+        "fps": 8
+      }
+    },
+    {
+      "file": "procedural/hip-thrust-standing.bvh",
+      "title": "立って腰を突き出す",
+      "author": "標準",
+      "tags": [
+        "標準",
+        "nsfw",
+        "男性"
+      ],
+      "description": "",
+      "thumbnail": "previews/hip-thrust-standing.thumb.webp",
+      "preview": {
+        "file": "previews/hip-thrust-standing.webp",
+        "frames": 12,
+        "fps": 8
+      }
+    },
+    {
+      "file": "procedural/riding-grind.bvh",
+      "title": "騎乗位（前後にこする）",
+      "author": "標準",
+      "tags": [
+        "標準",
+        "nsfw",
+        "女性"
+      ],
+      "description": "",
+      "thumbnail": "previews/riding-grind.thumb.webp",
+      "preview": {
+        "file": "previews/riding-grind.webp",
+        "frames": 12,
+        "fps": 8
+      }
+    },
+    {
+      "file": "procedural/riding-up-down.bvh",
+      "title": "騎乗位（上下）",
+      "author": "標準",
+      "tags": [
+        "標準",
+        "nsfw",
+        "女性"
+      ],
+      "description": "",
+      "thumbnail": "previews/riding-up-down.thumb.webp",
+      "preview": {
+        "file": "previews/riding-up-down.webp",
+        "frames": 12,
+        "fps": 8
+      }
+    }
+  ]
+}

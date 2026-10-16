@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "description": "単純な図形で組んだ全身3Dモデルのビューワー",
   "scripts": {
-    "start": "npx --yes serve -l 8765 ."
+    "start": "npx --yes serve -l 8765 .",
+    "previews": "node scripts/build-motion-previews.mjs"
   },
   "dependencies": {
     "manifold-3d": "^3.5.4",

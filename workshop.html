@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ワークショップ - 図形エディター</title>
+  <style>
+    :root { --bg: #111317; --panel: #1a1d23; --line: #2c313a; --text: #e9e6e2; --muted: #9a9fa8; --accent: #e7b5a4; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+    header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 1; }
+    header h1 { margin: 0; font-size: 17px; font-weight: 650; }
+    header a { color: var(--accent); text-decoration: none; font-size: 13px; }
+    .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; align-items: center; }
+    input, select, button { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; }
+    button { cursor: pointer; }
+    button:hover { border-color: var(--accent); }
+    main { padding: 18px 20px; }
+    #status { color: var(--muted); margin: 0 0 14px; white-space: pre-wrap; }
+    #repo-status { color: var(--muted); font-size: 13px; white-space: pre-wrap; }
+    .section h2.section-title { font-size: 14px; font-weight: 650; margin: 18px 0 10px; color: var(--muted); }
+    .section[hidden] { display: none; }
+    .thumb { position: relative; aspect-ratio: 4 / 3; background: #000; }
+    .thumb img, .thumb .anim { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .thumb .anim { background-repeat: no-repeat; opacity: 0; }
+    .thumb.playing .anim { opacity: 1; }
+    .thumb .hint { position: absolute; right: 6px; bottom: 6px; font-size: 10px; padding: 1px 6px; border-radius: 999px; background: rgba(0,0,0,.55); color: #ddd; pointer-events: none; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
+    .card img { object-fit: cover; display: block; }
+    .card .body { padding: 10px 12px; display: grid; gap: 4px; flex: 1; }
+    .card h2 { margin: 0; font-size: 15px; font-weight: 650; overflow-wrap: anywhere; }
+    .card .meta { color: var(--muted); font-size: 12px; }
+    .card .desc { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+    .badge { display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--accent); color: var(--accent); margin-right: 6px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 4px; }
+    .tag { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: #262a32; color: var(--muted); border: 0; }
+    .actions { display: flex; gap: 6px; padding: 0 12px 12px; }
+    .actions button { flex: 1; }
+    details { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+    details label { display: inline-flex; gap: 6px; align-items: center; margin: 8px 12px 0 0; }
+    .nsfw-toggle { display: inline-flex; gap: 4px; align-items: center; font-size: 13px; color: var(--muted); white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>ワークショップ</h1>
+    <a href="index.html">← エディターに戻る</a>
+    <div class="controls">
+      <input id="search" type="search" placeholder="タイトル・作者・タグで検索" aria-label="検索" />
+      <select id="type" aria-label="種類">
+        <option value="">すべて</option>
+        <option value="model">モデル</option>
+        <option value="motion">モーション</option>
+      </select>
+      <label class="nsfw-toggle"><input id="show-nsfw" type="checkbox" /> nsfwを表示</label>
+      <button id="reload" type="button">更新</button>
+    </div>
+  </header>
+  <main>
+    <details id="settings">
+      <summary>データ置き場の設定</summary>
+      <label>GitHub リポジトリ（owner/repo）<input id="repo" type="text" spellcheck="false" size="40" /></label>
+      <button id="repo-apply" type="button">変更</button>
+      <p>公開されたモデル・モーションは、このリポジトリの <code>entries/&lt;id&gt;/</code> に置かれます。公開はエディターの「ファイル → ワークショップに公開…」から行います。</p>
+    </details>
+    <p id="status" role="status">読み込んでいます…</p>
+    <section id="builtin-section" class="section" hidden>
+      <h2 class="section-title">標準モーション</h2>
+      <div id="builtin-grid" class="grid"></div>
+    </section>
+    <section id="repo-section" class="section">
+      <h2 class="section-title">公開されたもの</h2>
+      <p id="repo-status" class="meta"></p>
+      <div id="grid" class="grid"></div>
+    </section>
+  </main>
+  <script type="module">
+    const CONFIG_KEY = "gfv-workshop";
+    const DEFAULT_REPO = "sakurabanban2/geometric-figure-viewer-workshop";
+    const REPO_PATTERN = /^[\w.-]+\/[\w.-]+$/;
+    const FILE_PATTERN = /^[\w.-]+$/;
+    let entries = [];
+    let activeTag = "";
+    // nsfw タグの付いたものは既定で隠す。「nsfwを表示」の状態はこのブラウザに覚える
+    const NSFW_KEY = "gfv-workshop-nsfw";
+    const isNsfw = (entry) => entry.tags.some((tag) => tag.toLowerCase() === "nsfw");
+    let showNsfw = false;
+    try { showNsfw = localStorage.getItem(NSFW_KEY) === "1"; } catch { /* 読めないときは隠す */ }
+
+    function config() {
+      try {
+        const value = JSON.parse(localStorage.getItem(CONFIG_KEY) || "{}") || {};
+        return { ...value, repo: REPO_PATTERN.test(value.repo ?? "") ? value.repo : DEFAULT_REPO };
+      } catch {
+        return { repo: DEFAULT_REPO };
+      }
+    }
+
+    function saveRepo(repo) {
+      try {
+        localStorage.setItem(CONFIG_KEY, JSON.stringify({ ...config(), repo }));
+      } catch { /* 覚えられなくても表示はできる */ }
+    }
+
+    const raw = (repo, path) => `https://raw.githubusercontent.com/${repo}/HEAD/${path.split("/").map(encodeURIComponent).join("/")}`;
+    const setStatus = (text) => { document.getElementById("status").textContent = text; };
+
+    function readPreview(preview) {
+      if (!preview || typeof preview !== "object" || typeof preview.file !== "string" || !FILE_PATTERN.test(preview.file)) return null;
+      const frames = Math.round(Number(preview.frames));
+      const fps = Number(preview.fps);
+      if (!(frames >= 2 && frames <= 120) || !(fps > 0 && fps <= 60)) return null;
+      return { file: preview.file, frames, fps };
+    }
+
+    function readMeta(meta, dir) {
+      if (!meta || typeof meta !== "object") return null;
+      const type = meta.type === "motion" ? "motion" : meta.type === "model" ? "model" : null;
+      if (!type || typeof meta.file !== "string" || !FILE_PATTERN.test(meta.file)) return null;
+      return {
+        dir,
+        type,
+        file: meta.file,
+        title: String(meta.title ?? dir.split("/").pop()).slice(0, 80),
+        author: String(meta.author ?? "").slice(0, 60),
+        tags: Array.isArray(meta.tags) ? meta.tags.map((tag) => String(tag).slice(0, 30)).slice(0, 12) : [],
+        description: String(meta.description ?? "").slice(0, 2000),
+        created: String(meta.created ?? ""),
+        thumbnail: typeof meta.thumbnail === "string" && FILE_PATTERN.test(meta.thumbnail) ? meta.thumbnail : null,
+        preview: readPreview(meta.preview),
+      };
+    }
+
+    function withRepoUrls(repo, entry) {
+      const url = (file) => (file ? raw(repo, `${entry.dir}/${file}`) : null);
+      return { ...entry, source: "repo", dataUrl: url(entry.file), thumbUrl: url(entry.thumbnail), previewUrl: url(entry.preview?.file) };
+    }
+
+    // アプリに同梱した motions/ のモーション（motions/index.json）。GitHub API は使わない
+    async function loadBuiltin() {
+      const base = new URL("motions/", location.href);
+      const response = await fetch(new URL("index.json", base), { cache: "no-store" });
+      if (!response.ok) return [];
+      const index = await response.json();
+      const list = Array.isArray(index?.motions) ? index.motions : [];
+      const local = (path) => (typeof path === "string" && /^[\w./-]+$/.test(path) && !path.includes("..") ? new URL(path, base).href : null);
+      return list.map((item) => {
+        const dataUrl = local(item?.file);
+        if (!dataUrl || !/\.(bvh|vmd)$/i.test(item.file)) return null;
+        const preview = item.preview && readPreview({ ...item.preview, file: "x" });
+        return {
+          source: "builtin",
+          type: "motion",
+          file: item.file.split("/").pop(),
+          title: String(item.title ?? item.file).slice(0, 80),
+          author: String(item.author ?? "標準").slice(0, 60),
+          tags: Array.isArray(item.tags) ? item.tags.map((tag) => String(tag).slice(0, 30)).slice(0, 12) : [],
+          description: String(item.description ?? "").slice(0, 2000),
+          created: "",
+          dataUrl,
+          thumbUrl: local(item.thumbnail),
+          previewUrl: preview ? local(item.preview.file) : null,
+          preview,
+        };
+      }).filter(Boolean);
+    }
+
+    // index.json があればそれを使い、なければリポジトリのファイル一覧から entries/*/meta.json を集める
+    async function loadEntries(repo) {
+      const indexResponse = await fetch(raw(repo, "index.json"), { cache: "no-store" });
+      if (indexResponse.ok) {
+        const index = await indexResponse.json();
+        const list = Array.isArray(index?.entries) ? index.entries : [];
+        return list.map((meta) => readMeta(meta, `entries/${meta?.id}`)).filter((entry) => entry && FILE_PATTERN.test(entry.dir.split("/")[1] ?? ""));
+      }
+      const treeResponse = await fetch(`https://api.github.com/repos/${repo}/git/trees/HEAD?recursive=1`, { headers: { Accept: "application/vnd.github+json" } });
+      if (treeResponse.status === 404 || treeResponse.status === 409) throw Object.assign(new Error("missing"), { code: treeResponse.status });
+      if (!treeResponse.ok) throw new Error(`GitHub API ${treeResponse.status}`);
+      const tree = await treeResponse.json();
+      const metas = (tree.tree ?? []).map((item) => item.path).filter((path) => /^entries\/[\w.-]+\/meta\.json$/.test(path));
+      const loaded = await Promise.all(metas.map(async (path) => {
+        try {
+          const response = await fetch(raw(repo, path));
+          return response.ok ? readMeta(await response.json(), path.replace(/\/meta\.json$/, "")) : null;
+        } catch {
+          return null;
+        }
+      }));
+      return loaded.filter(Boolean);
+    }
+
+    let builtin = [];
+    let repoMessage = "";
+
+    function render() {
+      const word = document.getElementById("search").value.trim().toLowerCase();
+      const type = document.getElementById("type").value;
+      const pick = (list) => list
+        .filter((entry) => !type || entry.type === type)
+        .filter((entry) => showNsfw || !isNsfw(entry))
+        .filter((entry) => !activeTag || entry.tags.includes(activeTag))
+        .filter((entry) => !word || [entry.title, entry.author, ...entry.tags].some((text) => text.toLowerCase().includes(word)));
+      const shownBuiltin = pick(builtin);
+      const shown = pick(entries).sort((a, b) => b.created.localeCompare(a.created));
+      document.getElementById("builtin-grid").replaceChildren(...shownBuiltin.map(card));
+      document.getElementById("builtin-section").hidden = !shownBuiltin.length;
+      document.getElementById("grid").replaceChildren(...shown.map(card));
+      document.getElementById("repo-status").textContent = repoMessage || (entries.length ? "" : "まだ公開されたものはありません。エディターの「ファイル → ワークショップに公開…」から公開できます。");
+      const total = builtin.length + entries.length;
+      const filters = [type && (type === "model" ? "モデル" : "モーション"), activeTag && `タグ「${activeTag}」`, word && `「${word}」`].filter(Boolean);
+      const hiddenNsfw = showNsfw ? 0 : [...builtin, ...entries].filter(isNsfw).length;
+      setStatus(`${shownBuiltin.length + shown.length} / ${total} 件${filters.length ? `（${filters.join("・")}）` : ""}${hiddenNsfw ? `・nsfw ${hiddenNsfw} 件を非表示` : ""}`);
+    }
+
+    function thumbBox(entry) {
+      const box = document.createElement("div");
+      box.className = "thumb";
+      const image = document.createElement("img");
+      image.alt = "";
+      image.loading = "lazy";
+      if (entry.thumbUrl) image.src = entry.thumbUrl;
+      box.append(image);
+      if (!entry.previewUrl || !entry.preview) return box;
+      const anim = document.createElement("div");
+      anim.className = "anim";
+      const hint = document.createElement("span");
+      hint.className = "hint";
+      hint.textContent = "▶";
+      box.append(anim, hint);
+      let animation = null;
+      const start = () => {
+        if (!anim.style.backgroundImage) {
+          anim.style.backgroundImage = `url("${entry.previewUrl}")`;
+          anim.style.backgroundSize = `${entry.preview.frames * 100}% 100%`;
+        }
+        box.classList.add("playing");
+        animation = anim.animate(
+          [{ backgroundPosition: "0% 0" }, { backgroundPosition: "100% 0" }],
+          { duration: (entry.preview.frames / entry.preview.fps) * 1000, iterations: Infinity, easing: `steps(${entry.preview.frames - 1}, jump-none)` },
+        );
+      };
+      const stop = () => {
+        animation?.cancel();
+        animation = null;
+        box.classList.remove("playing");
+      };
+      box.addEventListener("mouseenter", start);
+      box.addEventListener("mouseleave", stop);
+      box.addEventListener("focusin", start);
+      box.addEventListener("focusout", stop);
+      return box;
+    }
+
+    function card(entry) {
+      const root = document.createElement("article");
+      root.className = "card";
+      root.dataset.type = entry.type;
+      root.dataset.source = entry.source;
+      const image = thumbBox(entry);
+      const body = document.createElement("div");
+      body.className = "body";
+      const title = document.createElement("h2");
+      const badge = document.createElement("span");
+      badge.className = "badge";
+      badge.textContent = entry.type === "model" ? "モデル" : "モーション";
+      title.append(badge, entry.title);
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.textContent = [entry.author && `作者: ${entry.author}`, entry.created && entry.created.slice(0, 10)].filter(Boolean).join("　");
+      const desc = document.createElement("div");
+      desc.className = "desc";
+      desc.textContent = entry.description;
+      const tags = document.createElement("div");
+      tags.className = "tags";
+      for (const tagText of entry.tags) {
+        const tag = document.createElement("button");
+        tag.type = "button";
+        tag.className = "tag";
+        tag.textContent = `#${tagText}`;
+        tag.addEventListener("click", () => {
+          activeTag = activeTag === tagText ? "" : tagText;
+          render();
+        });
+        tags.append(tag);
+      }
+      body.append(title, meta, tags, desc);
+      const actions = document.createElement("div");
+      actions.className = "actions";
+      const dataUrl = entry.dataUrl;
+      const open = document.createElement("button");
+      open.type = "button";
+      open.textContent = "エディターで開く";
+      open.addEventListener("click", () => {
+        const params = new URLSearchParams({ workshop: dataUrl, kind: entry.type, title: entry.title });
+        window.open(`index.html?${params}`, "_blank", "noopener");
+      });
+      const download = document.createElement("button");
+      download.type = "button";
+      download.textContent = "ダウンロード";
+      download.addEventListener("click", async () => {
+        try {
+          const response = await fetch(dataUrl);
+          if (!response.ok) throw new Error(String(response.status));
+          const url = URL.createObjectURL(await response.blob());
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = entry.type === "model" ? `${entry.title.replace(/[\\/:*?"<>|]/g, "_")}.json` : `${entry.title.replace(/[\\/:*?"<>|]/g, "_")}.${entry.file.split(".").pop()}`;
+          document.body.append(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch {
+          setStatus("ダウンロードできませんでした");
+        }
+      });
+      actions.append(open, download);
+      root.append(image, body, actions);
+      return root;
+    }
+
+    async function reload() {
+      const repo = config().repo;
+      document.getElementById("repo").value = repo;
+      setStatus(`${repo} を読み込んでいます…`);
+      document.getElementById("grid").replaceChildren();
+      repoMessage = "";
+      try {
+        builtin = await loadBuiltin();
+      } catch {
+        builtin = [];
+      }
+      try {
+        entries = (await loadEntries(repo)).map((entry) => withRepoUrls(repo, entry));
+        render();
+      } catch (error) {
+        entries = [];
+        repoMessage = (error?.code === 404
+          ? `データ置き場 ${repo} が見つかりません。\nGitHub でこの名前の公開リポジトリを作るか、「データ置き場の設定」で別のリポジトリを指定してください。`
+          : error?.code === 409
+            ? `データ置き場 ${repo} はまだ空です。`
+            : `読み込めませんでした（${error?.message ?? error}）`);
+        render();
+      }
+    }
+
+    document.getElementById("search").addEventListener("input", render);
+    document.getElementById("type").addEventListener("change", render);
+    const nsfwBox = document.getElementById("show-nsfw");
+    nsfwBox.checked = showNsfw;
+    nsfwBox.addEventListener("change", () => {
+      showNsfw = nsfwBox.checked;
+      try { localStorage.setItem(NSFW_KEY, showNsfw ? "1" : "0"); } catch { /* 覚えられなくても表示は切り替える */ }
+      render();
+    });
+    document.getElementById("reload").addEventListener("click", reload);
+    document.getElementById("repo-apply").addEventListener("click", () => {
+      const repo = document.getElementById("repo").value.trim();
+      if (!REPO_PATTERN.test(repo)) {
+        setStatus("owner/repo の形で入れてください");
+        return;
+      }
+      saveRepo(repo);
+      reload();
+    });
+    reload();
+  </script>
+</body>
+</html>
