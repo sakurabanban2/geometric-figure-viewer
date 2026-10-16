@@ -21960,15 +21960,25 @@ void main() {
     // program の頂点シェーダーを、columns（名前 → {array,size}）を入力に count 個の点で回し、varying を読み戻す。
     // 読み戻す前に GPU の完了をフェンスで待ち、そのあいだはブラウザへ処理を返す（読み戻しでタブが固まらないように）。
     const PREVIEW_CHUNK = 1 << 20;
+    // フェンスの完了通知が極端に遅い環境（SwiftShader など）があるので、少し待っても終わらなければ
+    // 以後はフェンスを使わず、そのまま読み戻す（その場合も、パーツや段階の区切りではブラウザへ返す）。
+    const FENCE_PATIENCE = 60;
+    let fenceUsable = true;
     async function gpuSettle(gl) {
+      if (!fenceUsable) return;
       const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
       if (!sync) return;
       gl.flush();
+      const began = performance.now();
       try {
         for (;;) {
           const status = gl.clientWaitSync(sync, 0, 0);
           if (status === gl.ALREADY_SIGNALED || status === gl.CONDITION_SATISFIED || status === gl.WAIT_FAILED) return;
-          await new Promise((resolve) => setTimeout(resolve, 4));
+          if (performance.now() - began > FENCE_PATIENCE) {
+            fenceUsable = false;
+            return;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 1));
           if (busyJob?.cancelled) throw new JobCancelled();
         }
       } finally {
