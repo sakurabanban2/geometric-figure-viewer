@@ -1973,7 +1973,8 @@
   <div id="context-menu" class="menu-list" role="menu" hidden></div>
   <dialog id="help-modal" aria-labelledby="help-title">
     <h2 id="help-title">操作ガイド</h2>
-    <p>クリックで選択し、Shift+クリックで追加します。移動・回転・拡縮はボタンで重ねて選べます。移動と拡縮を同時に選ぶと、拡縮のハンドルは外側に出ます。Shift を押しながらドラッグすると、移動はつかんだ矢印以外の方向（面をつかんだ場合はその面に垂直な方向）に動き、回転は45度刻みになり、拡縮はつかんだ側の反対の面を固定して伸び縮みします。ロックしたパーツは動きません。Ctrl+C でコピー、Ctrl+V で少しずらした位置に貼り付けます。フォルダを選んでコピーすると、中のフォルダやパーツごとフォルダをまるごとコピーします。貼り付け先は、フォルダを選んでいればそのフォルダの中、パーツを選んでいればそのパーツのすぐ下になります。リンクパーツを貼り付けると、同じリンク先モデルを共有するリンクが増えます。</p>
+    <p>クリックで選択し、Shift+クリックで追加します。移動・回転・拡縮はボタンで重ねて選べます。移動と拡縮を同時に選ぶと、拡縮のハンドルは外側に出ます。Shift を押しながらドラッグすると、移動はつかんだ矢印以外の方向（面をつかんだ場合はその面に垂直な方向）に動き、回転は45度刻みになり、拡縮はつかんだ側の反対の面を固定して伸び縮みします。ロックしたパーツは動きません。Ctrl+C でコピー、Ctrl+V で少しずらした位置に貼り付けます。フォルダを選んでコピーすると、中のフォルダやパーツごとフォルダをまるごとコピーします。貼り付け先は、フォルダを選んでいればそのフォルダの中、パーツを選んでいればそのパーツのすぐ下になります。リンクパーツを貼り付けると、同じリンク先モデルを共有するリンクが増えます。Ctrl+D で選んだものをその場に複製します（クリップボードは変わりません）。パスもパーツと同じようにコピー・貼り付け・複製でき、パーツとそのパスを一緒にコピーすると、貼り付けたパーツは新しいパスに沿います。</p>
+    <p>パーツをパスに沿わせるには、パーツ一覧でパーツの行をパスの行の中央にドラッグするか、右クリックの「パスに沿わせる…」を選んで画面のパスをクリックします（Esc でやめる）。メニューには最近使ったパス・近いパスが 5 つまで並び、ほかのパスは「ほかのパスから選ぶ…」で名前を検索して選べます。沿わせたパーツをパス以外の場所へドラッグするとパスから外れます。</p>
     <p>画面右下のアイコンでワイヤーフレーム・自動回転・パースを切り替えられます。パースをオフにすると遠近感のない平行投影になり、形の比率や左右のずれを確かめやすくなります。平行投影中もホイールで拡大縮小できます。視点を回す中心は、パーツを選ぶとそのパーツの中心（複数なら最初に選んだパーツの中心）に移ります。選択を外しても視点の中心はその場所にとどまります。</p>
     <p>画面の左と上にスケール（cm）が表示されます。回転の中心を通る面での長さです（パースオフなら画面全体で正確です）。左のスケールをドラッグすると上下スケールの起点（0 の位置）を動かせ、ドラッグ中は起点から横に線が表示されます。ダブルクリックで画面下に戻ります。</p>
     <p>メニューバーの左右対称アイコンがオンのときは、追加した形が左右1組で置かれ、片側の編集がもう一方にも反映されます。オフにすると、追加した形は1つだけ置かれ、編集も片側だけになります。</p>
@@ -10972,7 +10973,9 @@ self.onmessage = (event) => {
       const linked = descendantLinks(subject.id);
       const visible = meshes.filter((mesh) => !mesh.userData.hidden);
       const visibleAnchors = linked.filter((link) => !link.hidden).map((link) => linkAnchors.get(link.id)).filter(Boolean);
-      const allLocked = meshes.length > 0 && meshes.every((mesh) => mesh.userData.locked);
+      const pathsInFolder = folderCurves(subject.id);
+      const lockables = [...meshes, ...pathsInFolder];
+      const allLocked = lockables.length > 0 && lockables.every((item) => item.userData.locked);
       const hiddenFlags = folderHiddenFlags(subject.id);
       const allHidden = hiddenFlags.length > 0 && hiddenFlags.every(Boolean);
       return {
@@ -10985,12 +10988,12 @@ self.onmessage = (event) => {
             run: () => makeLinkedModel({ type: "folder", id: subject.id }),
           },
           null,
-          ...clipItems([...visible, ...visibleAnchors], subject.id),
+          ...clipItems([...visible, ...visibleAnchors, ...pathsInFolder.filter((curve) => !curve.userData.hidden)], subject.id),
           null,
           { label: "名前の変更", disabled: masking, run: () => beginRename("folder", subject.id) },
           { label: "色を設定…", disabled: masking, run: () => pickFolderColor(subject.id, subject.x ?? 0, subject.y ?? 0) },
           ...(folder?.color ? [{ label: "色を元に戻す", disabled: masking, run: () => clearFolderColor(subject.id) }] : []),
-          { label: allLocked ? "ロック解除" : "ロック", disabled: masking || !meshes.length, run: () => toggleFolderLock(subject.id) },
+          { label: allLocked ? "ロック解除" : "ロック", disabled: masking || !lockables.length, run: () => toggleFolderLock(subject.id) },
           { label: allHidden ? "表示" : "非表示", disabled: masking || !hiddenFlags.length, run: () => toggleFolderHidden(subject.id) },
           folderSymmetryItem(subject.id, masking),
           null,
@@ -11432,6 +11435,11 @@ self.onmessage = (event) => {
       if (command && event.code === "KeyC" && !event.shiftKey) {
         if (String(window.getSelection?.() ?? "")) return;
         if (copySelection()) event.preventDefault();
+        return;
+      }
+      if (command && event.code === "KeyD" && !event.shiftKey) {
+        event.preventDefault();
+        duplicateSelection();
         return;
       }
       if (command && event.code === "KeyV" && !event.shiftKey) {
