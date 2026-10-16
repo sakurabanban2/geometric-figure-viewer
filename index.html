@@ -168,6 +168,10 @@
 
     #help-modal::backdrop { background: rgba(8, 9, 12, 0.62); }
     #help-modal h2 { margin: 0 0 8px; color: var(--text); font-size: 15px; letter-spacing: 0; }
+    #help-modal h3 { margin: 0 0 6px; color: var(--text); font-size: 13px; }
+    #help-modal .shortcut-table { width: 100%; border-collapse: collapse; margin: 0 0 14px; font-size: 12px; }
+    #help-modal .shortcut-table th { text-align: left; white-space: nowrap; padding: 3px 12px 3px 0; color: var(--text); font-weight: 600; vertical-align: top; }
+    #help-modal .shortcut-table td { padding: 3px 0; color: var(--muted); }
     #help-modal p { margin: 0 0 10px; color: var(--muted); font-size: 13px; line-height: 1.6; }
     #help-close { padding: 7px 12px; font-size: 13px; }
 
@@ -1223,11 +1227,19 @@
           <button type="button" role="menuitem" data-command="undo">戻す<kbd>Ctrl+Z</kbd></button>
           <button type="button" role="menuitem" data-command="redo">やり直す<kbd>Ctrl+Y</kbd></button>
           <hr />
+          <button type="button" role="menuitem" data-action="cut">切り取り<kbd>Ctrl+X</kbd></button>
           <button type="button" role="menuitem" data-action="copy">コピー<kbd>Ctrl+C</kbd></button>
           <button type="button" role="menuitem" data-action="paste">貼り付け<kbd>Ctrl+V</kbd></button>
+          <button type="button" role="menuitem" data-action="duplicate">複製<kbd>Ctrl+D</kbd></button>
           <hr />
           <button type="button" role="menuitem" data-action="select-all">すべて選択<kbd>Ctrl+A</kbd></button>
+          <button type="button" role="menuitem" data-action="select-invert">選択を反転<kbd>Ctrl+I</kbd></button>
+          <button type="button" role="menuitem" data-action="select-none">選択を解除<kbd>Esc</kbd></button>
+          <hr />
+          <button type="button" role="menuitem" data-action="group">新しいフォルダにまとめる<kbd>Ctrl+G</kbd></button>
           <button type="button" role="menuitem" data-command="lock">ロック<kbd>L</kbd></button>
+          <button type="button" role="menuitem" data-action="hide">表示/非表示<kbd>H</kbd></button>
+          <button type="button" role="menuitem" data-action="show-all">すべて表示<kbd>Alt+H</kbd></button>
           <button type="button" role="menuitem" data-command="remove">削除<kbd>Del</kbd></button>
           <button type="button" role="menuitem" data-action="merge">選択中のパーツを結合</button>
           <button type="button" role="menuitem" data-action="rasterize">ラスタライズ</button>
@@ -1261,6 +1273,7 @@
         <button class="menu-button" type="button" role="menuitem" aria-haspopup="true" aria-expanded="false">その他</button>
         <div class="menu-list" role="menu" hidden>
           <button type="button" role="menuitem" data-action="help">操作ガイド</button>
+          <button type="button" role="menuitem" data-action="shortcuts">キーボードショートカット<kbd>?</kbd></button>
         </div>
       </div>
     </div>
@@ -1973,7 +1986,23 @@
   <div id="context-menu" class="menu-list" role="menu" hidden></div>
   <dialog id="help-modal" aria-labelledby="help-title">
     <h2 id="help-title">操作ガイド</h2>
-    <p>クリックで選択し、Shift+クリックで追加します。移動・回転・拡縮はボタンで重ねて選べます。移動と拡縮を同時に選ぶと、拡縮のハンドルは外側に出ます。Shift を押しながらドラッグすると、移動はつかんだ矢印以外の方向（面をつかんだ場合はその面に垂直な方向）に動き、回転は45度刻みになり、拡縮はつかんだ側の反対の面を固定して伸び縮みします。ロックしたパーツは動きません。Ctrl+C でコピー、Ctrl+V で少しずらした位置に貼り付けます。フォルダを選んでコピーすると、中のフォルダやパーツごとフォルダをまるごとコピーします。貼り付け先は、フォルダを選んでいればそのフォルダの中、パーツを選んでいればそのパーツのすぐ下になります。リンクパーツを貼り付けると、同じリンク先モデルを共有するリンクが増えます。Ctrl+D で選んだものをその場に複製します（クリップボードは変わりません）。パスもパーツと同じようにコピー・貼り付け・複製でき、パーツとそのパスを一緒にコピーすると、貼り付けたパーツは新しいパスに沿います。</p>
+    <section id="help-shortcuts" aria-label="キーボードショートカット">
+      <h3>キーボードショートカット</h3>
+      <table class="shortcut-table">
+        <tr><th>クリック / Shift+クリック / Ctrl+クリック</th><td>選択 / 追加 / 追加・解除（パーツ一覧の Shift+クリックは間の行もまとめて選択）</td></tr>
+        <tr><th>Ctrl+A / Ctrl+I / Esc</th><td>すべて選択（パスも含む） / 選択を反転 / 選択を解除</td></tr>
+        <tr><th>Ctrl+C / Ctrl+X / Ctrl+V / Ctrl+D</th><td>コピー / 切り取り / 貼り付け / その場に複製</td></tr>
+        <tr><th>Ctrl+Z / Ctrl+Y（Ctrl+Shift+Z）</th><td>元に戻す / やり直す</td></tr>
+        <tr><th>Delete / Backspace</th><td>選択中のものを削除</td></tr>
+        <tr><th>L</th><td>選択中のものをロック / 解除</td></tr>
+        <tr><th>H / Alt+H</th><td>選択中のものを非表示 / 表示、非表示のものをすべて表示</td></tr>
+        <tr><th>Ctrl+G</th><td>選択中のものを新しいフォルダにまとめる</td></tr>
+        <tr><th>F2 / ダブルクリック</th><td>名前の変更</td></tr>
+        <tr><th>Ctrl+N / Ctrl+S</th><td>新規 / 保存（編集モード中はその編集を保存）</td></tr>
+        <tr><th>?</th><td>この一覧を開く</td></tr>
+      </table>
+    </section>
+    <p>クリックで選択し、Shift+クリックで追加します（パーツ一覧では Shift+クリックで間の行もまとめて選べます）。移動・回転・拡縮はボタンで重ねて選べます。移動と拡縮を同時に選ぶと、拡縮のハンドルは外側に出ます。Shift を押しながらドラッグすると、移動はつかんだ矢印以外の方向（面をつかんだ場合はその面に垂直な方向）に動き、回転は45度刻みになり、拡縮はつかんだ側の反対の面を固定して伸び縮みします。ロックしたパーツは動きません。Ctrl+C でコピー、Ctrl+V で少しずらした位置に貼り付けます。フォルダを選んでコピーすると、中のフォルダやパーツごとフォルダをまるごとコピーします。貼り付け先は、フォルダを選んでいればそのフォルダの中、パーツを選んでいればそのパーツのすぐ下になります。リンクパーツを貼り付けると、同じリンク先モデルを共有するリンクが増えます。Ctrl+D で選んだものをその場に複製します（クリップボードは変わりません）。パスもパーツと同じようにコピー・貼り付け・複製でき、パーツとそのパスを一緒にコピーすると、貼り付けたパーツは新しいパスに沿います。</p>
     <p>パーツをパスに沿わせるには、パーツ一覧でパーツの行をパスの行の中央にドラッグするか、右クリックの「パスに沿わせる…」を選んで画面のパスをクリックします（Esc でやめる）。メニューには最近使ったパス・近いパスが 5 つまで並び、ほかのパスは「ほかのパスから選ぶ…」で名前を検索して選べます。沿わせたパーツをパス以外の場所へドラッグするとパスから外れます。</p>
     <p>画面右下のアイコンでワイヤーフレーム・自動回転・パースを切り替えられます。パースをオフにすると遠近感のない平行投影になり、形の比率や左右のずれを確かめやすくなります。平行投影中もホイールで拡大縮小できます。視点を回す中心は、パーツを選ぶとそのパーツの中心（複数なら最初に選んだパーツの中心）に移ります。選択を外しても視点の中心はその場所にとどまります。</p>
     <p>画面の左と上にスケール（cm）が表示されます。回転の中心を通る面での長さです（パースオフなら画面全体で正確です）。左のスケールをドラッグすると上下スケールの起点（0 の位置）を動かせ、ドラッグ中は起点から横に線が表示されます。ダブルクリックで画面下に戻ります。</p>
@@ -4732,9 +4761,17 @@ if (decalOn > 0.5) {
       const target = !reliefDrawing && selected && selected.visible && !locked ? selected : null;
       toolByMode.rotate.setSpace(target?.userData.isCurvePoint || target?.userData.curveBind ? "local" : "world");
       for (const control of toolList) {
-        if (target && toolAllowed(target, control.mode)) control.attach(target);
+        const holder = target && toolAllowed(target, control.mode) ? target : groupToolHolder(control.mode);
+        if (holder) control.attach(holder);
         else control.detach();
       }
+    }
+
+    // 複数選択（フォルダの選択など）で、選択の中心になっているものにハンドルが付けられないとき
+    // （パスに沿わせたパーツは移動できない、ロック中、など）は、選択の中で動かせるほかのものに付ける。
+    function groupToolHolder(mode) {
+      if (reliefDrawing || selection.length < 2 || isCurvePart(selected)) return null;
+      return leaders().find((item) => item.visible && !isCurvePart(item) && toolAllowed(item, mode)) ?? null;
     }
 
     function toolAllowed(object, mode) {
@@ -8316,9 +8353,37 @@ self.onmessage = (event) => {
       return selection.filter((mesh) => !mesh.userData.locked && !driven.has(mesh));
     }
 
+    // まとめて動かすとき、パスに沿わせたパーツはパスごと動かす（そのパスを使うものが全部選択に入っている場合）
+    function followedCurves(items) {
+      if (items.length < 2) return [];
+      const chosen = new Set(items);
+      const users = new Map();
+      const note = (item, bind) => {
+        const curve = bind && curveById(bind.curveId);
+        if (!curve) return;
+        if (!users.has(curve)) users.set(curve, []);
+        users.get(curve).push(item);
+      };
+      for (const mesh of editableMeshes()) {
+        note(mesh, mesh.userData.curveBind);
+        for (const shape of mesh.userData.masks ?? []) note(shape, shape.userData.curveBind);
+      }
+      for (const anchor of activeAnchors()) note(anchor, linkById(anchor.userData.linkId)?.curveBind);
+      const result = [];
+      for (const [curve, list] of users) {
+        if (chosen.has(curve) || curve.userData.locked) continue;
+        const inSelection = list.filter((item) => chosen.has(item));
+        if (!inSelection.length) continue;
+        // 対称の相手が選択外でも、選択側に合わせて動くので数えない
+        const outside = list.filter((item) => !chosen.has(item) && !(symmetric && !item.userData.isMask && !isLinkAnchor(item) && chosen.has(otherOf(recordOf(item), item))));
+        if (!outside.length) result.push(curve);
+      }
+      return result;
+    }
+
     function captureDragOrigins() {
       dragOrigins.clear();
-      for (const mesh of leaders()) {
+      for (const mesh of [...leaders(), ...followedCurves(selection)]) {
         mesh.updateWorldMatrix(true, false);
         const pos = new THREE.Vector3().setFromMatrixPosition(mesh.matrixWorld);
         const quat = worldQuaternionOf(mesh);
@@ -8958,9 +9023,99 @@ self.onmessage = (event) => {
     function selectAllUnlocked() {
       const pool = maskTarget
         ? maskFocus().flatMap((mesh) => (mesh.userData.masks || []).filter((shape) => shape.visible))
-        : [...editableMeshes(), ...activeAnchors()].filter((mesh) => mesh.visible);
+        : [...editableMeshes(), ...activeAnchors(), ...curves.filter((curve) => !curve.userData.hidden)].filter((mesh) => isCurve(mesh) || mesh.visible);
       const meshes = pool.filter((mesh) => !mesh.userData.locked);
       setSelection(meshes, meshes.includes(selected) ? selected : undefined);
+    }
+
+    // ===== 複数選択をまとめて扱うコマンド =====
+    // 選択の持ち主（パスの点・ハンドルはそのパス）。マスク範囲は除く。
+    function selectionOwners(items = selection) {
+      return [...new Set(items.map((item) => (isCurvePart(item) ? curveOf(item) : item)).filter((item) => item && !item.userData.isMask))];
+    }
+
+    function itemHidden(item) {
+      if (isLinkAnchor(item)) return Boolean(linkById(item.userData.linkId)?.hidden);
+      return Boolean(item.userData.hidden);
+    }
+
+    // パーツ・リンク・パスの表示/非表示をまとめて切り替える（1 回で元に戻せる）
+    function setItemsHidden(items, next) {
+      let linksChanged = false;
+      for (const item of items) {
+        if (isLinkAnchor(item)) {
+          const link = linkById(item.userData.linkId);
+          if (link && link.hidden !== next) {
+            link.hidden = next;
+            linksChanged = true;
+          }
+        } else if (isCurve(item)) {
+          item.userData.hidden = next;
+        } else {
+          for (const part of withTwins([item])) {
+            part.userData.hidden = next;
+            part.visible = !next;
+          }
+        }
+      }
+      if (linksChanged) refreshLinks();
+      const keep = selection.filter((item) => {
+        const owner = isCurvePart(item) ? curveOf(item) : item;
+        return !owner || item.userData.isMask || !itemHidden(owner);
+      });
+      setSelection(keep, keep.includes(selected) ? selected : null);
+      paintCurves();
+      commit();
+    }
+
+    function toggleHideSelection() {
+      if (maskTarget) return;
+      const owners = selectionOwners();
+      if (!owners.length) return;
+      const next = owners.some((item) => !itemHidden(item));
+      setItemsHidden(owners, next);
+      setFileStatus(next ? `${owners.length}個を非表示にしました（Alt+H ですべて表示）` : `${owners.length}個を表示しました`);
+    }
+
+    function showAllHidden() {
+      if (maskTarget) return;
+      const hiddenItems = [
+        ...editableMeshes().filter((mesh) => mesh.userData.hidden),
+        ...links.filter((link) => link.hidden).map((link) => linkAnchors.get(link.id)).filter(Boolean),
+        ...curves.filter((curve) => curve.userData.hidden),
+      ];
+      if (!hiddenItems.length) {
+        setFileStatus("非表示のものはありません");
+        return;
+      }
+      setItemsHidden(hiddenItems, false);
+      setSelection(hiddenItems.filter((item) => !isLinkAnchor(item) || item.visible), undefined);
+      setFileStatus(`${hiddenItems.length}個を表示しました`);
+    }
+
+    function invertSelection() {
+      if (maskTarget) return;
+      const owners = new Set(selectionOwners());
+      const pool = [...editableMeshes(), ...activeAnchors(), ...curves]
+        .filter((item) => !item.userData.locked && !itemHidden(item) && (isCurve(item) || item.visible));
+      const next = pool.filter((item) => !owners.has(item));
+      setSelection(next, undefined);
+    }
+
+    function groupSelection() {
+      if (maskTarget || !selectionOwners().length) return;
+      focusedFolder = null;
+      folderPick = null;
+      addFolder();
+    }
+
+    function cutSelection() {
+      if (maskTarget || !selection.length) return;
+      if (selectionOwners().some((item) => item.userData.locked)) {
+        setFileStatus("ロック中のものは切り取れません");
+        return;
+      }
+      if (copySelection()) removeSelected();
     }
 
     function withTwins(meshes) {
@@ -10929,8 +11084,10 @@ self.onmessage = (event) => {
         const mesh = subject.mesh;
         const locked = Boolean(mesh.userData.locked);
         const hidden = Boolean(mesh.userData.hidden);
+        const owners = selection.includes(mesh) ? selectionOwners() : [];
+        const multi = owners.length > 1 ? owners.length : 0;
         return {
-          title: `${sideText(mesh)}${mesh.userData.label ?? "パーツ"}`,
+          title: multi ? `${sideText(mesh)}${mesh.userData.label ?? "パーツ"}（ほか${multi - 1}個を選択中）` : `${sideText(mesh)}${mesh.userData.label ?? "パーツ"}`,
           items: [
             { label: "マスク編集", disabled: Boolean(reliefTarget) || Boolean(featureTarget) || Boolean(softTarget) || rigEditing, run: () => beginMaskEdit(mesh) },
             { label: "法線編集", disabled: masking || hidden || Boolean(reliefTarget) || Boolean(featureTarget) || Boolean(softTarget) || rigEditing, run: () => beginReliefEdit(mesh) },
@@ -10953,18 +11110,27 @@ self.onmessage = (event) => {
             { label: "名前の変更", disabled: masking, run: () => beginRename("part", mesh.userData.id) },
             { label: "色を設定…", disabled: masking, run: () => pickPartColor(mesh, subject.x ?? 0, subject.y ?? 0) },
             ...(colorTargets(mesh).some((item) => item.userData.color) ? [{ label: "色を元に戻す", disabled: masking, run: () => clearPartColor(mesh) }] : []),
-            { label: locked ? "ロック解除" : "ロック", disabled: masking, run: () => toggleMeshLock(mesh) },
-            { label: hidden ? "表示" : "非表示", disabled: masking, run: () => toggleMeshHidden(mesh) },
-            null,
-            {
-              label: "削除",
-              danger: true,
-              disabled: masking || locked,
-              run: () => {
-                select(mesh);
-                removeSelected();
-              },
-            },
+            ...(multi
+              ? [
+                { label: `選択中の${multi}個をロック/解除`, disabled: masking, run: () => toggleLock() },
+                { label: `選択中の${multi}個を表示/非表示`, disabled: masking, run: () => toggleHideSelection() },
+                null,
+                { label: `選択中の${multi}個を削除`, danger: true, disabled: masking, run: () => removeSelected() },
+              ]
+              : [
+                { label: locked ? "ロック解除" : "ロック", disabled: masking, run: () => toggleMeshLock(mesh) },
+                { label: hidden ? "表示" : "非表示", disabled: masking, run: () => toggleMeshHidden(mesh) },
+                null,
+                {
+                  label: "削除",
+                  danger: true,
+                  disabled: masking || locked,
+                  run: () => {
+                    select(mesh);
+                    removeSelected();
+                  },
+                },
+              ]),
           ],
         };
       }
@@ -11168,10 +11334,14 @@ self.onmessage = (event) => {
       if (!mesh) return;
       focusedFolder = null;
       if (event.shiftKey && !event.ctrlKey && !event.metaKey) {
-        if (selection.includes(mesh)) setSelection(selection, mesh);
-        else setSelection([...selection, mesh], mesh);
+        // Shift+クリック: 前にクリックした行からこの行までをまとめて追加する
+        const range = outlinerRange(outlinerAnchor, clickKey);
+        const extra = range.length ? range : [mesh];
+        const next = [...selection, ...extra.filter((item) => !selection.includes(item))];
+        setSelection(next, mesh);
         return;
       }
+      outlinerAnchor = clickKey;
       if (event.ctrlKey || event.metaKey) {
         if (selection.includes(mesh)) {
           setSelection(selection.filter((item) => item !== mesh), selected === mesh ? null : selected);
@@ -11180,6 +11350,33 @@ self.onmessage = (event) => {
       }
       select(mesh);
     });
+    // パーツ一覧の Shift+クリックの起点（type:id）
+    let outlinerAnchor = null;
+    function outlinerRowItem(row) {
+      const { type, id } = row.dataset;
+      if (type === "part") {
+        const mesh = meshById(id);
+        return mesh && !mesh.userData.hidden ? mesh : null;
+      }
+      if (type === "link") {
+        const anchor = linkAnchors.get(id);
+        return anchor && !linkById(id)?.hidden ? anchor : null;
+      }
+      if (type === "curve") return curveById(id) ?? null;
+      return null;
+    }
+
+    function outlinerRange(fromKey, toKey) {
+      if (!fromKey) return [];
+      const rows = [...outlinerTree.querySelectorAll(".outliner-row")];
+      const keyOf = (row) => `${row.dataset.type}:${row.dataset.id}`;
+      const from = rows.findIndex((row) => keyOf(row) === fromKey);
+      const to = rows.findIndex((row) => keyOf(row) === toKey);
+      if (from < 0 || to < 0) return [];
+      const [start, end] = from < to ? [from, to] : [to, from];
+      return rows.slice(start, end + 1).map(outlinerRowItem).filter(Boolean);
+    }
+
     outlinerTree.addEventListener("dblclick", (event) => {
       if (event.target.closest("button, input")) return;
       const row = event.target.closest(".outliner-row");
@@ -11445,6 +11642,41 @@ self.onmessage = (event) => {
       if (command && event.code === "KeyV" && !event.shiftKey) {
         event.preventDefault();
         pasteClipboard();
+        return;
+      }
+      if (command && event.code === "KeyX" && !event.shiftKey) {
+        if (String(window.getSelection?.() ?? "")) return;
+        event.preventDefault();
+        cutSelection();
+        return;
+      }
+      if (command && event.code === "KeyI" && !event.shiftKey) {
+        event.preventDefault();
+        invertSelection();
+        return;
+      }
+      if (command && event.code === "KeyG" && !event.shiftKey) {
+        event.preventDefault();
+        groupSelection();
+        return;
+      }
+      if (event.code === "KeyH" && !command && !event.shiftKey) {
+        event.preventDefault();
+        if (event.altKey) showAllHidden();
+        else toggleHideSelection();
+        return;
+      }
+      if (event.key === "Escape" && !command && (selection.length || focusedFolder)) {
+        event.preventDefault();
+        focusedFolder = null;
+        folderPick = null;
+        select(null);
+        renderOutliner();
+        return;
+      }
+      if (event.key === "?" && !command) {
+        event.preventDefault();
+        openShortcutHelp();
         return;
       }
       if ((event.key === "l" || event.key === "L") && !event.ctrlKey && !event.metaKey && !event.altKey) {
@@ -18005,6 +18237,15 @@ self.onmessage = (event) => {
           ...folderItems(curve, masking),
           null,
           { label: "名前の変更", disabled: masking, run: () => beginRename("curve", curve.userData.id) },
+          ...(curveMulti(curve)
+            ? [
+              { label: `選択中の${curveMulti(curve)}個をロック/解除`, disabled: masking, run: () => toggleLock() },
+              { label: `選択中の${curveMulti(curve)}個を表示/非表示`, disabled: masking, run: () => toggleHideSelection() },
+              null,
+              { label: `選択中の${curveMulti(curve)}個を削除`, danger: true, disabled: masking, run: () => removeSelected() },
+              null,
+            ]
+            : []),
           { label: curve.userData.locked ? "ロック解除" : "ロック", disabled: masking, run: () => toggleCurveLock(curve) },
           { label: curve.userData.hidden ? "表示" : "非表示", disabled: masking, run: () => toggleCurveHidden(curve) },
           null,
@@ -18020,6 +18261,11 @@ self.onmessage = (event) => {
           },
         ],
       };
+    }
+
+    function curveMulti(curve) {
+      const owners = selectionOwners();
+      return owners.includes(curve) && owners.length > 1 ? owners.length : 0;
     }
 
     function selectableObjects() {
@@ -22004,6 +22250,18 @@ self.onmessage = (event) => {
         else if (item.dataset.view) setView(item.dataset.view);
         else if (item.dataset.action === "select-all") selectAllUnlocked();
         else if (item.dataset.action === "copy") copySelection();
+        else if (item.dataset.action === "cut") cutSelection();
+        else if (item.dataset.action === "duplicate") duplicateSelection();
+        else if (item.dataset.action === "select-invert") invertSelection();
+        else if (item.dataset.action === "select-none") {
+          focusedFolder = null;
+          folderPick = null;
+          select(null);
+          renderOutliner();
+        } else if (item.dataset.action === "group") groupSelection();
+        else if (item.dataset.action === "hide") toggleHideSelection();
+        else if (item.dataset.action === "show-all") showAllHidden();
+        else if (item.dataset.action === "shortcuts") openShortcutHelp();
         else if (item.dataset.action === "paste") pasteClipboard();
         else if (item.dataset.action === "merge") mergeSelected();
         else if (item.dataset.action === "rasterize") rasterizePart(rasterizeTarget());
@@ -22025,6 +22283,11 @@ self.onmessage = (event) => {
       event.stopImmediatePropagation();
       closeMenus();
     }, true);
+    function openShortcutHelp() {
+      const modal = document.getElementById("help-modal");
+      if (!modal.open) modal.showModal();
+      document.getElementById("help-shortcuts").scrollIntoView({ block: "start" });
+    }
     document.getElementById("help-close").addEventListener("click", () => document.getElementById("help-modal").close());
 
     new ResizeObserver(() => resize()).observe(viewport);
