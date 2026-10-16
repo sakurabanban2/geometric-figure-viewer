@@ -4761,9 +4761,17 @@ if (decalOn > 0.5) {
       const target = !reliefDrawing && selected && selected.visible && !locked ? selected : null;
       toolByMode.rotate.setSpace(target?.userData.isCurvePoint || target?.userData.curveBind ? "local" : "world");
       for (const control of toolList) {
-        if (target && toolAllowed(target, control.mode)) control.attach(target);
+        const holder = target && toolAllowed(target, control.mode) ? target : groupToolHolder(control.mode);
+        if (holder) control.attach(holder);
         else control.detach();
       }
+    }
+
+    // 複数選択（フォルダの選択など）で、選択の中心になっているものにハンドルが付けられないとき
+    // （パスに沿わせたパーツは移動できない、ロック中、など）は、選択の中で動かせるほかのものに付ける。
+    function groupToolHolder(mode) {
+      if (reliefDrawing || selection.length < 2 || isCurvePart(selected)) return null;
+      return leaders().find((item) => item.visible && !isCurvePart(item) && toolAllowed(item, mode)) ?? null;
     }
 
     function toolAllowed(object, mode) {
@@ -8345,9 +8353,37 @@ self.onmessage = (event) => {
       return selection.filter((mesh) => !mesh.userData.locked && !driven.has(mesh));
     }
 
+    // まとめて動かすとき、パスに沿わせたパーツはパスごと動かす（そのパスを使うものが全部選択に入っている場合）
+    function followedCurves(items) {
+      if (items.length < 2) return [];
+      const chosen = new Set(items);
+      const users = new Map();
+      const note = (item, bind) => {
+        const curve = bind && curveById(bind.curveId);
+        if (!curve) return;
+        if (!users.has(curve)) users.set(curve, []);
+        users.get(curve).push(item);
+      };
+      for (const mesh of editableMeshes()) {
+        note(mesh, mesh.userData.curveBind);
+        for (const shape of mesh.userData.masks ?? []) note(shape, shape.userData.curveBind);
+      }
+      for (const anchor of activeAnchors()) note(anchor, linkById(anchor.userData.linkId)?.curveBind);
+      const result = [];
+      for (const [curve, list] of users) {
+        if (chosen.has(curve) || curve.userData.locked) continue;
+        const inSelection = list.filter((item) => chosen.has(item));
+        if (!inSelection.length) continue;
+        // 対称の相手が選択外でも、選択側に合わせて動くので数えない
+        const outside = list.filter((item) => !chosen.has(item) && !(symmetric && !item.userData.isMask && !isLinkAnchor(item) && chosen.has(otherOf(recordOf(item), item))));
+        if (!outside.length) result.push(curve);
+      }
+      return result;
+    }
+
     function captureDragOrigins() {
       dragOrigins.clear();
-      for (const mesh of leaders()) {
+      for (const mesh of [...leaders(), ...followedCurves(selection)]) {
         mesh.updateWorldMatrix(true, false);
         const pos = new THREE.Vector3().setFromMatrixPosition(mesh.matrixWorld);
         const quat = worldQuaternionOf(mesh);
