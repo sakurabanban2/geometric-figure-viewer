@@ -21209,7 +21209,7 @@ if (decalOn > 0.5) {
         setFileStatus("モデルファイル（.json）をドロップしてください");
         return;
       }
-      if (!loadingView.hidden) return;
+      if (!loadingView.hidden || !leaveEditModes()) return;
       const input = document.getElementById("file-input");
       const transfer = new DataTransfer();
       transfer.items.add(file);
