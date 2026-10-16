@@ -663,6 +663,8 @@
     .publish-kind { display: flex; gap: 16px; border: 0; padding: 0; margin: 0; font-size: 13px; }
     .publish-kind small { color: var(--muted); }
     .publish-thumb { display: flex; align-items: center; gap: 10px; }
+    .publish-preview { width: 160px; height: 120px; border: 1px solid var(--line); border-radius: 6px; background: #000 no-repeat; }
+    .publish-thumb-actions { display: grid; gap: 6px; font-size: 11px; color: var(--muted); }
     .publish-thumb img { width: 160px; height: 120px; object-fit: cover; border: 1px solid var(--line); border-radius: 6px; background: #000; }
     .publish-settings { font-size: 12px; color: var(--muted); }
     .publish-settings[open] { display: grid; gap: 8px; }
@@ -2013,7 +2015,14 @@
       <label>作者<input id="publish-author" type="text" maxlength="60" required /></label>
       <label>タグ（, 区切り）<input id="publish-tags" type="text" maxlength="200" placeholder="例: 人物, 立ちポーズ" /></label>
       <label>説明<textarea id="publish-description" rows="3" maxlength="2000"></textarea></label>
-      <div class="publish-thumb"><img id="publish-thumb" alt="サムネイル" /><button id="publish-rethumb" type="button">今の画面で撮り直す</button></div>
+      <div class="publish-thumb">
+        <img id="publish-thumb" alt="サムネイル" />
+        <div id="publish-preview" class="publish-preview" role="img" aria-label="動くプレビュー"></div>
+        <div class="publish-thumb-actions">
+          <button id="publish-rethumb" type="button">今の画面で撮り直す</button>
+          <small id="publish-preview-note">動くプレビューを作っています…</small>
+        </div>
+      </div>
       <details class="publish-settings">
         <summary>公開先とトークン</summary>
         <label>データ置き場（owner/repo）<input id="publish-repo" type="text" spellcheck="false" /></label>
@@ -18588,7 +18597,10 @@ self.onmessage = (event) => {
     }
 
     function captureThumbnail() {
+      const guide = rigGuide.visible;
+      rigGuide.visible = false;
       renderer.render(scene, camera);
+      rigGuide.visible = guide;
       const source = renderer.domElement;
       const canvas = document.createElement("canvas");
       canvas.width = 480;
@@ -18624,6 +18636,128 @@ self.onmessage = (event) => {
       return `${base || "entry"}-${stamp}-${random}`;
     }
 
+    // 動くプレビュー: 横に並べたコマ画像（スプライト）。モデルは周りを一周、モーションは再生を等間隔に撮る。
+    const PREVIEW_FRAMES = 12;
+    const PREVIEW_FPS = 8;
+    const PREVIEW_SIZE = [200, 150];
+    const waitFrame = () => new Promise((resolve) => requestAnimationFrame(() => resolve()));
+
+    function drawPreviewFrame(context, index) {
+      const [width, height] = PREVIEW_SIZE;
+      const guide = rigGuide.visible;
+      rigGuide.visible = false;
+      renderer.render(scene, camera);
+      rigGuide.visible = guide;
+      const source = renderer.domElement;
+      const scale = Math.max(width / source.width, height / source.height);
+      const drawWidth = source.width * scale;
+      const drawHeight = source.height * scale;
+      context.save();
+      context.beginPath();
+      context.rect(index * width, 0, width, height);
+      context.clip();
+      context.fillStyle = "#101216";
+      context.fillRect(index * width, 0, width, height);
+      context.drawImage(source, index * width + (width - drawWidth) / 2, (height - drawHeight) / 2, drawWidth, drawHeight);
+      context.restore();
+    }
+
+    function spriteDataUrl(canvas) {
+      const webp = canvas.toDataURL("image/webp", 0.72);
+      return webp.startsWith("data:image/webp") ? webp : canvas.toDataURL("image/jpeg", 0.8);
+    }
+
+    async function capturePreviewSprite(kind) {
+      const [width, height] = PREVIEW_SIZE;
+      const canvas = document.createElement("canvas");
+      canvas.width = width * PREVIEW_FRAMES;
+      canvas.height = height;
+      const context = canvas.getContext("2d");
+      if (kind === "motion") {
+        if (!rigEditing || !rigMotion) return null;
+        const saved = { time: rigPlayer.time, playing: rigPlayer.playing, showing: rigPlayer.showing };
+        rigPlayer.playing = false;
+        rigPlayer.showing = true;
+        try {
+          for (let index = 0; index < PREVIEW_FRAMES; index += 1) {
+            rigPlayer.time = (rigMotion.duration * index) / PREVIEW_FRAMES;
+            requestRender(1000);
+            await waitFrame();
+            await waitFrame();
+            drawPreviewFrame(context, index);
+          }
+        } finally {
+          Object.assign(rigPlayer, saved);
+          requestRender();
+        }
+      } else {
+        const position = camera.position.clone();
+        const quaternion = camera.quaternion.clone();
+        const center = controls.target.clone();
+        const offset = position.clone().sub(center);
+        const turn = new THREE.Quaternion();
+        const up = new THREE.Vector3(0, 1, 0);
+        try {
+          for (let index = 0; index < PREVIEW_FRAMES; index += 1) {
+            turn.setFromAxisAngle(up, (Math.PI * 2 * index) / PREVIEW_FRAMES);
+            camera.position.copy(center).add(offset.clone().applyQuaternion(turn));
+            camera.lookAt(center);
+            camera.updateMatrixWorld();
+            drawPreviewFrame(context, index);
+          }
+        } finally {
+          camera.position.copy(position);
+          camera.quaternion.copy(quaternion);
+          camera.updateMatrixWorld();
+          requestRender();
+        }
+      }
+      const dataUrl = spriteDataUrl(canvas);
+      return { dataUrl, frames: PREVIEW_FRAMES, fps: PREVIEW_FPS, width, height, type: dataUrl.startsWith("data:image/webp") ? "webp" : "jpg" };
+    }
+
+    let publishPreview = null;
+    let previewAnimation = null;
+    let previewToken = 0;
+
+    function showPreviewSprite(element, preview) {
+      previewAnimation?.cancel();
+      previewAnimation = null;
+      if (!preview) {
+        element.style.backgroundImage = "";
+        return;
+      }
+      element.style.backgroundImage = `url("${preview.dataUrl}")`;
+      element.style.backgroundSize = `${preview.frames * 100}% 100%`;
+      previewAnimation = element.animate(
+        [{ backgroundPosition: "0% 0" }, { backgroundPosition: "100% 0" }],
+        { duration: (preview.frames / preview.fps) * 1000, iterations: Infinity, easing: `steps(${preview.frames - 1}, jump-none)` },
+      );
+    }
+
+    async function refreshPublishPreview() {
+      const token = ++previewToken;
+      const note = document.getElementById("publish-preview-note");
+      const kind = readPublishForm().kind;
+      publishPreview = null;
+      showPreviewSprite(document.getElementById("publish-preview"), null);
+      if (kind === "motion" && !rigEditing && canRigEdit()) beginRigEdit();
+      if (kind === "motion" && !(rigEditing && rigMotion)) {
+        note.textContent = "モーションの動くプレビューは「ボーンとモーション」で再生できるときに作れます";
+        return;
+      }
+      note.textContent = "動くプレビューを作っています…";
+      try {
+        const preview = await capturePreviewSprite(kind);
+        if (token !== previewToken) return;
+        publishPreview = preview;
+        showPreviewSprite(document.getElementById("publish-preview"), preview);
+        note.textContent = preview ? `動くプレビュー（${preview.frames}コマ）` : "動くプレビューを作れませんでした";
+      } catch {
+        if (token === previewToken) note.textContent = "動くプレビューを作れませんでした";
+      }
+    }
+
     let publishThumb = null;
 
     function readPublishForm() {
@@ -18650,20 +18784,22 @@ self.onmessage = (event) => {
         created: new Date().toISOString(),
         app: "geometric-figure-viewer",
       };
+      const preview = publishPreview && { file: `preview.${publishPreview.type}`, frames: publishPreview.frames, fps: publishPreview.fps };
+      if (preview) meta.preview = preview;
       if (form.kind === "model") {
         meta.file = "model.json";
-        return { meta, thumbnail: publishThumb, payload: { kind: "model", text: modelPayloadText() } };
+        return { meta, thumbnail: publishThumb, preview: publishPreview, payload: { kind: "model", text: modelPayloadText() } };
       }
       meta.file = `motion.${motionExtension(rigMotionSource.name)}`;
       meta.sourceName = rigMotionSource.name;
-      return { meta, thumbnail: publishThumb, payload: { kind: "motion", name: rigMotionSource.name, bytes: rigMotionSource.bytes } };
+      return { meta, thumbnail: publishThumb, preview: publishPreview, payload: { kind: "motion", name: rigMotionSource.name, bytes: rigMotionSource.bytes } };
     }
 
     function packageJson(pack) {
       const payload = pack.payload.kind === "model"
         ? { kind: "model", data: JSON.parse(pack.payload.text) }
         : { kind: "motion", name: pack.payload.name, base64: bytesToBase64(pack.payload.bytes) };
-      return JSON.stringify({ workshop: 1, meta: pack.meta, thumbnail: pack.thumbnail, payload });
+      return JSON.stringify({ workshop: 1, meta: pack.meta, thumbnail: pack.thumbnail, preview: pack.preview?.dataUrl ?? null, payload });
     }
 
     function setPublishStatus(text, link = null) {
@@ -18701,6 +18837,7 @@ self.onmessage = (event) => {
       document.getElementById("publish-thumb").src = publishThumb;
       setPublishStatus("");
       modal.showModal();
+      refreshPublishPreview();
     }
 
     function rememberPublishSettings() {
@@ -18758,6 +18895,7 @@ self.onmessage = (event) => {
       const files = [
         [`${dir}/${pack.meta.file}`, pack.payload.kind === "model" ? textToBase64(pack.payload.text) : bytesToBase64(pack.payload.bytes)],
         ...(pack.thumbnail ? [[`${dir}/thumb.png`, pack.thumbnail.split(",")[1]]] : []),
+        ...(pack.preview && pack.meta.preview ? [[`${dir}/${pack.meta.preview.file}`, pack.preview.dataUrl.split(",")[1]]] : []),
         [`${dir}/meta.json`, textToBase64(`${JSON.stringify({ ...pack.meta, thumbnail: pack.thumbnail ? "thumb.png" : null }, null, 2)}\n`)],
       ];
       for (const [path, content] of files) {
@@ -18912,6 +19050,12 @@ self.onmessage = (event) => {
     document.getElementById("publish-rethumb").addEventListener("click", () => {
       publishThumb = captureThumbnail();
       document.getElementById("publish-thumb").src = publishThumb;
+      refreshPublishPreview();
+    });
+    for (const radio of document.querySelectorAll('input[name="publish-kind"]')) radio.addEventListener("change", refreshPublishPreview);
+    document.getElementById("publish-modal").addEventListener("close", () => {
+      previewToken += 1;
+      previewAnimation?.cancel();
     });
     document.getElementById("publish-form").addEventListener("submit", (event) => {
       event.preventDefault();
