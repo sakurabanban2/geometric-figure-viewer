@@ -20934,12 +20934,19 @@ if (decalOn > 0.5) {
       if (event.target === event.currentTarget) finishOverallScale(false);
     });
 
+    function leaveEditModes() {
+      if (previewMode) exitMotionPreview();
+      if (faceSession) cancelFaceEdit(true);
+      if (faceSession) return false;
+      if (maskTarget) leaveMaskEdit();
+      if (reliefTarget) leaveReliefEdit();
+      if (featureTarget) leaveFeatureEdit();
+      if (softTarget) leaveSoftEdit();
+      return !maskTarget && !reliefTarget && !featureTarget && !softTarget;
+    }
+
     function createNewDocument() {
-      if (faceSession) {
-        cancelFaceEdit(true);
-        if (faceSession) return;
-      }
-      if (!loadingView.hidden || maskTarget || MODEL_ID || !baseline) return;
+      if (!loadingView.hidden || MODEL_ID || !baseline || !leaveEditModes()) return;
       if (records.length || links.length || folders.length || curves.length || sketches.length) {
         if (!window.confirm("今のモデルを閉じて、新しいモデルを作ります。保存していない変更は失われます。")) return;
       }
@@ -20959,6 +20966,7 @@ if (decalOn > 0.5) {
     document.getElementById("new-file").addEventListener("click", createNewDocument);
     document.getElementById("save").addEventListener("click", saveDocument);
     document.getElementById("load").addEventListener("click", () => {
+      if (!leaveEditModes()) return;
       document.getElementById("file-input").click();
     });
     const importModal = document.getElementById("import-modal");
@@ -21125,7 +21133,7 @@ if (decalOn > 0.5) {
     }
 
     document.getElementById("import").addEventListener("click", () => {
-      if (maskTarget) return;
+      if (!leaveEditModes()) return;
       document.getElementById("import-input").click();
     });
     document.getElementById("import-input").addEventListener("change", async (event) => {
@@ -21164,6 +21172,7 @@ if (decalOn > 0.5) {
         setFileStatus("読み込めませんでした");
         return;
       }
+      if (!leaveEditModes()) return;
       if (hasUnsavedChanges() && !window.confirm(`「${file.name}」を開くと、今のモデルの保存していない変更は失われます。開きますか？`)) return;
       try {
         restoreLinkedModels(data);
