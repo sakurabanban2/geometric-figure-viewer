@@ -21865,6 +21865,7 @@ self.onmessage = (event) => {
       while (chainJointMarks.length <= index) {
         const mark = new THREE.Mesh(rigJointGeometry, new THREE.MeshBasicMaterial({ color: CHAIN_COLOR }));
         rigGuide.add(sagGuideLook(mark));
+        mark.renderOrder = 12; // 線や体の関節より手前に描く
         chainJointMarks.push(mark);
       }
       return chainJointMarks[index];
@@ -21912,7 +21913,9 @@ self.onmessage = (event) => {
           const length = rigGuideA.distanceTo(rigGuideB);
           if (length > 1e-6) rigGuideDirection.subVectors(rigGuideB, rigGuideA).divideScalar(length);
           else rigGuideDirection.set(0, 1, 0);
-          placeSagArrow(arrow, rigGuideA, rigGuideDirection, Math.max(length, 1e-6), thickness * (focus ? 2 : 1.2));
+          // 線は近づいても画面上で数ピクセルより太くしない（点が線に埋もれないように）
+          const thin = screenRadius(rigGuideB.lerp(rigGuideA, 0.5), focus ? 2.2 : 1.6);
+          placeSagArrow(arrow, rigGuideA, rigGuideDirection, Math.max(length, 1e-6), Math.min(thickness * (focus ? 2 : 1.2), thin));
           arrow.shaft.material.color.setHex(focus ? RIG_COLORS.focus : CHAIN_COLOR);
         }
       }
@@ -22194,6 +22197,11 @@ self.onmessage = (event) => {
       if (chain && JSON.stringify(chain.points) !== JSON.stringify(drag.start)) commit(); // ドラッグ 1 回で履歴 1 つ
       updateRigChrome();
     });
+
+    // 揺れボーンの点の選択・強調・移動ハンドルは場面の署名に入らないので、描き直しの判定に足す
+    function rigGuideSignature() {
+      return rigEditing ? JSON.stringify([chainSel, rigHover, rigBone, Boolean(chainTool.object), chainTool.axis, chainXray]) : "";
+    }
 
     function syncChainTool() {
       const ref = rigEditing && rig && !rigPlayer.showing ? selectedChainJoint() : null;
@@ -26436,7 +26444,7 @@ void main() {
           shadowSignature = shadowKey;
           renderer.shadowMap.needsUpdate = true;
         }
-        const frameKey = safetyTick ? [sceneSignature(false), drawSize.x, drawSize.y, ...camera.matrixWorld.elements, ...camera.projectionMatrix.elements, scene.background?.id, scene.environment?.id].join() : null;
+        const frameKey = safetyTick ? [sceneSignature(false), drawSize.x, drawSize.y, ...camera.matrixWorld.elements, ...camera.projectionMatrix.elements, scene.background?.id, scene.environment?.id, rigGuideSignature()].join() : null;
         if (!safetyTick || frameKey !== frameSignature) {
           frameSignature = frameKey;
           renderer.render(scene, camera);
