@@ -437,6 +437,17 @@
     .rig-item-name small { margin-left: 4px; color: var(--muted); font-size: 10px; }
     .rig-item select { width: 118px; flex: none; font-size: 11px; }
     .rig-empty { margin: 0; padding: 8px; color: var(--muted); font-size: 12px; }
+    .chain-card { margin-top: 8px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; }
+    .chain-card.active { border-color: #c77dff; box-shadow: 0 0 0 1px rgba(199, 125, 255, 0.35); }
+    .chain-card .chain-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+    .chain-card .chain-row input[type="text"] { flex: 1; min-width: 0; }
+    .chain-card .chain-row select { flex: 1; min-width: 0; font-size: 12px; }
+    .chain-card .chain-field { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 12px; }
+    .chain-card .chain-field span { min-width: 64px; color: var(--muted); }
+    .chain-card .chain-field select, .chain-card .chain-field input { flex: 1; min-width: 0; }
+    .chain-card .slider-row .chain-value { min-width: 40px; color: var(--muted); font-size: 11px; text-align: right; font-variant-numeric: tabular-nums; }
+    .chain-card .rig-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: #c77dff; }
+    .chain-card .chain-note { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
     .rig-time { min-width: 72px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; text-align: right; }
     #sag-open-edit { margin: 0 0 8px; }
     #sag-open-edit[hidden],
@@ -1759,6 +1770,12 @@
       </div>
       <div class="wide"><button id="rig-fit" type="button" title="今の配置を捨てて、体の大きさに合わせて最初から置き直す">自動で置き直す</button></div>
     </section>
+    <section id="rig-chain-section" class="rig-panel">
+      <h2>揺れボーン（追加ボーン）</h2>
+      <p class="hint">体のボーンに、しなって揺れる鎖状のボーンを付け足します。先にビューか下の一覧で付けたいパーツをクリックしてから追加すると、そのパーツの形に沿って置かれ、そのまま割り当てられます。</p>
+      <div class="wide"><button id="chain-add" type="button" title="選んでいるパーツに沿って（選んでいなければ選んでいるボーンか腰から前に）揺れボーンを追加する">揺れボーンを追加</button></div>
+      <div id="chain-list" role="list" aria-label="揺れボーンの一覧"></div>
+    </section>
     <section id="rig-assign-section" class="rig-panel">
       <h2>パーツの割り当て</h2>
       <p id="rig-focus" class="hint"></p>
@@ -2102,6 +2119,7 @@
     <p>パス（カーブ・ループ）やリンクパーツを選んだときも「柔らかさ」が出て、「なし」「柔らかく」から選べます（「付いて動く」と「ひとまとめにする」はパーツだけです）。パスを「柔らかく」にすると、「起点」で選んだ始点か終点の点は動かず、そこから離れた点ほど重力の向きへ曲がって垂れ、動かすと遅れて揺れます。点どうしの間隔は保たれるので、真下に垂れ下がったパスはそれ以上伸びません。パスに沿わせたパーツやリンクパーツ、マスク範囲も一緒に曲がるので、髪の房やしっぽ、ひもなどに使えます。点やハンドルを選んで形を直している間は、そのパスは元の形で表示されます。リンクパーツを「柔らかく」にすると、中のパーツ全体が1つのかたまりとして、起点の側（リンクパーツ自身の向きで、後ろ・前・上・下・右・左）を残して垂れたり揺れたりします。リンク先で付けた柔らかさよりこちらが優先され、左右対称のコピーも鏡写しで同じように動きます。どちらも「揺れやすさ」やモーション再生中の揺れ、「編集モードで動きを確認」が使えます。</p>
     <p>「柔らかさ」の「編集モードで動きを確認」（パーツの右クリックや編集メニューの「柔らかさの編集」からも入れます）を押すと、柔らかさの編集モードになります。編集するパーツと、その反対側や付いているパーツだけがはっきり表示され、左のパネルで垂れ・揺れ・起点・付き先を変えると、その場ですぐ形と動きに反映されます。起点・重力・弾みの表示は、傾けたときの重力の向きや揺らしたときの弾みにも合わせて動きます。「動きの確認」の「重力」の「大きさ」では、重力の強さを 0%（無重力）〜300% で変えて、垂れ方の違いを確かめられます（青の矢印の長さも変わります）。「体の傾き」や「立ち・前かがみ・仰向け・うつ伏せ・右を下・左を下」で重力の向きを変えると、姿勢を変えたときの垂れ方を確かめられます。「上下・左右・前後」で一度だけ揺らし、「跳ね続ける」で跳ねている間の揺れを見られます。「強さ」で揺らす大きさを 10%〜300% で変えます。100% を超えると、ドラッグで揺らしたときの動きも大きくなり、より大きく揺れるようになります。ビューで左ドラッグすると、体をつかんで揺らしたように揺れ、離すと反動で揺れ戻ります。右ドラッグで視点を回し、パーツをクリックすると編集するパーツを切り替えます。傾きや揺らしは確認用で保存されません。設定は「保存」（Ctrl+S）で確定し、「破棄」で編集モードに入る前に戻します。Esc か「メインエディターに戻る」で終わります。</p>
     <p>編集メニューの「ボーンとモーション」で、体にボーン（骨組み）を入れて、ダンスなどのモーションを再生できます。左のパネルは「モーション」「ボーンの配置」「パーツの割り当て」に分かれていて、見出しをクリックすると折りたためます。初めて開くと、モデルの大きさに合わせて腰・背骨・胸・首・頭・肩・上腕・前腕・手・太もも・すね・足のボーンが置かれます（中央は黄色、左は水色、右はピンク）。関節の点をドラッグすると位置を変えられます。「左右対称に動かす」がオンのときは、反対側の関節も鏡写しで一緒に動き、中央のボーンは左右の真ん中から外れません。オンのまま置き直すと、左右がそろった配置になります。「左 → 右に写す」「右 → 左に写す」で、片側のボーンの位置を反対側にそのまま写して左右対称にできます。「自動で置き直す」で体の大きさに合わせた最初の配置に戻せます。それぞれのパーツは、いちばん近いボーンに自動で付いて動きます。「パーツの割り当て」には、ボーンごとにそのボーンで動くパーツが並びます。各パーツの右の欄でボーンを選ぶと付け替えられ、「自動（〜）」に戻すと再びいちばん近いボーン（かっこの中）に付きます。「動かさない」にすると、その場に残ります。ビューの点やパーツをクリックしても、そのボーンで動くパーツだけがはっきり表示され、一覧の行も強調されます。ボーン名やパーツ名をクリックすると、ビューでそのボーンやパーツが強調されます。「モーションを読み込む」で、無料で配布されている MMD のモーション（.vmd）や、モーションキャプチャーの .bvh を読み込むと再生が始まります。足の動きが IK で付けられた VMD にも対応しています。「再生／一時停止」（Space キーでも切り替え）、「位置」で好きな場面へ移動、「速さ」で再生の速さ、「くり返す」で最後まで行ったら最初に戻ります。「移動もする」をオフにすると、前後左右には動かずその場で踊ります。膝立ち・四つんばい・寝そべりのように最初から低い姿勢のモーションでは、体がそのぶん床まで下がります（「移動もする」がオフでも上下には動きます）。「停止」で元の姿勢に戻り、関節を動かせるようになります。柔らかさを付けたパーツは、踊りに合わせて揺れます。再生中の揺れは体の動きの勢いで決まり、柔らかさの編集モードの「強さ」は効きません。パーツごとの揺れ方は「柔らかさ」の「揺れやすさ」で変え、すべてのパーツをまとめて大きく揺らしたいときは、モーションの「全体の揺れ」を 100% より上げてください（最大 500%）。「全体の揺れ」を 0% にすると再生中は揺れません。ボーンの配置とパーツごとのボーンの選び方はモデルと一緒に保存されますが、モーションそのものは保存されません。モデルの腕の向きや体型がモーションの元のモデルと違っても、ボーンの向きに合わせて動きを置き換えます。</p>
+    <p>「揺れボーン（追加ボーン）」で、体のボーンに鎖状のボーンを付け足せます。しっぽ・髪の房・男性器など、動きに合わせてしなって揺れてほしいパーツに使います。ビューか「パーツの割り当て」の一覧で付けたいパーツ（リンクも可）をクリックしてから「揺れボーンを追加」を押すと、そのパーツの形に沿って紫の鎖が置かれ、パーツがその鎖に割り当てられます（何も選んでいないときは、選んでいるボーンか腰から前向きに置かれます）。紫の点をドラッグすると位置を直せます。点をつかむと、その点から先がまとめて動きます（根元をつかむと鎖ごと移動）。カードでは、名前、付け根になる「親ボーン」、「節の数」（1〜8、多いほどなめらかにしなる）、揺れ方を変えられます。「硬さ」を上げると速く小さく揺れ、下げるとゆっくり大きく揺れます。「揺れの止まりやすさ」を上げるとすぐ落ち着き、下げるといつまでも揺れます。「重力」で垂れ下がる強さ、「曲がる上限」で 1 節あたりに曲がれる最大の角度を決めます。「割り当て」の欄で、選んでいるパーツ、フォルダの中身すべて、リンクをまとめてこの揺れボーンに付けたり、すべて外したりできます。一覧の各パーツの欄で「揺れ：〜」を選んでも付けられます。揺れボーンに付けたパーツは、再生中に鎖に沿って曲がります。節は曲がるだけで長さは変わらないので、伸びたり縮んだりしません。揺れはモーションの「全体の揺れ」の倍率も受けます。「停止」で揺れはリセットされます。揺れボーンはモデルと一緒に保存され、元に戻す／やり直しもできます。パーツを動かしたあとは「選んだパーツに合わせる」で鎖を置き直してください。</p>
     <p>平面（円・三角・四角）を選ぶと、左のパネルに「盛り上がり」が出ます。「高さ」を上げると、面の中央点を頂点にして前面が盛り上がります（100% で幅の半分の高さ）。ふだん裏面は平らなままですが、「裏面にも盛り上げる」を入れると、後ろの面も同じ高さとカーブで盛り上がり、前後対称の形になります。「円形」は中央点からの距離で高さが決まり、角に向かって低くなります。「輪郭に沿う」は面の輪郭と同じ形の等高線で、辺に向かって低くなります。トーンカーブは横が中央点（左）から縁（右）、縦が高さです。空いた所をクリックすると点が増え、点をドラッグすると盛り上げ方が変わります。ダブルクリックか右クリックで点を消せます。「ドーム」「山形」「台地」で代表的な形を選べ、「リセット」でなだらかな初期のカーブに戻ります。盛り上げた平面は立体として扱われ、ほかのパーツと結合したり、ラスタライズしたりできます。</p>
     <p>「追加」の「断面」は、輪切りにした断面の形を上下につないで作る立体です（円柱から始まります）。選ぶと左のパネルに「断面」が出て、3D 表示にも断面の輪が重なります（選んでいる断面はオレンジ）。縦棒は2本あり、どちらも横から見た形で、下が根元、上が先端です。いちばん左の細い縦棒は全体図で、上下にドラッグして範囲を囲むと、その範囲が中央の縦棒に拡大表示されます。青い枠はドラッグで移動、上下の端をドラッグで伸縮でき、枠の外をクリックするとその位置へ枠が移ります。ダブルクリックか「全体を表示」で範囲指定をやめます。中央の縦棒の上でホイールを回しても、カーソルの位置を中心に拡大・縮小できます。全身のような長い形でも、範囲を絞れば胸やくびれなどの断面を細かく並べられます。中央の縦棒の空いた所をクリックすると断面が増え（最大 60 個）、目盛りをドラッグすると上下に動き、ダブルクリックか右クリックで消せます。右の図は選んだ断面を真上から見た形で、下が正面側です。前後の断面が点線で重なります。線の近くをクリックで点を追加、ドラッグで移動、ダブルクリックで削除、右クリックで角／なめらかを切り替えます。その下の「輪郭で編集」には、正面から見た輪郭（幅）と横から見た輪郭（厚み、右が正面側）が並びます。輪郭の点をドラッグすると、その高さの断面の幅や厚みと高さが変わり（反対側の輪郭は動きません。Shift を押しながらなら高さは固定）、断面の形を1枚ずつ描き直さなくても全体のシルエットを作れます。輪郭の外の空いた所をクリックすると、その高さに前後の断面から補間した断面が増え、そのままドラッグで形を決められます。点をダブルクリックか右クリックするとその断面を消せます。「左右対称に編集」が入っていると右半分だけを編集し、左半分は自動で鏡写しになります。「大きさ」「傾き」（＋で後ろ側が上がる）「左右」「前後」は選んだ断面ごとの値です。形は中心から放射状に読み取るので、中心から見て裏側に回り込む形は外側の線だけが使われます（そのときは警告が出ます）。「端の形」で先端と根元を平ら・丸く・とがるから選べ、「長さ」で丸みやとがりの長さを変えられます。「ペニス」のテンプレートは、竿・くびれ・傾いたカリ首・切れ込みのある亀頭・先端の断面を並べた形です（正面側が裏筋側。上に向いて立った向きなので、回転させて使ってください）。軸はまっすぐですが、曲げたいときは「パスに沿わせる」が使えます。モーフと盛り上がりは効きません。ほかのパーツと結合したり、ラスタライズしたりできます。</p>
     <p>パーツを右クリックして「法線編集」を選ぶと、そのパーツだけに光で浮き出て見える模様を描けます。編集中はほかのパーツが薄くなり、そのパーツの前を向いた面に左ドラッグで盛ります。右ドラッグで視点を回せます。左右のもう片方には付きません。「削る」で盛りを減らせます。「浮き出し」は凹凸の強さ、「厚み」は模様を載せた面から前後に広げる距離です。「法線マップ」の「読み込む」で、そのパーツの正面に画像を貼れます。緑チャンネルが下向きの画像は「法線の緑を上」を外してください。「裏面にも貼る」を入れると、描いた模様と法線マップがそのパーツの後ろを向いた面にも付き、後ろから見ても正面と同じ向きに読めるよう左右反転して貼られます。読み込んだ法線マップは「法線マップ」の横位置・縦位置・回転・大きさで動かせます。「法線マップを動かす」を押すと、パーツの上で左ドラッグで移動、Shift＋左ドラッグで回転、ホイールで拡大縮小できます（もう一度押すか「描く」で筆に戻ります）。「繰り返す」で画像を敷き詰め、「位置を戻す」で元に戻ります。回しても光の当たり方は正しく保たれます。「投影」を「巻き付け」にすると、缶のラベルのようにパーツの縦軸のまわりへ画像を巻いて貼ります。画像の横は正面を中心に軸のまわりの角度（弧の長さ）に、縦は高さに対応し、横へ行っても引き伸ばされず、後ろ側にも回り込みます。「巻く角度」で何度ぶん巻くかを決め、画像の横幅はいつもその角度ぶんに合わせ、高さは画像の縦横比で決まります（範囲より高い部分は上下が切れるので、大きさで縮めてください）。360°では継ぎ目なく一周し、横にずらすと反対側へ回り込みます。四角柱など円柱でない形にも、軸から放射状に投影して貼れます。模様はそのパーツに付いたまま動き、保存ファイルに含まれます。Escで編集を終えます。</p>
@@ -2609,9 +2627,54 @@ ${withNormal ? "    #ifndef FLAT_SHADED\n    vNormal = normalize((viewMatrix * v
       }
     `;
 
+    // 追加ボーン（揺れボーン）の曲げ。休み姿勢のワールド座標で鎖のどこにあるかを求め、隣り合う節の剛体変換をなめらかに混ぜる。
+    // 各節は回転と平行移動だけなので、鎖に沿った長さは変わらず曲がるだけになる。
+    const BEND_MAX = 8;
+    const BEND_LIB = `
+      uniform float bendOn;
+      uniform int bendCount;
+      uniform vec3 bendRest[${BEND_MAX + 1}];
+      uniform vec3 bendHead[${BEND_MAX + 1}];
+      uniform vec4 bendQuat[${BEND_MAX + 1}];
+      vec3 bendRotate(vec4 q, vec3 v) {
+        return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
+      }
+      float bendParam(vec3 p) {
+        float best = 1e30;
+        float s = 0.0;
+        for (int k = 0; k < ${BEND_MAX}; k++) {
+          if (k >= bendCount) break;
+          vec3 a = bendRest[k];
+          vec3 ab = bendRest[k + 1] - a;
+          float raw = dot(p - a, ab) / max(dot(ab, ab), 1e-12);
+          float t = clamp(raw, 0.0, 1.0);
+          float d = length(p - a - ab * t);
+          if (d < best) {
+            best = d;
+            s = float(k) + t;
+            if (k == 0 && raw < 0.0) s = raw;
+            if (k == bendCount - 1 && raw > 1.0) s = float(k) + raw;
+          }
+        }
+        return s;
+      }
+      void bendBlend(float s, out int lo, out float w) {
+        float n = float(bendCount);
+        if (s <= 0.0) { lo = 0; w = 0.0; return; }
+        if (s >= n - 0.5) { lo = bendCount; w = 0.0; return; }
+        if (s < 0.5) { lo = 0; w = smoothstep(0.0, 1.0, s / 0.5); return; }
+        lo = int(floor(s + 0.5));
+        w = smoothstep(0.0, 1.0, s - (float(lo) - 0.5));
+      }
+      vec3 bendPoint(int m, vec3 p) {
+        int j = max(m - 1, 0);
+        return bendHead[j] + bendRotate(bendQuat[m], p - bendRest[j]);
+      }
+    `;
+
     function patchSagVertex(source, withNormal) {
       return source
-        .replace("#include <common>", `#include <common>\n${SAG_LIB}`)
+        .replace("#include <common>", `#include <common>\n${SAG_LIB}\n${BEND_LIB}`)
         .replace("#include <skinning_vertex>", `#include <skinning_vertex>
 if (sagOn > 0.5) {
   vec3 sagWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;
@@ -2627,6 +2690,20 @@ ${withNormal ? `  vec3 sagN0 = normalize(transpose(inverse(mat3(modelMatrix))) *
   vNormal = normalize((viewMatrix * vec4(sagN, 0.0)).xyz);
   #endif
 ` : ""}  transformed = (inverse(modelMatrix) * vec4(sagWorld + sagD, 1.0)).xyz;
+}
+if (bendOn > 0.5 && bendCount > 0) {
+  vec3 bendWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;
+  int bendLo;
+  float bendW;
+  bendBlend(bendParam(bendWorld), bendLo, bendW);
+  int bendHi = min(bendLo + 1, bendCount);
+  vec3 bendMoved = mix(bendPoint(bendLo, bendWorld), bendPoint(bendHi, bendWorld), bendW);
+${withNormal ? `  #ifndef FLAT_SHADED
+  vec3 bendN = normalize(transpose(mat3(viewMatrix)) * vNormal);
+  bendN = normalize(mix(bendRotate(bendQuat[bendLo], bendN), bendRotate(bendQuat[bendHi], bendN), bendW));
+  vNormal = normalize(mat3(viewMatrix) * bendN);
+  #endif
+` : ""}  transformed = (inverse(modelMatrix) * vec4(bendMoved, 1.0)).xyz;
 }`);
     }
 
@@ -2945,6 +3022,11 @@ if (decalOn > 0.5) {
     let rigLookActive = false;
     let rigMirror = true;
     const rigPlayer = { playing: false, showing: false, time: 0, speed: 1, loop: true, travel: true, sway: 1 };
+    // 追加ボーン（揺れボーン）。姿勢は再生中だけ計算し、停止で揺れの状態を捨てる
+    const chainStates = new Map();
+    const chainPoses = new Map();
+    const chainBentObjects = [];
+    const chainBentUniforms = [];
     const RIG_BONES = [
       { name: "hips", label: "腰", tail: "spine", parent: null },
       { name: "spine", label: "背骨", tail: "chest", parent: "hips", fromRoot: true },
@@ -3280,6 +3362,11 @@ if (decalOn > 0.5) {
         sagGravity: { value: new THREE.Vector3(0, -1, 0) },
         sagAxisWorld: { value: new THREE.Vector3(0, 0, -1) },
         sagWobble: { value: new THREE.Vector3() },
+        bendOn: { value: 0 },
+        bendCount: { value: 0 },
+        bendRest: { value: Array.from({ length: BEND_MAX + 1 }, () => new THREE.Vector3()) },
+        bendHead: { value: Array.from({ length: BEND_MAX + 1 }, () => new THREE.Vector3()) },
+        bendQuat: { value: Array.from({ length: BEND_MAX + 1 }, () => new THREE.Vector4(0, 0, 0, 1)) },
       };
     }
 
@@ -14580,7 +14667,7 @@ self.onmessage = (event) => {
         links: links.length ? serializeLinks() : undefined,
         curves: curves.length ? packCurves() : undefined,
         sketches: sketches.length ? sketches.map(serializeSketch) : undefined,
-        rig: rig ? { joints: Object.fromEntries(Object.entries(rig.joints).map(([name, point]) => [name, point.map(roundNumber)])) } : undefined,
+        rig: rig ? { joints: Object.fromEntries(Object.entries(rig.joints).map(([name, point]) => [name, point.map(roundNumber)])), chains: serializeChains() } : undefined,
         name: MODEL_ID ? modelName : undefined,
         records: records.map((record) => ({
           kind: record.kind,
@@ -15258,6 +15345,7 @@ self.onmessage = (event) => {
           scale: isVector(link.scale, 3) ? [...link.scale] : [1, 1, 1],
           masks: Array.isArray(link.masks) ? link.masks : undefined,
           sag: readSag(link.sag ? { ...link.sag, follow: undefined } : null) ?? undefined,
+          bone: readBoneName(link.bone) ?? undefined,
           curveBind: withCurveRest(readCurveBind(link.curveBind), isVector(link.quaternion, 4) ? link.quaternion : [0, 0, 0, 1]) ?? undefined,
         };
       });
@@ -15383,7 +15471,7 @@ self.onmessage = (event) => {
     function linkSignature() {
       return links.map((link) => {
         const anchor = linkAnchors.get(link.id);
-        return [link.id, link.name, link.parentId ?? "-", link.order ?? 0, link.hidden ? 1 : 0, link.mirror ? 1 : 0, anchor ? transformSignature(anchor) : "", anchor ? maskSignature(anchor) : "", JSON.stringify(link.curveBind ?? null), JSON.stringify(link.sag ?? null)].join(",");
+        return [link.id, link.name, link.parentId ?? "-", link.order ?? 0, link.hidden ? 1 : 0, link.mirror ? 1 : 0, anchor ? transformSignature(anchor) : "", anchor ? maskSignature(anchor) : "", JSON.stringify(link.curveBind ?? null), JSON.stringify(link.sag ?? null), link.bone ?? ""].join(",");
       }).join(";");
     }
 
@@ -15544,6 +15632,8 @@ self.onmessage = (event) => {
         anchor.userData.label = link.name;
         if (link.sag) anchor.userData.sag = link.sag;
         else delete anchor.userData.sag;
+        if (link.bone) anchor.userData.bone = link.bone;
+        else delete anchor.userData.bone;
         anchor.visible = !link.hidden;
         let data = linkedDocs.get(linkModel(link));
         if (!data) {
@@ -19611,6 +19701,7 @@ self.onmessage = (event) => {
       // ボーンの関節はワールド座標なので、体と一緒に拡縮しないとずれる
       if (rig) {
         rig = { ...rig, joints: Object.fromEntries(Object.entries(rig.joints).map(([name, point]) => [name, point.map((value) => value * factor)])) };
+        if (rig.chains) rig.chains = rig.chains.map((chain) => ({ ...chain, points: chain.points.map((point) => point.map((value) => value * factor)) }));
       }
     }
 
@@ -20518,15 +20609,76 @@ self.onmessage = (event) => {
         if (!isVector(joints[name], 3)) return null;
         out[name] = [...joints[name]];
       }
-      return { joints: out };
+      const chains = readChains(value.chains);
+      return chains.length ? { joints: out, chains } : { joints: out };
     }
 
     function rigSignature() {
       if (!rig) return "-";
-      return RIG_JOINTS.map((name) => rig.joints[name].map((value) => value.toFixed(5)).join(",")).join(";");
+      const chains = rig.chains?.length ? `|chains:${JSON.stringify(rig.chains)}` : "";
+      return RIG_JOINTS.map((name) => rig.joints[name].map((value) => value.toFixed(5)).join(",")).join(";") + chains;
+    }
+
+    const CHAIN_PREFIX = "chain:";
+    const CHAIN_LIMIT = 16;
+    const CHAIN_DEFAULTS = { segments: 4, stiffness: 0.45, damping: 0.3, gravity: 0.3, maxAngle: 45 };
+    const CHAIN_COLOR = 0xc77dff;
+
+    function isChainBone(name) {
+      return typeof name === "string" && name.startsWith(CHAIN_PREFIX);
+    }
+
+    function rigChains() {
+      return rig?.chains ?? [];
+    }
+
+    function chainById(id) {
+      return rigChains().find((chain) => chain.id === id) ?? null;
+    }
+
+    function chainOfBone(name) {
+      return isChainBone(name) ? chainById(name.slice(CHAIN_PREFIX.length)) : null;
+    }
+
+    function readChains(value) {
+      if (!Array.isArray(value)) return [];
+      const out = [];
+      const ids = new Set();
+      const within = (number, low, high, fallback) => (typeof number === "number" && Number.isFinite(number) ? Math.min(high, Math.max(low, number)) : fallback);
+      for (const item of value.slice(0, CHAIN_LIMIT)) {
+        if (!item || typeof item !== "object") continue;
+        const id = typeof item.id === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(item.id) ? item.id : null;
+        const points = Array.isArray(item.points) ? item.points.filter((point) => isVector(point, 3)).slice(0, BEND_MAX + 1) : [];
+        if (!id || ids.has(id) || points.length < 2) continue;
+        ids.add(id);
+        out.push({
+          id,
+          name: typeof item.name === "string" && item.name.trim() ? item.name.trim().slice(0, 40) : "揺れボーン",
+          parent: RIG_BONE_MAP.has(item.parent) ? item.parent : "hips",
+          points: points.map((point) => [...point]),
+          stiffness: within(item.stiffness, 0, 1, CHAIN_DEFAULTS.stiffness),
+          damping: within(item.damping, 0, 1, CHAIN_DEFAULTS.damping),
+          gravity: within(item.gravity, 0, 1, CHAIN_DEFAULTS.gravity),
+          maxAngle: within(item.maxAngle, 0, 90, CHAIN_DEFAULTS.maxAngle),
+        });
+      }
+      return out;
+    }
+
+    function serializeChains() {
+      if (!rig?.chains?.length) return undefined;
+      return rig.chains.map((chain) => ({
+        ...chain,
+        points: chain.points.map((point) => point.map(roundNumber)),
+        stiffness: roundNumber(chain.stiffness),
+        damping: roundNumber(chain.damping),
+        gravity: roundNumber(chain.gravity),
+        maxAngle: roundNumber(chain.maxAngle),
+      }));
     }
 
     function readBoneName(value) {
+      if (typeof value === "string" && /^chain:[A-Za-z0-9_-]{1,40}$/.test(value)) return value;
       return value === "none" || RIG_BONE_MAP.has(value) ? value : null;
     }
 
@@ -20544,10 +20696,20 @@ self.onmessage = (event) => {
 
     function rigBoneLabel(name) {
       if (name === "none") return "動かさない";
+      if (isChainBone(name)) return chainOfBone(name)?.name ?? "（削除した揺れボーン）";
       return RIG_BONE_MAP.get(name)?.label ?? "";
     }
 
+    function chainJointRef(name) {
+      const match = /^chain:([A-Za-z0-9_-]+):(\d+)$/.exec(name ?? "");
+      const chain = match ? chainById(match[1]) : null;
+      const index = match ? Number(match[2]) : -1;
+      return chain && index < chain.points.length ? { chain, index } : null;
+    }
+
     function rigJoint(name, target = new THREE.Vector3()) {
+      const ref = name.startsWith(CHAIN_PREFIX) ? chainJointRef(name) : null;
+      if (ref) return target.fromArray(ref.chain.points[ref.index]);
       return target.fromArray(rig.joints[name]);
     }
 
@@ -20676,7 +20838,7 @@ self.onmessage = (event) => {
 
     function rigBoneOf(object) {
       const own = object.userData.bone;
-      if (own) return own;
+      if (own && (!isChainBone(own) || chainOfBone(own))) return own;
       return rig ? nearestRigBone(rigCenterOf(object, rigCenterPoint)) : "none";
     }
 
@@ -20707,8 +20869,18 @@ self.onmessage = (event) => {
       if (!rigPoseFrame) return;
       scene.updateMatrixWorld(true);
       const entries = [];
+      chainBentObjects.length = 0;
       for (const [object, bone] of rigPoseTargets()) {
-        const pose = rigPoseFrame.get(bone);
+        let pose = rigPoseFrame.get(bone);
+        if (!pose && isChainBone(bone)) {
+          // 揺れボーンのパーツは休み姿勢のまま置き、頂点シェーダーで鎖に沿って曲げる（マスクも休み姿勢で判定される）
+          const chain = chainOfBone(bone);
+          if (chain && chainPoses.has(chain.id) && !isCurve(object)) {
+            chainBentObjects.push({ object, chain });
+            continue;
+          }
+          pose = rigPoseFrame.get(chain?.parent ?? "hips");
+        }
         if (!pose || !object.parent) continue;
         let depth = 0;
         for (let cursor = object.parent; cursor; cursor = cursor.parent) depth += 1;
@@ -20724,9 +20896,12 @@ self.onmessage = (event) => {
         object.matrixWorld.copy(rigDesired);
       }
       scene.updateMatrixWorld(true);
+      pushChainBends();
     }
 
     function restoreRigPose() {
+      clearChainBends();
+      chainBentObjects.length = 0;
       if (!rigPosed.length) return;
       for (const { object, matrix, auto } of rigPosed) {
         object.matrix.copy(matrix);
@@ -20734,6 +20909,247 @@ self.onmessage = (event) => {
       }
       rigPosed.length = 0;
       scene.updateMatrixWorld(true);
+    }
+
+    function bendUniformsOf(mesh) {
+      const uniforms = mesh?.material?.userData?.maskUniforms ?? mesh?.material?.userData?.capUniforms;
+      return uniforms?.bendOn ? uniforms : null;
+    }
+
+    function bendRenderMeshes(object) {
+      const list = [];
+      const add = (mesh) => {
+        if (!mesh?.isMesh) return;
+        list.push(mesh);
+        for (const cap of maskCaps.get(mesh) ?? []) list.push(cap);
+      };
+      if (object.userData.isLinkAnchor) for (const mesh of object.userData.inner.children) add(mesh);
+      else add(object);
+      return list;
+    }
+
+    function pushChainBends() {
+      clearChainBends();
+      if (!rigPoseFrame) return;
+      for (const { object, chain } of chainBentObjects) {
+        const pose = chainPoses.get(chain.id);
+        if (!pose || !shownInScene(object)) continue;
+        const count = pose.quats.length - 1;
+        for (const mesh of bendRenderMeshes(object)) {
+          const uniforms = bendUniformsOf(mesh);
+          if (!uniforms) continue;
+          uniforms.bendOn.value = 1;
+          uniforms.bendCount.value = count;
+          for (let index = 0; index <= count; index += 1) {
+            uniforms.bendRest.value[index].fromArray(chain.points[index]);
+            uniforms.bendHead.value[index].copy(pose.heads[index]);
+            const quat = pose.quats[index];
+            uniforms.bendQuat.value[index].set(quat.x, quat.y, quat.z, quat.w);
+          }
+          chainBentUniforms.push(uniforms);
+        }
+      }
+    }
+
+    function clearChainBends() {
+      for (const uniforms of chainBentUniforms) uniforms.bendOn.value = 0;
+      chainBentUniforms.length = 0;
+    }
+
+    function chainRest(chain) {
+      const joints = chain.points.map((point) => new THREE.Vector3().fromArray(point));
+      const dirs = [];
+      const lengths = [];
+      for (let index = 1; index < joints.length; index += 1) {
+        const step = joints[index].clone().sub(joints[index - 1]);
+        const length = step.length();
+        lengths.push(length);
+        dirs.push(length > 1e-9 ? step.divideScalar(length) : new THREE.Vector3(0, 0, 1));
+      }
+      return { joints, dirs, lengths, total: lengths.reduce((sum, value) => sum + value, 0), key: JSON.stringify(chain.points) };
+    }
+
+    const chainMatrixPosition = new THREE.Vector3();
+    const chainMatrixScale = new THREE.Vector3();
+
+    function chainParentFrame(chain, rest) {
+      const head = rest.joints[0].clone();
+      const rot = new THREE.Quaternion();
+      const matrix = rigPoseFrame?.get(chain.parent);
+      if (matrix) {
+        head.applyMatrix4(matrix);
+        matrix.decompose(chainMatrixPosition, rot, chainMatrixScale);
+      }
+      return { head, rot };
+    }
+
+    // ばね（固有振動数 omega・減衰比 zeta）は目標の向きとの差に掛ける。長さは毎ステップ元に戻すので伸び縮みしない
+    function chainParams(chain) {
+      const hz = 0.6 * Math.pow(20, chain.stiffness);
+      return {
+        omega: 2 * Math.PI * hz,
+        zeta: 0.03 + chain.damping * 1.2,
+        gravity: new THREE.Vector3(0, -9.8 * chain.gravity, 0),
+        maxAngle: THREE.MathUtils.degToRad(chain.maxAngle),
+      };
+    }
+
+    const chainAxis = new THREE.Vector3();
+    const chainTarget = new THREE.Vector3();
+    const chainAccel = new THREE.Vector3();
+    const chainDir = new THREE.Vector3();
+    const chainNext = new THREE.Vector3();
+    const chainTurn = new THREE.Quaternion();
+
+    function limitChainDir(dir, target, maxAngle) {
+      const angle = target.angleTo(dir);
+      if (angle <= maxAngle) return dir;
+      chainAxis.crossVectors(target, dir);
+      if (chainAxis.lengthSq() < 1e-14) return dir.copy(target);
+      chainAxis.normalize();
+      return dir.copy(target).applyAxisAngle(chainAxis, maxAngle);
+    }
+
+    function stepChainOnce(state, rest, head, rot, h, params, firstStep) {
+      const q = state.scratchQuat.copy(rot);
+      const root = state.scratchHead.copy(head);
+      for (let index = 0; index < rest.dirs.length; index += 1) {
+        const length = rest.lengths[index];
+        const targetDir = state.scratchDir.copy(rest.dirs[index]).applyQuaternion(q);
+        chainTarget.copy(root).addScaledVector(targetDir, length);
+        const previous = state.targets[index];
+        const targetVelocity = state.scratchVelocity.copy(chainTarget).sub(previous).divideScalar(firstStep ? Infinity : h);
+        previous.copy(chainTarget);
+        const tail = state.tails[index];
+        const velocity = state.velocities[index];
+        chainAccel.copy(chainTarget).sub(tail).multiplyScalar(params.omega * params.omega)
+          .addScaledVector(velocity.clone().sub(targetVelocity), -2 * params.zeta * params.omega)
+          .add(params.gravity);
+        velocity.addScaledVector(chainAccel, h);
+        chainNext.copy(tail).addScaledVector(velocity, h);
+        chainDir.copy(chainNext).sub(root);
+        if (chainDir.lengthSq() < 1e-18) chainDir.copy(targetDir);
+        else chainDir.normalize();
+        limitChainDir(chainDir, targetDir, params.maxAngle);
+        chainNext.copy(root).addScaledVector(chainDir, length);
+        velocity.copy(chainNext).sub(tail).divideScalar(h);
+        tail.copy(chainNext);
+        state.devs[index].setFromUnitVectors(targetDir, chainDir);
+        q.premultiply(state.devs[index]);
+        root.copy(chainNext);
+      }
+    }
+
+    function chainRigidTails(rest, head, rot) {
+      const tails = [];
+      const q = rot.clone();
+      const root = head.clone();
+      for (let index = 0; index < rest.dirs.length; index += 1) {
+        root.addScaledVector(rest.dirs[index].clone().applyQuaternion(q), rest.lengths[index]);
+        tails.push(root.clone());
+      }
+      return tails;
+    }
+
+    function initChainState(chain, rest, frame) {
+      const tails = chainRigidTails(rest, frame.head, frame.rot);
+      const state = {
+        key: rest.key,
+        tails,
+        targets: tails.map((tail) => tail.clone()),
+        velocities: tails.map(() => new THREE.Vector3()),
+        devs: tails.map(() => new THREE.Quaternion()),
+        head: frame.head.clone(),
+        rot: frame.rot.clone(),
+        scratchQuat: new THREE.Quaternion(),
+        scratchHead: new THREE.Vector3(),
+        scratchDir: new THREE.Vector3(),
+        scratchVelocity: new THREE.Vector3(),
+        moving: false,
+      };
+      // 最初から重力で垂れた形で始める（再生開始の瞬間に落ちて揺れないように）
+      const params = chainParams(chain);
+      const h = 1 / 240;
+      for (let step = 0; step < 240; step += 1) stepChainOnce(state, rest, frame.head, frame.rot, h, params, step === 0);
+      for (const velocity of state.velocities) velocity.set(0, 0, 0);
+      return state;
+    }
+
+    const chainStepHead = new THREE.Vector3();
+    const chainStepRot = new THREE.Quaternion();
+
+    function simulateChain(chain, state, rest, frame, dt) {
+      const params = chainParams(chain);
+      const elapsed = Math.min(dt, 0.1);
+      const steps = Math.max(1, Math.ceil(elapsed * 240));
+      const h = elapsed / steps;
+      for (let step = 0; step < steps; step += 1) {
+        const f = (step + 1) / steps;
+        chainStepHead.lerpVectors(state.head, frame.head, f);
+        chainStepRot.slerpQuaternions(state.rot, frame.rot, f);
+        stepChainOnce(state, rest, chainStepHead, chainStepRot, h, params, false);
+      }
+      let moving = false;
+      for (const velocity of state.velocities) if (velocity.length() > rest.total * 0.002) moving = true;
+      state.moving = moving;
+    }
+
+    function scaledDeviation(dev, sway, maxAngle, target) {
+      if (sway === 1) return target.copy(dev);
+      const w = Math.min(1, Math.abs(dev.w));
+      const angle = 2 * Math.acos(w);
+      if (angle < 1e-7) return target.identity();
+      chainAxis.set(dev.x, dev.y, dev.z).multiplyScalar(dev.w < 0 ? -1 : 1).normalize();
+      return target.setFromAxisAngle(chainAxis, Math.min(angle * sway, Math.max(maxAngle, angle)));
+    }
+
+    function chainOutput(chain, rest, frame, state) {
+      const heads = [frame.head.clone()];
+      const quats = [frame.rot.clone()];
+      const q = frame.rot.clone();
+      const root = frame.head.clone();
+      const sway = rigPlayer.sway;
+      const maxAngle = THREE.MathUtils.degToRad(chain.maxAngle);
+      for (let index = 0; index < rest.dirs.length; index += 1) {
+        if (state) q.premultiply(scaledDeviation(state.devs[index], sway, maxAngle, chainTurn));
+        quats.push(q.clone());
+        root.addScaledVector(rest.dirs[index].clone().applyQuaternion(q), rest.lengths[index]);
+        heads.push(root.clone());
+      }
+      return { heads, quats };
+    }
+
+    function updateChainPoses(dt) {
+      chainPoses.clear();
+      const live = new Set();
+      for (const chain of rigChains()) {
+        live.add(chain.id);
+        const rest = chainRest(chain);
+        if (rest.total < 1e-6) continue;
+        const frame = chainParentFrame(chain, rest);
+        let state = chainStates.get(chain.id);
+        const jumped = state && state.head.distanceTo(frame.head) > Math.max(rest.total * 4, rigSize() * 0.25);
+        if (!state || state.key !== rest.key || jumped) {
+          state = initChainState(chain, rest, frame);
+          chainStates.set(chain.id, state);
+        } else if (dt > 0) {
+          simulateChain(chain, state, rest, frame, dt);
+          if (state.tails.some((tail) => !Number.isFinite(tail.x + tail.y + tail.z))) {
+            state = initChainState(chain, rest, frame);
+            chainStates.set(chain.id, state);
+          }
+        }
+        state.head.copy(frame.head);
+        state.rot.copy(frame.rot);
+        if (state.moving) sagSettling = true;
+        chainPoses.set(chain.id, chainOutput(chain, rest, frame, state));
+      }
+      for (const id of [...chainStates.keys()]) if (!live.has(id)) chainStates.delete(id);
+    }
+
+    function resetChainMotion() {
+      chainStates.clear();
+      chainPoses.clear();
     }
 
     function computeRigPose(sample) {
@@ -21202,6 +21618,7 @@ self.onmessage = (event) => {
       if (!rigEditing || !rig || !rigMotion || !rigPlayer.showing) {
         rigPoseFrame = null;
         rigPosedJoints = null;
+        if (chainStates.size || chainPoses.size) resetChainMotion();
         return;
       }
       if (rigPlayer.playing) {
@@ -21219,6 +21636,7 @@ self.onmessage = (event) => {
       const pose = computeRigPose(rigMotion.sample(rigPlayer.time));
       rigPoseFrame = pose.matrices;
       rigPosedJoints = pose.joints;
+      updateChainPoses(dt);
     }
 
     const RIG_COLORS = { center: 0xffd166, left: 0x4cc9f0, right: 0xff5fa2, focus: 0xffffff };
@@ -21247,6 +21665,63 @@ self.onmessage = (event) => {
       const arrow = makeSagArrow(rigColor(bone.name), 0.85, true);
       rigGuide.add(sagGuideLook(arrow.group));
       rigBoneMarks.set(bone.name, arrow);
+    }
+    const chainJointMarks = [];
+    const chainBoneMarks = [];
+
+    function chainJointMark(index) {
+      while (chainJointMarks.length <= index) {
+        const mark = new THREE.Mesh(rigJointGeometry, new THREE.MeshBasicMaterial({ color: CHAIN_COLOR }));
+        rigGuide.add(sagGuideLook(mark));
+        chainJointMarks.push(mark);
+      }
+      return chainJointMarks[index];
+    }
+
+    function chainBoneMark(index) {
+      while (chainBoneMarks.length <= index) {
+        const arrow = makeSagArrow(CHAIN_COLOR, 0.85, true);
+        rigGuide.add(sagGuideLook(arrow.group));
+        chainBoneMarks.push(arrow);
+      }
+      return chainBoneMarks[index];
+    }
+
+    function chainJointNames() {
+      return rigChains().flatMap((chain) => chain.points.map((_, index) => `${CHAIN_PREFIX}${chain.id}:${index}`));
+    }
+
+    function updateChainGuide(radius, thickness) {
+      let joints = 0;
+      let bones = 0;
+      for (const chain of rigChains()) {
+        const pose = rigPosedJoints ? chainPoses.get(chain.id) : null;
+        const focus = rigBone === `${CHAIN_PREFIX}${chain.id}`;
+        const at = (index, target) => (pose ? target.copy(pose.heads[index]) : target.fromArray(chain.points[index]));
+        chain.points.forEach((_, index) => {
+          const mark = chainJointMark(joints);
+          joints += 1;
+          mark.visible = true;
+          at(index, mark.position);
+          const dragged = rigDrag?.name === `${CHAIN_PREFIX}${chain.id}:${index}`;
+          mark.scale.setScalar(radius * (dragged ? 1.5 : index === 0 ? 1 : 0.8));
+          mark.material.color.setHex(focus ? RIG_COLORS.focus : CHAIN_COLOR);
+        });
+        for (let index = 1; index < chain.points.length; index += 1) {
+          const arrow = chainBoneMark(bones);
+          bones += 1;
+          arrow.group.visible = true;
+          at(index - 1, rigGuideA);
+          at(index, rigGuideB);
+          const length = rigGuideA.distanceTo(rigGuideB);
+          if (length > 1e-6) rigGuideDirection.subVectors(rigGuideB, rigGuideA).divideScalar(length);
+          else rigGuideDirection.set(0, 1, 0);
+          placeSagArrow(arrow, rigGuideA, rigGuideDirection, Math.max(length, 1e-6), thickness * (focus ? 2 : 1.2));
+          arrow.shaft.material.color.setHex(focus ? RIG_COLORS.focus : CHAIN_COLOR);
+        }
+      }
+      for (let index = joints; index < chainJointMarks.length; index += 1) chainJointMarks[index].visible = false;
+      for (let index = bones; index < chainBoneMarks.length; index += 1) chainBoneMarks[index].group.visible = false;
     }
 
     function rigShownJoint(name, target) {
@@ -21279,9 +21754,12 @@ self.onmessage = (event) => {
         placeSagArrow(arrow, rigGuideA, rigGuideDirection, Math.max(length, 1e-6), thickness * (focus ? 2 : 1));
         arrow.shaft.material.color.setHex(focus ? RIG_COLORS.focus : rigColor(bone.name));
       }
+      updateChainGuide(radius, thickness);
     }
 
     function rigJointBone(name) {
+      const ref = chainJointRef(name);
+      if (ref) return `${CHAIN_PREFIX}${ref.chain.id}`;
       if (RIG_BONE_MAP.has(name)) return name;
       return RIG_BONES.find((bone) => bone.tail === name)?.name ?? null;
     }
@@ -21290,7 +21768,7 @@ self.onmessage = (event) => {
       const rect = renderer.domElement.getBoundingClientRect();
       let best = null;
       let bestDistance = 14 * 14;
-      for (const name of RIG_JOINTS) {
+      for (const name of [...chainJointNames(), ...RIG_JOINTS]) {
         rigJoint(name, rigGuideA).project(camera);
         if (rigGuideA.z > 1) continue;
         const x = ((rigGuideA.x + 1) / 2) * rect.width + rect.left;
@@ -21305,6 +21783,15 @@ self.onmessage = (event) => {
     }
 
     function moveRigJoint(name, point) {
+      const ref = chainJointRef(name);
+      if (ref) {
+        // 揺れボーンの点は、その先の点も一緒に動かす（根元をつかむと鎖ごと動く）
+        const delta = point.clone().sub(rigJoint(name, rigGuideA));
+        for (let index = ref.index; index < ref.chain.points.length; index += 1) {
+          ref.chain.points[index] = new THREE.Vector3().fromArray(ref.chain.points[index]).add(delta).toArray();
+        }
+        return;
+      }
       const sided = /^(left|right)/.test(name);
       const value = point.clone();
       if (rigMirror && !sided) value.x = torsoCenter.x;
@@ -21345,7 +21832,7 @@ self.onmessage = (event) => {
       if (!rigEditing) return;
       const focusText = document.getElementById("rig-focus");
       if (rigPart) {
-        const label = `${sideText(rigPart)}${rigPart.userData.label ?? "パーツ"}`;
+        const label = rigItemLabel(rigPart);
         const bone = rigBoneOf(rigPart);
         focusText.textContent = bone === "none"
           ? `「${label}」はボーンで動かさず、その場に残します。`
@@ -21372,6 +21859,8 @@ self.onmessage = (event) => {
       document.getElementById("rig-fit").disabled = rigPlayer.showing;
       document.getElementById("rig-copy-left").disabled = rigPlayer.showing;
       document.getElementById("rig-copy-right").disabled = rigPlayer.showing;
+      document.getElementById("chain-add").disabled = rigPlayer.showing;
+      renderChainList();
       showRigTime();
     }
 
@@ -21474,22 +21963,49 @@ self.onmessage = (event) => {
       if (!rigEditing || event.button !== 0 || !start || rigPlayer.showing) return;
       if ((event.clientX - start.x) ** 2 + (event.clientY - start.y) ** 2 > 16) return;
       const hit = pickScene(event);
-      rigPart = hit && editableMeshes().includes(hit) ? hit : null;
+      rigPart = hit && (editableMeshes().includes(hit) || (hit.userData.isLinkAnchor && !hit.userData.isLinkMirror)) ? hit : null;
       rigBone = hit && !hit.userData.isMask ? rigBoneOf(hit) : null;
       updateRigChrome();
     });
 
-    const rigBoneOptions = [
-      `<option value="">自動</option>`,
-      ...RIG_BONES.map((bone) => `<option value="${bone.name}">${bone.label}</option>`),
-      `<option value="none">動かさない</option>`,
-    ].join("");
+    function rigBoneOptions() {
+      return [
+        `<option value="">自動</option>`,
+        ...RIG_BONES.map((bone) => `<option value="${bone.name}">${bone.label}</option>`),
+        ...rigChains().map((chain) => `<option value="${CHAIN_PREFIX}${chain.id}">揺れ：${escapeHtml(chain.name)}</option>`),
+        `<option value="none">動かさない</option>`,
+      ].join("");
+    }
+
+    function rigAssignTargets() {
+      return [...editableMeshes(), ...activeAnchors()];
+    }
+
+    function setRigItemBone(item, value) {
+      if (!item.userData.isLinkAnchor) {
+        setPartBone(item, value);
+        return;
+      }
+      const link = linkById(item.userData.linkId);
+      const bone = readBoneName(value);
+      if (link) {
+        if (bone) link.bone = bone;
+        else delete link.bone;
+      }
+      if (bone) item.userData.bone = bone;
+      else delete item.userData.bone;
+    }
+
+    function rigItemLabel(item) {
+      if (item.userData.isLinkAnchor) return `${item.userData.label ?? "リンク"}（リンク）`;
+      return `${sideText(item)}${item.userData.label ?? "パーツ"}`;
+    }
 
     function assignRigBone(mesh, value) {
       if (!mesh || mesh.userData.locked) return;
-      setPartBone(mesh, value);
-      const record = recordOf(mesh);
-      const twin = symmetric && !record?.solo ? otherOf(record, mesh) : null;
+      setRigItemBone(mesh, value);
+      const record = mesh.userData.isLinkAnchor ? null : recordOf(mesh);
+      const twin = symmetric && record && !record.solo && !isChainBone(value) ? otherOf(record, mesh) : null;
       if (twin && !twin.userData.locked) setPartBone(twin, mirroredBoneName(value));
       rigPart = mesh;
       rigBone = rigBoneOf(mesh);
@@ -21503,22 +22019,24 @@ self.onmessage = (event) => {
 
     function rigBoneColor(name) {
       if (name === "none") return "#9c948b";
+      if (isChainBone(name)) return `#${CHAIN_COLOR.toString(16).padStart(6, "0")}`;
       const side = name.startsWith("left") ? "left" : name.startsWith("right") ? "right" : "center";
       return `#${RIG_COLORS[side].toString(16).padStart(6, "0")}`;
     }
 
     function updateRigAssign() {
-      const meshes = editableMeshes();
+      const meshes = rigAssignTargets();
       const rows = meshes.map((mesh, index) => ({
         index,
         bone: rigBoneOf(mesh),
-        auto: !mesh.userData.bone,
-        label: `${sideText(mesh)}${mesh.userData.label ?? "パーツ"}`,
+        auto: !mesh.userData.bone || (isChainBone(mesh.userData.bone) && !chainOfBone(mesh.userData.bone)),
+        label: rigItemLabel(mesh),
         locked: Boolean(mesh.userData.locked),
       }));
       const key = [
         rigPart ? meshes.indexOf(rigPart) : -1,
         rigBone ?? "",
+        rigChains().map((chain) => `${chain.id}:${chain.name}`).join(","),
         ...rows.map((row) => `${row.bone}:${row.auto}:${row.locked}:${row.label}`),
       ].join("|");
       if (key === rigAssignKey && rigAssignMeshes.length === meshes.length && rigAssignMeshes.every((mesh, index) => mesh === meshes[index])) return;
@@ -21529,7 +22047,8 @@ self.onmessage = (event) => {
         return;
       }
       const html = [];
-      for (const bone of [...RIG_BONES.map((item) => item.name), "none"]) {
+      const options = rigBoneOptions();
+      for (const bone of [...RIG_BONES.map((item) => item.name), ...rigChains().map((chain) => `${CHAIN_PREFIX}${chain.id}`), "none"]) {
         const items = rows.filter((row) => row.bone === bone);
         if (!items.length) continue;
         html.push(`<div class="rig-group${rigBone === bone && !rigPart ? " active" : ""}" role="listitem">`);
@@ -21538,7 +22057,7 @@ self.onmessage = (event) => {
           const active = rigPart === meshes[row.index] ? " active" : "";
           const note = row.locked ? "ロック" : "";
           html.push(`<div class="rig-item${active}"><button type="button" class="rig-item-name" data-index="${row.index}" title="${escapeHtml(row.label)}">${escapeHtml(row.label)}${note ? `<small>${note}</small>` : ""}</button>`);
-          html.push(`<select data-index="${row.index}" aria-label="${escapeHtml(row.label)}を動かすボーン"${row.locked ? " disabled" : ""}>${rigBoneOptions}</select></div>`);
+          html.push(`<select data-index="${row.index}" aria-label="${escapeHtml(row.label)}を動かすボーン"${row.locked ? " disabled" : ""}>${options}</select></div>`);
         }
         html.push(`</div>`);
       }
@@ -21576,7 +22095,9 @@ self.onmessage = (event) => {
     document.getElementById("rig-leave").addEventListener("click", leaveRigEdit);
     document.getElementById("rig-fit").addEventListener("click", () => {
       if (!rigEditing || rigPlayer.showing) return;
+      const chains = rig?.chains;
       rig = fitRig();
+      if (chains?.length) rig.chains = chains;
       commit();
       setFileStatus("ボーンを体の大きさに合わせて置き直しました");
     });
@@ -21620,6 +22141,306 @@ self.onmessage = (event) => {
       rigPlayer.sway = Number(event.target.value) / 100;
     });
     setSlider("rig-sway", 100);
+
+    const chainList = document.getElementById("chain-list");
+    let chainListKey = "";
+    const CHAIN_SLIDERS = [
+      ["stiffness", "硬さ", 100, "%", "上げると速く小さく揺れ、下げるとゆっくり大きく揺れる"],
+      ["damping", "揺れの止まりやすさ", 100, "%", "上げるとすぐ落ち着き、下げると長く揺れ続ける"],
+      ["gravity", "重力", 100, "%", "垂れ下がる強さ"],
+      ["maxAngle", "曲がる上限", 1, "°", "1 節あたりに曲がれる最大の角度"],
+    ];
+
+    function chainItems(chain) {
+      const bone = `${CHAIN_PREFIX}${chain.id}`;
+      return rigAssignTargets().filter((item) => item.userData.bone === bone);
+    }
+
+    function uniqueChainName() {
+      const names = new Set(rigChains().map((chain) => chain.name));
+      for (let index = 1; ; index += 1) if (!names.has(`揺れボーン${index}`)) return `揺れボーン${index}`;
+    }
+
+    function chainObjectPoints(object) {
+      const meshes = object.userData.isLinkAnchor ? object.userData.inner.children.filter((mesh) => mesh.isMesh) : [object];
+      const points = [];
+      for (const mesh of meshes) {
+        const position = mesh.geometry?.attributes?.position;
+        if (!position) continue;
+        mesh.updateWorldMatrix(true, false);
+        const stride = Math.max(1, Math.floor(position.count / 4000));
+        for (let index = 0; index < position.count; index += stride) {
+          points.push(new THREE.Vector3().fromBufferAttribute(position, index).applyMatrix4(mesh.matrixWorld));
+        }
+      }
+      return points;
+    }
+
+    // パーツの頂点の主軸（いちばん長く伸びる向き）に沿って輪切りにし、断面の中心を節の点にする（曲がった形にも沿う）
+    function fitChainPoints(object, segments) {
+      const points = chainObjectPoints(object);
+      if (points.length < 4) return null;
+      const mean = new THREE.Vector3();
+      for (const point of points) mean.add(point);
+      mean.divideScalar(points.length);
+      const c = [0, 0, 0, 0, 0, 0];
+      for (const point of points) {
+        const x = point.x - mean.x, y = point.y - mean.y, z = point.z - mean.z;
+        c[0] += x * x; c[1] += x * y; c[2] += x * z; c[3] += y * y; c[4] += y * z; c[5] += z * z;
+      }
+      const axis = new THREE.Vector3(1, 0.7, 0.4).normalize();
+      for (let step = 0; step < 50; step += 1) {
+        axis.set(c[0] * axis.x + c[1] * axis.y + c[2] * axis.z, c[1] * axis.x + c[3] * axis.y + c[4] * axis.z, c[2] * axis.x + c[4] * axis.y + c[5] * axis.z);
+        if (axis.lengthSq() < 1e-30) return null;
+        axis.normalize();
+      }
+      let low = Infinity;
+      let high = -Infinity;
+      const along = points.map((point) => {
+        const t = point.clone().sub(mean).dot(axis);
+        low = Math.min(low, t);
+        high = Math.max(high, t);
+        return t;
+      });
+      if (high - low < 1e-5) return null;
+      const lowEnd = mean.clone().addScaledVector(axis, low);
+      const highEnd = mean.clone().addScaledVector(axis, high);
+      const reach = (point) => {
+        rigJoint(nearestRigBone(point), rigSegment.start);
+        rigJoint(RIG_BONE_MAP.get(nearestRigBone(point)).tail, rigSegment.end);
+        return rigSegment.closestPointToPoint(point, true, rigClosest).distanceTo(point);
+      };
+      const flip = reach(highEnd) < reach(lowEnd);
+      const start = flip ? high : low;
+      const end = flip ? low : high;
+      const spacing = Math.abs(end - start) / segments;
+      const joints = [];
+      for (let index = 0; index <= segments; index += 1) {
+        const t = start + ((end - start) * index) / segments;
+        const from = index === 0 ? t : t - Math.sign(end - start) * spacing * 0.5;
+        const to = index === segments ? t : t + Math.sign(end - start) * spacing * 0.5;
+        const lo = Math.min(from, to, t);
+        const hi = Math.max(from, to, t);
+        const center = new THREE.Vector3();
+        let count = 0;
+        along.forEach((value, pointIndex) => {
+          if (value < lo - spacing * 0.15 || value > hi + spacing * 0.15) return;
+          center.add(points[pointIndex]);
+          count += 1;
+        });
+        if (count) center.divideScalar(count);
+        else center.copy(mean);
+        center.addScaledVector(axis, t - center.clone().sub(mean).dot(axis));
+        joints.push(center);
+      }
+      let parent = nearestRigBone(joints[0]);
+      if (/UpperLeg$/.test(parent) && Math.abs(joints[0].x - torsoCenter.x) < rigSize() * 0.03) parent = "hips";
+      return { points: joints.map((point) => point.toArray().map(roundNumber)), parent };
+    }
+
+    function resampleChain(points, segments) {
+      const joints = points.map((point) => new THREE.Vector3().fromArray(point));
+      const along = [0];
+      for (let index = 1; index < joints.length; index += 1) along.push(along[index - 1] + joints[index].distanceTo(joints[index - 1]));
+      const total = along[along.length - 1];
+      const out = [];
+      for (let index = 0; index <= segments; index += 1) {
+        const target = (total * index) / segments;
+        let span = 1;
+        while (span < joints.length - 1 && along[span] < target) span += 1;
+        const width = along[span] - along[span - 1];
+        const f = width > 1e-12 ? (target - along[span - 1]) / width : 0;
+        out.push(joints[span - 1].clone().lerp(joints[span], Math.min(1, Math.max(0, f))).toArray().map(roundNumber));
+      }
+      return out;
+    }
+
+    function addChain() {
+      if (!rigEditing || !rig || rigPlayer.showing) return;
+      if (rigChains().length >= CHAIN_LIMIT) {
+        setFileStatus(`揺れボーンは ${CHAIN_LIMIT} 本までです`);
+        return;
+      }
+      const segments = CHAIN_DEFAULTS.segments;
+      const target = rigPart && !rigPart.userData.locked ? rigPart : null;
+      const fitted = target ? fitChainPoints(target, segments) : null;
+      let parent = fitted?.parent;
+      let points = fitted?.points;
+      if (!points) {
+        parent = rigBone && RIG_BONE_MAP.has(rigBone) ? rigBone : "hips";
+        const root = rigJoint(parent, new THREE.Vector3());
+        const length = rigSize() * 0.12;
+        points = Array.from({ length: segments + 1 }, (_, index) => root.clone().add(new THREE.Vector3(0, 0, (length * index) / segments)).toArray().map(roundNumber));
+      }
+      const chain = {
+        id: `c${Date.now().toString(36)}${Math.floor(Math.random() * 1296).toString(36)}`,
+        name: uniqueChainName(),
+        parent,
+        points,
+        stiffness: CHAIN_DEFAULTS.stiffness,
+        damping: CHAIN_DEFAULTS.damping,
+        gravity: CHAIN_DEFAULTS.gravity,
+        maxAngle: CHAIN_DEFAULTS.maxAngle,
+      };
+      rig.chains = [...rigChains(), chain];
+      if (fitted) setRigItemBone(target, `${CHAIN_PREFIX}${chain.id}`);
+      rigBone = `${CHAIN_PREFIX}${chain.id}`;
+      commit();
+      setFileStatus(fitted
+        ? `「${rigItemLabel(target)}」に沿って「${chain.name}」を追加し、割り当てました`
+        : `「${chain.name}」を追加しました。紫の点をドラッグして位置を合わせてください`);
+      updateRigChrome();
+    }
+
+    function chainAssignOptions(chain) {
+      const options = [`<option value="">割り当て…</option>`];
+      if (rigPart) options.push(`<option value="picked">選んでいるパーツ「${escapeHtml(rigItemLabel(rigPart))}」</option>`);
+      for (const folder of folders) options.push(`<option value="folder:${escapeHtml(folder.id)}">フォルダ「${escapeHtml(folder.name)}」の中身すべて</option>`);
+      for (const link of links) options.push(`<option value="link:${escapeHtml(link.id)}">リンク「${escapeHtml(link.name ?? "")}」</option>`);
+      if (chainItems(chain).length) options.push(`<option value="clear">割り当てをすべて外す</option>`);
+      return options.join("");
+    }
+
+    function renderChainList() {
+      const chains = rigChains();
+      const key = JSON.stringify([chains, rigBone, rigPart ? rigItemLabel(rigPart) : "", folders.map((folder) => [folder.id, folder.name]), links.map((link) => [link.id, link.name]),
+        chains.map((chain) => chainItems(chain).length)]);
+      if (key === chainListKey) return;
+      const editing = document.activeElement;
+      if (editing && chainList.contains(editing) && (editing.type === "range" || editing.type === "text")) return;
+      chainListKey = key;
+      if (!chains.length) {
+        chainList.innerHTML = `<p class="rig-empty">揺れボーンはまだありません。</p>`;
+        return;
+      }
+      const parents = RIG_BONES.map((bone) => `<option value="${bone.name}">${bone.label}</option>`).join("");
+      chainList.innerHTML = chains.map((chain) => {
+        const count = chainItems(chain).length;
+        const sliders = CHAIN_SLIDERS.map(([field, label, scale, unit, tip]) => {
+          const value = Math.round(chain[field] * scale);
+          const max = field === "maxAngle" ? 90 : 100;
+          return `<div class="slider-row" title="${tip}"><span>${label}</span><input type="range" min="0" max="${max}" step="1" value="${value}" data-field="${field}" aria-label="${escapeHtml(chain.name)}の${label}" /><span class="chain-value">${value}${unit}</span></div>`;
+        }).join("");
+        return `<div class="chain-card${rigBone === `${CHAIN_PREFIX}${chain.id}` ? " active" : ""}" data-chain="${chain.id}" role="listitem">
+          <div class="chain-row"><span class="rig-dot"></span><input type="text" maxlength="40" value="${escapeHtml(chain.name)}" data-field="name" aria-label="揺れボーンの名前" /><button type="button" data-act="delete" title="この揺れボーンを削除する（割り当てたパーツは自動に戻る）">削除</button></div>
+          <label class="chain-field"><span>親ボーン</span><select data-field="parent" aria-label="付け根になるボーン">${parents}</select></label>
+          <label class="chain-field"><span>節の数</span><input type="number" min="1" max="${BEND_MAX}" step="1" value="${chain.points.length - 1}" data-field="segments" aria-label="節の数" /></label>
+          ${sliders}
+          <div class="chain-row"><select data-act="assign" aria-label="この揺れボーンに割り当てる">${chainAssignOptions(chain)}</select></div>
+          <div class="rig-transport"><button type="button" data-act="fit" title="選んでいるパーツの形に沿って点を置き直す">選んだパーツに合わせる</button><button type="button" data-act="focus" title="この揺れボーンで動くパーツを強調する">強調</button></div>
+          <p class="chain-note">割り当て ${count} 個${count ? "" : "（「割り当て…」か下の一覧で付けます）"}</p>
+        </div>`;
+      }).join("");
+      for (const card of chainList.querySelectorAll(".chain-card")) {
+        const chain = chainById(card.dataset.chain);
+        card.querySelector('[data-field="parent"]').value = chain.parent;
+      }
+    }
+
+    function chainFromEvent(event) {
+      const card = event.target.closest(".chain-card");
+      return card ? chainById(card.dataset.chain) : null;
+    }
+
+    chainList.addEventListener("input", (event) => {
+      const chain = chainFromEvent(event);
+      const field = event.target.dataset.field;
+      if (!rigEditing || !chain || event.target.type !== "range") return;
+      const slider = CHAIN_SLIDERS.find((item) => item[0] === field);
+      if (!slider) return;
+      chain[field] = Number(event.target.value) / slider[2];
+      event.target.nextElementSibling.textContent = `${event.target.value}${slider[3]}`;
+    });
+    chainList.addEventListener("change", (event) => {
+      const chain = chainFromEvent(event);
+      if (!rigEditing || !chain) return;
+      const field = event.target.dataset.field;
+      const act = event.target.dataset.act;
+      if (field === "name") {
+        chain.name = event.target.value.trim().slice(0, 40) || chain.name;
+        event.target.value = chain.name;
+      } else if (field === "parent") {
+        if (RIG_BONE_MAP.has(event.target.value)) chain.parent = event.target.value;
+      } else if (field === "segments") {
+        const segments = Math.min(BEND_MAX, Math.max(1, Math.round(Number(event.target.value)) || 1));
+        chain.points = resampleChain(chain.points, segments);
+      } else if (CHAIN_SLIDERS.some((item) => item[0] === field)) {
+        // 値は input で反映済み。ここで履歴に積む
+      } else if (act === "assign") {
+        const value = event.target.value;
+        event.target.value = "";
+        if (!value) return;
+        assignChainItems(chain, value);
+        return;
+      } else {
+        return;
+      }
+      commit();
+      updateRigChrome();
+    });
+
+    function assignChainItems(chain, value) {
+      const bone = `${CHAIN_PREFIX}${chain.id}`;
+      let items = [];
+      if (value === "picked") items = rigPart ? [rigPart] : [];
+      else if (value.startsWith("folder:")) {
+        const id = value.slice(7);
+        items = [...descendantMeshes(id), ...descendantLinks(id).map((link) => linkAnchors.get(link.id)).filter(Boolean)];
+      } else if (value.startsWith("link:")) items = [linkAnchors.get(value.slice(5))].filter(Boolean);
+      else if (value === "clear") {
+        const owned = chainItems(chain);
+        for (const item of owned) setRigItemBone(item, null);
+        commit();
+        setFileStatus(`「${chain.name}」の割り当てを外しました（${owned.length} 個）`);
+        updateRigChrome();
+        return;
+      }
+      items = items.filter((item) => !item.userData.locked && !item.userData.isMask);
+      if (!items.length) {
+        setFileStatus("割り当てられるパーツがありません（ロック中のパーツは変えられません）");
+        return;
+      }
+      for (const item of items) setRigItemBone(item, bone);
+      rigBone = bone;
+      rigPart = null;
+      commit();
+      setFileStatus(`${items.length} 個のパーツを「${chain.name}」に割り当てました`);
+      updateRigChrome();
+    }
+
+    chainList.addEventListener("click", (event) => {
+      const chain = chainFromEvent(event);
+      const act = event.target.closest("button")?.dataset.act;
+      if (!rigEditing || !chain || !act) return;
+      const bone = `${CHAIN_PREFIX}${chain.id}`;
+      if (act === "delete") {
+        for (const item of chainItems(chain)) setRigItemBone(item, null);
+        rig.chains = rigChains().filter((item) => item !== chain);
+        if (!rig.chains.length) delete rig.chains;
+        if (rigBone === bone) rigBone = null;
+        commit();
+        setFileStatus(`「${chain.name}」を削除しました`);
+      } else if (act === "fit") {
+        if (rigPlayer.showing) return;
+        if (!rigPart) {
+          setFileStatus("先にビューか一覧で、合わせたいパーツをクリックしてください");
+          return;
+        }
+        const fitted = fitChainPoints(rigPart, chain.points.length - 1);
+        if (!fitted) {
+          setFileStatus("このパーツの形からは揺れボーンを置けませんでした");
+          return;
+        }
+        chain.points = fitted.points;
+        commit();
+        setFileStatus(`「${chain.name}」を「${rigItemLabel(rigPart)}」に合わせて置き直しました`);
+      } else if (act === "focus") {
+        rigBone = rigBone === bone && !rigPart ? null : bone;
+        rigPart = null;
+      }
+      updateRigChrome();
+    });
+    document.getElementById("chain-add").addEventListener("click", addChain);
 
     function domeOf(mesh) {
       return readDome(mesh?.userData.dome) ?? { height: 0, contour: "round", curve: DOME_DEFAULT_CURVE.map((knot) => [...knot]) };
