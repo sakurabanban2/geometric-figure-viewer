@@ -21736,6 +21736,7 @@ self.onmessage = (event) => {
       rigPlayer.time = 0;
       rigPoseFrame = null;
       rigPosedJoints = null;
+      resetChainMotion();
       updateRigChrome();
     }
 
@@ -22033,6 +22034,7 @@ self.onmessage = (event) => {
       rigPlayer.time = 0;
       rigPoseFrame = null;
       rigPosedJoints = null;
+      resetChainMotion();
       document.body.classList.remove("rig-dragging", "rig-hover");
       updateRigChrome();
     }
