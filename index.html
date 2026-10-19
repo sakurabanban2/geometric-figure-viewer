@@ -1168,6 +1168,7 @@
     .path-picker-search { width: 100%; box-sizing: border-box; margin: 8px 0; }
     .path-picker-list { display: flex; flex-direction: column; gap: 2px; max-height: 50vh; overflow: auto; }
     .path-picker-item { text-align: left; }
+    .brand .doc-name { margin-left: 8px; color: var(--muted); font-size: 12px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   </style>
   <script type="importmap">
   {
@@ -1195,6 +1196,7 @@
     <header class="brand">
       <span class="kicker">EDITOR</span>
       <h1>図形エディター</h1>
+      <span id="doc-name" class="doc-name" hidden></span>
     </header>
     <div class="menus" role="menubar">
       <div class="menu">
@@ -1210,6 +1212,11 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v6h8V4M8 20v-6h8v6"/></svg>
             保存
             <kbd>Ctrl+S</kbd>
+          </button>
+          <button id="save-as" type="button" role="menuitem" data-main-only>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v6h8V4"/><path d="M10 17l2-5 2 5M10.8 15.5h2.4"/></svg>
+            名前を付けて保存…
+            <kbd>Ctrl+Shift+S</kbd>
           </button>
           <button id="load" type="button" role="menuitem" data-main-only>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16v3h16v-3"/><path d="M12 4v12"/><path d="m7 11 5 5 5-5"/></svg>
@@ -11728,7 +11735,7 @@ self.onmessage = (event) => {
         else if (reliefTarget) saveReliefEdit();
         else if (featureTarget) saveFeatureEdit();
         else if (softTarget) saveSoftEdit();
-        else saveDocument();
+        else saveDocument(event.shiftKey);
         return;
       }
       if (command && event.code === "KeyZ" && !event.shiftKey) {
@@ -18820,8 +18827,49 @@ self.onmessage = (event) => {
       }
     });
 
-    function saveDocument() {
-      markSaved();
+    // ===== 保存先とファイル名 =====
+    // 対応ブラウザ（Chrome/Edge など）は「名前を付けて保存」の画面で名前と保存先を選び、以後の Ctrl+S は同じファイルに上書きする。
+    // 非対応ブラウザ（Firefox など）はファイル名を聞いてダウンロードする。
+    const FILE_NAME_KEY = `${STORAGE_KEY}:file-name`;
+    const DEFAULT_FILE_NAME = "figure.json";
+    let saveHandle = null;
+    let namedByUser = false;
+    let docFileName = (() => {
+      try {
+        return localStorage.getItem(FILE_NAME_KEY) || DEFAULT_FILE_NAME;
+      } catch {
+        return DEFAULT_FILE_NAME;
+      }
+    })();
+
+    function cleanFileName(name) {
+      let clean = String(name ?? "").trim().replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_");
+      if (!clean) return "";
+      if (!/\.json$/i.test(clean)) clean += ".json";
+      return clean;
+    }
+
+    function showDocName() {
+      if (MODEL_ID) return;
+      const label = document.getElementById("doc-name");
+      const custom = docFileName !== DEFAULT_FILE_NAME || namedByUser;
+      label.hidden = !custom;
+      label.textContent = custom ? docFileName : "";
+      label.title = custom ? docFileName : "";
+      document.title = custom ? `${docFileName.replace(/\.json$/i, "")} - 図形エディター` : "図形エディター";
+    }
+
+    function setDocFileName(name, handle = null, chosen = true) {
+      docFileName = cleanFileName(name) || DEFAULT_FILE_NAME;
+      saveHandle = handle;
+      namedByUser = chosen;
+      try {
+        localStorage.setItem(FILE_NAME_KEY, docFileName);
+      } catch { /* 名前を覚えられなくても保存はできる */ }
+      showDocName();
+    }
+
+    function documentJson() {
       const data = serialize();
       let stored = true;
       try {
@@ -18835,20 +18883,93 @@ self.onmessage = (event) => {
       } catch {
         models = undefined;
       }
-      const json = JSON.stringify({ ...data, models });
+      return { json: JSON.stringify({ ...data, models }), stored };
+    }
+
+    function downloadJson(json, name) {
       const link = document.createElement("a");
       const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
       link.href = url;
-      link.download = "figure.json";
+      link.download = name;
       document.body.appendChild(link);
       link.click();
       link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      if (stored) setFileStatus("保存しました");
-      else {
-        setFileStatus("ファイルはダウンロードしましたが、ブラウザ内には保存しきれませんでした");
-        alert("ブラウザの保存容量が足りないなどの理由で、ブラウザ内への保存に失敗しました。\nダウンロードした figure.json を保管し、次回は「読み込み」から開いてください。");
+    }
+
+    async function writeHandle(handle, json) {
+      const writable = await handle.createWritable();
+      await writable.write(new Blob([json], { type: "application/json" }));
+      await writable.close();
+    }
+
+    async function pickSaveHandle() {
+      return window.showSaveFilePicker({
+        suggestedName: docFileName,
+        types: [{ description: "図形モデル（JSON）", accept: { "application/json": [".json"] } }],
+      });
+    }
+
+    let saving = false;
+    // asNew: 名前を付けて保存（いつも保存先を聞く）
+    async function saveDocument(asNew = false) {
+      if (saving) return;
+      saving = true;
+      try {
+        await saveDocumentNow(asNew === true);
+      } finally {
+        saving = false;
       }
+    }
+
+    async function saveDocumentNow(asNew) {
+      const signature = history[historyIndex]?.signature ?? null;
+      const { json, stored } = documentJson();
+      let savedName = docFileName;
+      if (typeof window.showSaveFilePicker === "function") {
+        let handle = asNew ? null : saveHandle;
+        try {
+          if (handle) {
+            try {
+              await writeHandle(handle, json);
+            } catch (error) {
+              if (error?.name === "AbortError") throw error;
+              // 権限が外れた・ファイルが消えたなど: 保存先を選び直してもらう
+              handle = null;
+            }
+          }
+          if (!handle) {
+            handle = await pickSaveHandle();
+            await writeHandle(handle, json);
+          }
+        } catch (error) {
+          if (error?.name === "AbortError") return false;
+          setFileStatus("保存できませんでした");
+          alert(`ファイルに保存できませんでした。\n${error?.message ?? error}`);
+          return false;
+        }
+        savedName = handle.name || docFileName;
+        setDocFileName(savedName, handle);
+      } else {
+        if (asNew || !namedByUser) {
+          const answer = window.prompt("保存するファイル名を入力してください", docFileName);
+          if (answer === null) return false;
+          const clean = cleanFileName(answer);
+          if (!clean) return false;
+          savedName = clean;
+        }
+        downloadJson(json, savedName);
+        setDocFileName(savedName, null);
+      }
+      // 保存できたときだけ「保存済み」にする（保存中に編集されていたらその分は未保存のまま）
+      if ((history[historyIndex]?.signature ?? null) === signature) markSaved();
+      else savedSignature = signature;
+      if (stored) setFileStatus(`「${savedName}」に保存しました`);
+      else {
+        setFileStatus(`「${savedName}」に保存しましたが、ブラウザ内には保存しきれませんでした`);
+        alert(`ブラウザの保存容量が足りないなどの理由で、ブラウザ内への保存に失敗しました。\n保存した ${savedName} を保管し、次回は「読み込み」から開いてください。`);
+      }
+      return true;
     }
 
     function applyOverallFactor(factor) {
@@ -22058,11 +22179,13 @@ self.onmessage = (event) => {
       commit();
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(serialize())); } catch { /* 新しい状態の保存に失敗しても画面は空のまま */ }
       markSaved();
+      setDocFileName(DEFAULT_FILE_NAME, null, false);
       setFileStatus("新しいモデルを作りました");
     }
 
     document.getElementById("new-file").addEventListener("click", createNewDocument);
-    document.getElementById("save").addEventListener("click", saveDocument);
+    document.getElementById("save").addEventListener("click", () => saveDocument(false));
+    document.getElementById("save-as").addEventListener("click", () => saveDocument(true));
     document.getElementById("load").addEventListener("click", () => {
       if (!leaveEditModes()) return;
       document.getElementById("file-input").click();
@@ -22280,6 +22403,7 @@ self.onmessage = (event) => {
         return;
       }
       markSaved();
+      setDocFileName(file.name, null, true);
       let stored = true;
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(serialize()));
@@ -22443,6 +22567,7 @@ self.onmessage = (event) => {
       }
       markSaved();
       if (MODEL_ID) showModelTitle();
+      else showDocName();
     })();
 
     // 影はライト固定なので、影を落とす物の状態が変わったときだけ描き直す。
