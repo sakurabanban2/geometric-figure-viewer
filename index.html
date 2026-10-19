@@ -168,6 +168,10 @@
 
     #help-modal::backdrop { background: rgba(8, 9, 12, 0.62); }
     #help-modal h2 { margin: 0 0 8px; color: var(--text); font-size: 15px; letter-spacing: 0; }
+    #help-modal h3 { margin: 0 0 6px; color: var(--text); font-size: 13px; }
+    #help-modal .shortcut-table { width: 100%; border-collapse: collapse; margin: 0 0 14px; font-size: 12px; }
+    #help-modal .shortcut-table th { text-align: left; white-space: nowrap; padding: 3px 12px 3px 0; color: var(--text); font-weight: 600; vertical-align: top; }
+    #help-modal .shortcut-table td { padding: 3px 0; color: var(--muted); }
     #help-modal p { margin: 0 0 10px; color: var(--muted); font-size: 13px; line-height: 1.6; }
     #help-close { padding: 7px 12px; font-size: 13px; }
 
@@ -1186,6 +1190,7 @@
     .path-picker-search { width: 100%; box-sizing: border-box; margin: 8px 0; }
     .path-picker-list { display: flex; flex-direction: column; gap: 2px; max-height: 50vh; overflow: auto; }
     .path-picker-item { text-align: left; }
+    .brand .doc-name { margin-left: 8px; color: var(--muted); font-size: 12px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   </style>
   <script type="importmap">
   {
@@ -1213,6 +1218,7 @@
     <header class="brand">
       <span class="kicker">EDITOR</span>
       <h1>図形エディター</h1>
+      <span id="doc-name" class="doc-name" hidden></span>
     </header>
     <div class="menus" role="menubar">
       <div class="menu">
@@ -1228,6 +1234,11 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v6h8V4M8 20v-6h8v6"/></svg>
             保存
             <kbd>Ctrl+S</kbd>
+          </button>
+          <button id="save-as" type="button" role="menuitem" data-main-only>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v6h8V4"/><path d="M10 17l2-5 2 5M10.8 15.5h2.4"/></svg>
+            名前を付けて保存…
+            <kbd>Ctrl+Shift+S</kbd>
           </button>
           <button id="load" type="button" role="menuitem" data-main-only>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16v3h16v-3"/><path d="M12 4v12"/><path d="m7 11 5 5 5-5"/></svg>
@@ -1259,11 +1270,19 @@
           <button type="button" role="menuitem" data-command="undo">戻す<kbd>Ctrl+Z</kbd></button>
           <button type="button" role="menuitem" data-command="redo">やり直す<kbd>Ctrl+Y</kbd></button>
           <hr />
+          <button type="button" role="menuitem" data-action="cut">切り取り<kbd>Ctrl+X</kbd></button>
           <button type="button" role="menuitem" data-action="copy">コピー<kbd>Ctrl+C</kbd></button>
           <button type="button" role="menuitem" data-action="paste">貼り付け<kbd>Ctrl+V</kbd></button>
+          <button type="button" role="menuitem" data-action="duplicate">複製<kbd>Ctrl+D</kbd></button>
           <hr />
           <button type="button" role="menuitem" data-action="select-all">すべて選択<kbd>Ctrl+A</kbd></button>
+          <button type="button" role="menuitem" data-action="select-invert">選択を反転<kbd>Ctrl+I</kbd></button>
+          <button type="button" role="menuitem" data-action="select-none">選択を解除<kbd>Esc</kbd></button>
+          <hr />
+          <button type="button" role="menuitem" data-action="group">新しいフォルダにまとめる<kbd>Ctrl+G</kbd></button>
           <button type="button" role="menuitem" data-command="lock">ロック<kbd>L</kbd></button>
+          <button type="button" role="menuitem" data-action="hide">表示/非表示<kbd>H</kbd></button>
+          <button type="button" role="menuitem" data-action="show-all">すべて表示<kbd>Alt+H</kbd></button>
           <button type="button" role="menuitem" data-command="remove">削除<kbd>Del</kbd></button>
           <button type="button" role="menuitem" data-action="merge">選択中のパーツを結合</button>
           <button type="button" role="menuitem" data-action="rasterize">ラスタライズ</button>
@@ -1297,6 +1316,7 @@
         <button class="menu-button" type="button" role="menuitem" aria-haspopup="true" aria-expanded="false">その他</button>
         <div class="menu-list" role="menu" hidden>
           <button type="button" role="menuitem" data-action="help">操作ガイド</button>
+          <button type="button" role="menuitem" data-action="shortcuts">キーボードショートカット<kbd>?</kbd></button>
         </div>
       </div>
     </div>
@@ -2044,13 +2064,29 @@
   <div id="context-menu" class="menu-list" role="menu" hidden></div>
   <dialog id="help-modal" aria-labelledby="help-title">
     <h2 id="help-title">操作ガイド</h2>
+    <section id="help-shortcuts" aria-label="キーボードショートカット">
+      <h3>キーボードショートカット</h3>
+      <table class="shortcut-table">
+        <tr><th>クリック / Shift+クリック / Ctrl+クリック</th><td>選択 / 追加 / 追加・解除（パーツ一覧の Shift+クリックは間の行もまとめて選択）</td></tr>
+        <tr><th>Ctrl+A / Ctrl+I / Esc</th><td>すべて選択（パスも含む） / 選択を反転 / 選択を解除</td></tr>
+        <tr><th>Ctrl+C / Ctrl+X / Ctrl+V / Ctrl+D</th><td>コピー / 切り取り / 貼り付け / その場に複製</td></tr>
+        <tr><th>Ctrl+Z / Ctrl+Y（Ctrl+Shift+Z）</th><td>元に戻す / やり直す</td></tr>
+        <tr><th>Delete / Backspace</th><td>選択中のものを削除</td></tr>
+        <tr><th>L</th><td>選択中のものをロック / 解除</td></tr>
+        <tr><th>H / Alt+H</th><td>選択中のものを非表示 / 表示、非表示のものをすべて表示</td></tr>
+        <tr><th>Ctrl+G</th><td>選択中のものを新しいフォルダにまとめる</td></tr>
+        <tr><th>F2 / ダブルクリック</th><td>名前の変更</td></tr>
+        <tr><th>Ctrl+N / Ctrl+S</th><td>新規 / 保存（編集モード中はその編集を保存）</td></tr>
+        <tr><th>?</th><td>この一覧を開く</td></tr>
+      </table>
+    </section>
     <p>「ファイル → ワークショップを開く」で、みんなが公開したモデルやモーションの一覧を見られます。種類やタグで絞り込み、「エディターで開く」か「ダウンロード」で使えます。「ファイル → ワークショップに公開…」では、今のモデル、または「ボーンとモーション」で読み込んだモーションを、タイトル・作者・タグ・サムネイル付きで公開できます。公開先は GitHub のリポジトリで、GitHub のトークン（fine-grained、そのリポジトリの Contents と Pull requests の書き込み権限）が必要です。トークンはこのブラウザの中だけに保存されます。トークンがないときは「パッケージをダウンロード」で 1 つのファイルにまとめて渡せ、受け取った人は「読み込み」で開けます。「ファイル → モーションを書き出す」で読み込んだモーションのファイルだけを書き出せます。</p>
-    <p>クリックで選択し、Shift+クリックで追加します。移動・回転・拡縮はボタンで重ねて選べます。移動と拡縮を同時に選ぶと、拡縮のハンドルは外側に出ます。Shift を押しながらドラッグすると、移動はつかんだ矢印以外の方向（面をつかんだ場合はその面に垂直な方向）に動き、回転は45度刻みになり、拡縮はつかんだ側の反対の面を固定して伸び縮みします。ロックしたパーツは動きません。Ctrl+C でコピー、Ctrl+V で少しずらした位置に貼り付けます。フォルダを選んでコピーすると、中のフォルダやパーツごとフォルダをまるごとコピーします。貼り付け先は、フォルダを選んでいればそのフォルダの中、パーツを選んでいればそのパーツのすぐ下になります。リンクパーツを貼り付けると、同じリンク先モデルを共有するリンクが増えます。Ctrl+D で選んだものをその場に複製します（クリップボードは変わりません）。パスもパーツと同じようにコピー・貼り付け・複製でき、パーツとそのパスを一緒にコピーすると、貼り付けたパーツは新しいパスに沿います。</p>
+    <p>クリックで選択し、Shift+クリックで追加します（パーツ一覧では Shift+クリックで間の行もまとめて選べます）。移動・回転・拡縮はボタンで重ねて選べます。移動と拡縮を同時に選ぶと、拡縮のハンドルは外側に出ます。Shift を押しながらドラッグすると、移動はつかんだ矢印以外の方向（面をつかんだ場合はその面に垂直な方向）に動き、回転は45度刻みになり、拡縮はつかんだ側の反対の面を固定して伸び縮みします。ロックしたパーツは動きません。Ctrl+C でコピー、Ctrl+V で少しずらした位置に貼り付けます。フォルダを選んでコピーすると、中のフォルダやパーツごとフォルダをまるごとコピーします。貼り付け先は、フォルダを選んでいればそのフォルダの中、パーツを選んでいればそのパーツのすぐ下になります。リンクパーツを貼り付けると、同じリンク先モデルを共有するリンクが増えます。Ctrl+D で選んだものをその場に複製します（クリップボードは変わりません）。パスもパーツと同じようにコピー・貼り付け・複製でき、パーツとそのパスを一緒にコピーすると、貼り付けたパーツは新しいパスに沿います。</p>
     <p>パーツをパスに沿わせるには、パーツ一覧でパーツの行をパスの行の中央にドラッグするか、右クリックの「パスに沿わせる…」を選んで画面のパスをクリックします（Esc でやめる）。メニューには最近使ったパス・近いパスが 5 つまで並び、ほかのパスは「ほかのパスから選ぶ…」で名前を検索して選べます。沿わせたパーツをパス以外の場所へドラッグするとパスから外れます。</p>
     <p>画面右下のアイコンでワイヤーフレーム・自動回転・パースを切り替えられます。パースをオフにすると遠近感のない平行投影になり、形の比率や左右のずれを確かめやすくなります。平行投影中もホイールで拡大縮小できます。視点を回す中心は、パーツを選ぶとそのパーツの中心（複数なら最初に選んだパーツの中心）に移ります。選択を外しても視点の中心はその場所にとどまります。</p>
     <p>画面の左と上にスケール（cm）が表示されます。回転の中心を通る面での長さです（パースオフなら画面全体で正確です）。左のスケールをドラッグすると上下スケールの起点（0 の位置）を動かせ、ドラッグ中は起点から横に線が表示されます。ダブルクリックで画面下に戻ります。</p>
-    <p>メニューバーの左右対称アイコンがオンのときは、追加した形が左右1組で置かれ、片側の編集がもう一方にも反映されます。オフにすると、追加した形は1つだけ置かれ、編集も片側だけになります。</p>
-    <p>パーツやフォルダを右クリックするとメニューが開き、マスク編集・名前の変更・ロック・非表示・削除を選べます。マスク編集では、置いた図形と重なる範囲が非表示になります。マスク範囲の図形はパーツ作成と同じ立体（球・三角・四角・断面）と平面（円・三角・四角）から選べ、断面は通常のパーツと同じく断面パネルで形を編集できます。パーツを Ctrl+C でコピーしておき、マスク編集中に Ctrl+V で貼り付けると、そのパーツと同じ形・位置・大きさ・回転のマスク範囲になります（傾きと平面のドームは反映されません）。マスク編集中に「カーブ」「ループ」を押すと、パスとそれに沿って曲がる筒状のマスク範囲が追加されます（ループなら輪になります）。パスの点を動かすと切り取る範囲も曲がり、範囲を選ぶとパーツと同じカーブのパネルで始点・終点・太さの変化などを調整できます。ほかのマスク範囲も右クリックから既存のパスに沿わせたり外したりできます。フォルダでマスク編集すると、置いた図形1つでフォルダ内の全パーツをまとめて切り取れます。リンクパーツも右クリックからマスク編集でき、リンク先の中身全体をまとめて切り取れます（マスクは元のモデル側に保存されます）。フォルダを右クリックして「左右対称に配置」を選ぶと、中の片側だけのパーツ（サブフォルダやマスク、リンクパーツも含む）に反対側の鏡像コピーが付きます。「左右対称を解除」で反対側のコピーを外せます。</p>
+    <p>メニューバーの左右対称アイコンがオンのときは、左右の組になっているパーツの片側の編集がもう一方にも反映されます。オフにすると、編集は片側だけになります。左右対称モードでパーツが勝手に増えたり消えたりすることはありません（追加した形は1つだけ置かれます）。反対側のパーツを作りたいときは、パーツを右クリックして「左右対称のパーツを作る」を選びます（複数選んでいれば、選んだパーツのうち相手のないものすべてに作られます。中心線上にあるパーツには作れません）。「左右対称を解除」を選ぶと、両方のパーツを残したまま組だけを解除します。組の片側だけを削除すると、残った側は組のない普通のパーツになります。</p>
+    <p>パーツやフォルダを右クリックするとメニューが開き、マスク編集・名前の変更・ロック・非表示・削除を選べます。マスク編集では、置いた図形と重なる範囲が非表示になります。マスク範囲の図形はパーツ作成と同じ立体（球・三角・四角・断面）と平面（円・三角・四角）から選べ、断面は通常のパーツと同じく断面パネルで形を編集できます。パーツを Ctrl+C でコピーしておき、マスク編集中に Ctrl+V で貼り付けると、そのパーツと同じ形・位置・大きさ・回転のマスク範囲になります（傾きと平面のドームは反映されません）。マスク編集中に「カーブ」「ループ」を押すと、パスとそれに沿って曲がる筒状のマスク範囲が追加されます（ループなら輪になります）。パスの点を動かすと切り取る範囲も曲がり、範囲を選ぶとパーツと同じカーブのパネルで始点・終点・太さの変化などを調整できます。ほかのマスク範囲も右クリックから既存のパスに沿わせたり外したりできます。フォルダでマスク編集すると、置いた図形1つでフォルダ内の全パーツをまとめて切り取れます。リンクパーツも右クリックからマスク編集でき、リンク先の中身全体をまとめて切り取れます（マスクは元のモデル側に保存されます）。フォルダを右クリックして「左右対称に配置」を選ぶと、中の片側だけのパーツ（サブフォルダやマスク、リンクパーツも含む）に反対側の鏡像コピーが付きます。「左右対称を解除」で、両方のパーツを残したまま組を解除します（リンクパーツは反対側のコピーの表示をやめます）。</p>
     <p>「別モデル化して別タブで編集」を選ぶと、そのパーツやフォルダが別モデルになり、別タブで開きます。別タブでの変更は自動で元のモデルに反映されます。元のモデルではリンクアイコン付きの1つのパーツとして扱われ、まとめて移動・回転・拡大縮小できます（中身はリンク先で編集します）。右クリックでリンク先の編集やリンクの解除ができ、「左右対称に配置」を選ぶと反対側に鏡像のコピーが表示されます（移動・回転・マスクも自動で反映）。リンクを残すには、元のモデルを保存してください。リンク先が表示できないときは、右クリックの「リンクをつけなおす…」か、リンク先タブに出るウィンドウから保存したファイル（.json）を選ぶと、つけなおせます。</p>
     <p>「追加」は立体・平面・パスに分かれています。立体は球・三角柱・四角柱・断面、平面は薄い円・三角・四角です。「パス」の「カーブ」でベジエ曲線を置けます。パスは、右のパーツ一覧でそのパスを選んでいるときと、パスに沿わせたパーツやマスク範囲を選んでいるときだけ画面に表示されます。フォルダの表示・非表示を切り替えると、中のパスもまとめて切り替わります。カーブをクリックすると点（黄）とハンドル（ピンク）が表示され、点やハンドルを選んで移動ギズモで形を変えられます。ハンドルは反対側も連動して滑らかにつながります。点を右クリックして「角にする」を選ぶと、点が四角になり、2本のハンドルを別々に動かしてカーブを折り曲げられます（「滑らかな点にする」で元に戻ります）。角の点やそのハンドルを右クリックして「前のハンドルを削除」「次のハンドルを削除」を選ぶとハンドルがなくなり、その側はまっすぐ点に入ります（「…のハンドルを戻す」で再び出せます）。右クリックで点の追加・削除ができます（線の上で右クリックすると、その位置に中間点を追加できます）。パスを右クリックして「中間点で左右対称に編集」をオンにすると、真ん中の点（点が偶数なら真ん中の2点の間）を通る左右の面を境に、パスの形が鏡のように揃います。オンにしたときは右クリックした側（パス全体なら前半）の形がもう半分に写され、以後は点やハンドルを動かす・角にする・ハンドルを削除するといった操作が反対側の対になる点にも反映されます。点の追加と削除も左右で同時に行われ、真ん中の点は境の面の上に留まります。点を選んで回転ギズモを使うと、点のまわりでハンドルの向きがまとめて回ります。赤い輪（カーブの進む方向が軸）で回すと、カーブに沿わせたパーツがその点でねじれます。カーブ全体を選ぶと移動・回転・拡縮できます。パーツを右クリックして「カーブに沿わせる」または「ループに沿わせる」を選ぶと、パーツがそのパスに沿って曲がります。リンクパーツも右クリックから同じようにパスに沿わせられ、リンク先のモデル全体がひとまとまりで曲がります。パスに沿わせたパーツやリンクは、右のパーツ一覧ではそれぞれ元の場所（フォルダや並び順）のまま表示され、パスの行と水色の線でつながります（パスの行は白抜きの丸、沿わせたものは塗りの丸です）。閉じたフォルダの中にあるものは、そのフォルダの行に線がつながります。パスや沿わせたものを選んでいると線が濃くなります。左のパネルで始点・終点の範囲と両端の太さを調整できます。パスに沿わせたパーツを選ぶと、沿わせる前の形が元の位置に半透明の青で表示されます。点を選ぶと左のパネルに「点の太さ」が出て、その点を通る所でパーツを太く・細くできます（「拡縮」を選んで点の拡縮ギズモをドラッグしても変えられ、複数の点を選んでいればまとめて変わります）。点と点のあいだの太さはなめらかにつながり、両端の太さとも掛け合わされます。「曲がり具合」を下げるとパーツの曲がりが弱まり、0%ではパーツはまっすぐのまま、パスの位置と向きにだけ合わせて置かれます（並べたときはそれぞれが1つずつまっすぐになります）。「伸ばす」はパーツ1つをその区間の長さに引き延ばして曲げます。「並べる」は同じ形を引き延ばさず、区間の中に等間隔で置いて、それぞれをパスに沿って曲げます（角をつけた点でも隣同士の間に隙間ができません）。「個数を指定」では個数で並べる数を変えられ、「均等に配置」ではパーツの長さに合わせて入るだけ等間隔に並べ、「重なり」スライダーで間隔を変えられます（0%で隣同士がちょうど接し、プラスにすると重なって数が増え、マイナスにすると隙間が空きます。区間やパーツの長さを変えると数も変わり、ループ一周に並べたときは継ぎ目も同じ間隔になります）。法線編集で描いた模様や法線マップは、曲げたパーツに合わせて一緒に曲がります（左右対称オンなら反対側も鏡像で曲がります。拡縮ギズモで太さや長さも変えられます）。パスに沿わせたパーツやリンクは、「回転」を選ぶと回転ギズモで回せます。パーツ自身の向きの輪で、緑はパスの進む方向を軸にしたねじり、赤と青はパスに対する傾きになります。寸法の「回転」に数値を入れても回せます。回転はパスに沿わせたときの向きを基準にします。</p>
     <p>「パス」の「ループ」は、端を持たない閉じた輪です。カーブの端にあるような視点の終点はなく、最初は左右の2点と、そのあいだの中間点で輪っかになります。線は最後の点から最初の点へ戻ります。点やハンドルの編集、右クリックでの追加・削除、パーツを沿わせる操作はカーブと同じです。</p>
@@ -4805,10 +4841,26 @@ if (decalOn > 0.5) {
       const locked = selected?.userData.locked || (isCurvePart(selected) && curveOf(selected)?.userData.locked);
       const target = !reliefDrawing && selected && selected.visible && !locked ? selected : null;
       toolByMode.rotate.setSpace(target?.userData.isCurvePoint || target?.userData.curveBind ? "local" : "world");
-      for (const control of toolList) {
-        if (target && toolAllowed(target, control.mode)) control.attach(target);
-        else control.detach();
+      const holders = toolList.map((control) => (target && toolAllowed(target, control.mode) ? target : groupToolHolder(control.mode)));
+      // 複数選択では、選んでいるツール（移動・回転・拡縮）のハンドルだけを出す。
+      // パスに沿わせたパーツは単独では移動の代わりに拡縮ハンドルを出すが、まとめて動かすときは出さない。
+      const multi = selection.length > 1 && !isCurvePart(selected);
+      if (multi && toolList.some((control, index) => holders[index] && toolModes.has(control.mode))) {
+        toolList.forEach((control, index) => {
+          if (!toolModes.has(control.mode)) holders[index] = null;
+        });
       }
+      toolList.forEach((control, index) => {
+        if (holders[index]) control.attach(holders[index]);
+        else control.detach();
+      });
+    }
+
+    // 複数選択（フォルダの選択など）で、選択の中心になっているものにハンドルが付けられないとき
+    // （パスに沿わせたパーツは移動できない、ロック中、など）は、選択の中で動かせるほかのものに付ける。
+    function groupToolHolder(mode) {
+      if (reliefDrawing || selection.length < 2 || isCurvePart(selected)) return null;
+      return leaders().find((item) => item.visible && !isCurvePart(item) && toolAllowed(item, mode)) ?? null;
     }
 
     function toolAllowed(object, mode) {
@@ -4839,6 +4891,7 @@ if (decalOn > 0.5) {
         groupDrag = false;
         anchorScale = null;
         dragOrigins.clear();
+        mirrorShiftOrigins.clear();
         pointSizeOrigins.clear();
         settleCurveSelection();
         if (liveSignature() !== dragSignature) commit();
@@ -8199,9 +8252,9 @@ self.onmessage = (event) => {
           const record = recordOf(mesh);
           return record?.mirror && !record.solo && !picked.includes(otherOf(record, mesh));
         });
-      const sources = paired || !symmetric
-        ? picked
-        : withTwins(picked).filter((mesh) => !mesh.userData.locked);
+      // 選んだものだけを結合する（選んでいない対の相手を勝手に巻き込まない）。
+      // 片側だけを選び、そのすべてに相手がいるときは、相手側も同じように結合して対を保つ
+      const sources = picked;
       const bounds = new THREE.Box3();
       for (const mesh of sources) {
         mesh.updateWorldMatrix(true, false);
@@ -8259,7 +8312,7 @@ self.onmessage = (event) => {
       const record = { mesh, mirror: null, kind: "merged", solo: !paired };
       records.push(record);
       if (paired) {
-        syncFrom(mesh, true);
+        createTwin(record);
         if (record.mirror) record.mirror.userData.folderId = twinFolder;
       }
       select(mesh);
@@ -8390,14 +8443,77 @@ self.onmessage = (event) => {
       return selection.filter((mesh) => !mesh.userData.locked && !driven.has(mesh));
     }
 
+    // まとめて動かすとき、パスに沿わせたパーツはパスごと動かす（そのパスを使うものが全部選択に入っている場合）
+    function followedCurves(items) {
+      if (items.length < 2) return [];
+      const chosen = new Set(items);
+      const users = new Map();
+      const note = (item, bind) => {
+        const curve = bind && curveById(bind.curveId);
+        if (!curve) return;
+        if (!users.has(curve)) users.set(curve, []);
+        users.get(curve).push(item);
+      };
+      for (const mesh of editableMeshes()) {
+        note(mesh, mesh.userData.curveBind);
+        for (const shape of mesh.userData.masks ?? []) note(shape, shape.userData.curveBind);
+      }
+      for (const anchor of activeAnchors()) note(anchor, linkById(anchor.userData.linkId)?.curveBind);
+      const result = [];
+      for (const [curve, list] of users) {
+        if (chosen.has(curve) || curve.userData.locked) continue;
+        const inSelection = list.filter((item) => chosen.has(item));
+        if (!inSelection.length) continue;
+        // 対称の相手が選択外でも、選択側に合わせて動くので数えない
+        const outside = list.filter((item) => !chosen.has(item) && !(symmetric && !item.userData.isMask && !isLinkAnchor(item) && chosen.has(otherOf(recordOf(item), item))));
+        if (!outside.length) result.push(curve);
+      }
+      return result;
+    }
+
+    // 左右の両方が選択に入っているものの、もう片方（対称の相手）
+    function selectedTwin(item) {
+      const twin = item.userData.isMask ? liveTwin(item) : otherOf(recordOf(item), item);
+      return twin && dragOrigins.has(twin) ? twin : null;
+    }
+
     function captureDragOrigins() {
       dragOrigins.clear();
-      for (const mesh of leaders()) {
+      mirrorShiftOrigins.clear();
+      // まとめて移動するときは、左右の両方が選択されていれば両方を同じ向きに動かす（反転させない）
+      const rigid = activeTool?.mode === "translate" && selection.length > 1;
+      const movers = rigid ? selection.filter((item) => !item.userData.locked) : leaders();
+      for (const mesh of [...movers, ...followedCurves(selection)]) {
         mesh.updateWorldMatrix(true, false);
         const pos = new THREE.Vector3().setFromMatrixPosition(mesh.matrixWorld);
         const quat = worldQuaternionOf(mesh);
         const scl = worldScaleOf(mesh);
         dragOrigins.set(mesh, { pos, quat, scl, localScale: mesh.scale.clone() });
+      }
+      if (!rigid) return;
+      // パスの対称側に表示しているパーツは、パスを動かすと反対向きに動いてしまうので、ずらす量で打ち消す
+      const shiftable = (bind) => bind?.mirror && dragOrigins.has(curveById(bind.curveId));
+      for (const item of selection) {
+        if (item.userData.locked) continue;
+        if (isLinkAnchor(item)) {
+          const link = linkById(item.userData.linkId);
+          if (shiftable(link?.curveBind)) mirrorShiftOrigins.set(item, { link, shift: link.curveBind.mirrorShift ?? 0 });
+        } else if (shiftable(item.userData.curveBind)) mirrorShiftOrigins.set(item, { shift: item.userData.curveBind.mirrorShift ?? 0 });
+        for (const shape of item.userData.masks ?? []) {
+          if (!shape.userData.locked && !mirrorShiftOrigins.has(shape) && shiftable(shape.userData.curveBind)) mirrorShiftOrigins.set(shape, { shift: shape.userData.curveBind.mirrorShift ?? 0 });
+        }
+      }
+    }
+
+    const mirrorShiftOrigins = new Map();
+
+    function applyMirrorShifts(dx) {
+      for (const [item, start] of mirrorShiftOrigins) {
+        const shift = start.shift + 2 * dx;
+        if (start.link) {
+          start.link.curveBind = readCurveBind({ ...start.link.curveBind, mirrorShift: shift });
+          item.userData.curveBind = start.link.curveBind;
+        } else setCurveBind(item, { ...item.userData.curveBind, mirrorShift: shift });
       }
     }
 
@@ -8442,7 +8558,12 @@ self.onmessage = (event) => {
           writeWorldTransform(mesh, pivot.clone().add(offset), start.quat.clone(), start.localScale.clone().multiply(ratio));
         }
       }
-      for (const mesh of dragOrigins.keys()) syncFrom(mesh);
+      if (activeTool.mode === "translate" && mirrorShiftOrigins.size) applyMirrorShifts(deltaPos.x);
+      for (const mesh of dragOrigins.keys()) {
+        const twin = activeTool.mode === "translate" ? selectedTwin(mesh) : null;
+        if (!twin) syncFrom(mesh);
+        else if (mesh.userData.isMask) syncMaskShapes(mesh, false);
+      }
     }
 
     function linkedShapes(shape) {
@@ -8508,17 +8629,42 @@ self.onmessage = (event) => {
         return;
       }
       if (!symmetric && !force) return;
+      // 左右対称モードは、すでに対になっているパーツを合わせるだけ。相手を勝手に作ったり消したりしない
+      // （相手を作るのは右クリックの「左右対称のパーツを作る」などの明示的な操作だけ）
       const record = records.find((item) => item.mesh === source || item.mirror === source);
       if (!record || record.solo) return;
-      let other = otherOf(record, source);
-      if (other?.userData.locked) return;
-      if (!other) {
-        other = duplicate(source);
-        (source.userData.kind === "body" ? figure : edits).add(other);
-        if (source === record.mesh) record.mirror = other;
-        else record.mesh = other;
-      }
+      const other = otherOf(record, source);
+      if (!other || other.userData.locked) return;
       applyMirror(source, other);
+    }
+
+    // 対の相手を作る（明示的な操作から呼ぶ）。作った相手を返す
+    function createTwin(record) {
+      if (!record || record.mirror) return null;
+      const source = record.mesh;
+      const other = duplicate(source);
+      (source.userData.kind === "body" ? figure : edits).add(other);
+      record.mirror = other;
+      record.solo = false;
+      applyMirror(source, other);
+      return other;
+    }
+
+    // 対を解除して、両方を別々のパーツとして残す
+    function unpairRecord(record) {
+      if (!record?.mirror) return null;
+      const other = record.mirror;
+      for (const shape of record.mesh.userData.masks || []) {
+        if (shape.userData.twin?.parent === other) {
+          shape.userData.twin.userData.twin = null;
+          shape.userData.twin = null;
+        }
+      }
+      record.mirror = null;
+      record.solo = true;
+      const split = { kind: record.kind, mesh: other, mirror: null, solo: true };
+      records.splice(records.indexOf(record) + 1, 0, split);
+      return split;
     }
 
     function setSelection(meshes, active = undefined) {
@@ -9018,13 +9164,13 @@ self.onmessage = (event) => {
       const mesh = createMesh(kind);
       if (kind === "triangle") setDetail(mesh, TRIANGLE_DETAIL);
       const step = records.filter((item) => item.kind !== "body").length * 0.16;
-      const x = placeSymmetric ? torsoCenter.x + 0.28 : torsoCenter.x;
+      const x = torsoCenter.x;
       mesh.position.set(x, torsoCenter.y + 0.06 + step, torsoCenter.z + 0.26);
       mesh.userData.home = mesh.position.toArray();
       edits.add(mesh);
-      const record = { mesh, mirror: null, kind, solo: !placeSymmetric };
+      // 左右対称モードでも 1 個だけ追加する（対にしたいときは右クリックの「左右対称のパーツを作る」）
+      const record = { mesh, mirror: null, kind, solo: true };
       records.push(record);
-      if (placeSymmetric) syncFrom(mesh, true);
       select(mesh);
       commit();
     }
@@ -9032,9 +9178,99 @@ self.onmessage = (event) => {
     function selectAllUnlocked() {
       const pool = maskTarget
         ? maskFocus().flatMap((mesh) => (mesh.userData.masks || []).filter((shape) => shape.visible))
-        : [...editableMeshes(), ...activeAnchors()].filter((mesh) => mesh.visible);
+        : [...editableMeshes(), ...activeAnchors(), ...curves.filter((curve) => !curve.userData.hidden)].filter((mesh) => isCurve(mesh) || mesh.visible);
       const meshes = pool.filter((mesh) => !mesh.userData.locked);
       setSelection(meshes, meshes.includes(selected) ? selected : undefined);
+    }
+
+    // ===== 複数選択をまとめて扱うコマンド =====
+    // 選択の持ち主（パスの点・ハンドルはそのパス）。マスク範囲は除く。
+    function selectionOwners(items = selection) {
+      return [...new Set(items.map((item) => (isCurvePart(item) ? curveOf(item) : item)).filter((item) => item && !item.userData.isMask))];
+    }
+
+    function itemHidden(item) {
+      if (isLinkAnchor(item)) return Boolean(linkById(item.userData.linkId)?.hidden);
+      return Boolean(item.userData.hidden);
+    }
+
+    // パーツ・リンク・パスの表示/非表示をまとめて切り替える（1 回で元に戻せる）
+    function setItemsHidden(items, next) {
+      let linksChanged = false;
+      for (const item of items) {
+        if (isLinkAnchor(item)) {
+          const link = linkById(item.userData.linkId);
+          if (link && link.hidden !== next) {
+            link.hidden = next;
+            linksChanged = true;
+          }
+        } else if (isCurve(item)) {
+          item.userData.hidden = next;
+        } else {
+          for (const part of withTwins([item])) {
+            part.userData.hidden = next;
+            part.visible = !next;
+          }
+        }
+      }
+      if (linksChanged) refreshLinks();
+      const keep = selection.filter((item) => {
+        const owner = isCurvePart(item) ? curveOf(item) : item;
+        return !owner || item.userData.isMask || !itemHidden(owner);
+      });
+      setSelection(keep, keep.includes(selected) ? selected : null);
+      paintCurves();
+      commit();
+    }
+
+    function toggleHideSelection() {
+      if (maskTarget) return;
+      const owners = selectionOwners();
+      if (!owners.length) return;
+      const next = owners.some((item) => !itemHidden(item));
+      setItemsHidden(owners, next);
+      setFileStatus(next ? `${owners.length}個を非表示にしました（Alt+H ですべて表示）` : `${owners.length}個を表示しました`);
+    }
+
+    function showAllHidden() {
+      if (maskTarget) return;
+      const hiddenItems = [
+        ...editableMeshes().filter((mesh) => mesh.userData.hidden),
+        ...links.filter((link) => link.hidden).map((link) => linkAnchors.get(link.id)).filter(Boolean),
+        ...curves.filter((curve) => curve.userData.hidden),
+      ];
+      if (!hiddenItems.length) {
+        setFileStatus("非表示のものはありません");
+        return;
+      }
+      setItemsHidden(hiddenItems, false);
+      setSelection(hiddenItems.filter((item) => !isLinkAnchor(item) || item.visible), undefined);
+      setFileStatus(`${hiddenItems.length}個を表示しました`);
+    }
+
+    function invertSelection() {
+      if (maskTarget) return;
+      const owners = new Set(selectionOwners());
+      const pool = [...editableMeshes(), ...activeAnchors(), ...curves]
+        .filter((item) => !item.userData.locked && !itemHidden(item) && (isCurve(item) || item.visible));
+      const next = pool.filter((item) => !owners.has(item));
+      setSelection(next, undefined);
+    }
+
+    function groupSelection() {
+      if (maskTarget || !selectionOwners().length) return;
+      focusedFolder = null;
+      folderPick = null;
+      addFolder();
+    }
+
+    function cutSelection() {
+      if (maskTarget || !selection.length) return;
+      if (selectionOwners().some((item) => item.userData.locked)) {
+        setFileStatus("ロック中のものは切り取れません");
+        return;
+      }
+      if (copySelection()) removeSelected();
     }
 
     function withTwins(meshes) {
@@ -9127,12 +9363,8 @@ self.onmessage = (event) => {
     function removeSelected() {
       const maskShapes = selection.filter((mesh) => mesh.userData.isMask && !mesh.userData.locked);
       if (maskShapes.length) {
+        // 選んだマスク範囲だけを消す（対の相手は残し、対を解除する）
         const drop = new Set(maskShapes.flatMap((shape) => linkedShapes(shape)));
-        if (symmetric) {
-          for (const shape of [...drop]) {
-            for (const twin of linkedShapes(liveTwin(shape))) drop.add(twin);
-          }
-        }
         for (const shape of drop) {
           const twin = shape.userData.twin;
           if (twin && !drop.has(twin)) twin.userData.twin = null;
@@ -9161,13 +9393,8 @@ self.onmessage = (event) => {
         return;
       }
       removeLinks(anchors.map((anchor) => linkById(anchor.userData.linkId)).filter(Boolean));
+      // 選んだものだけを消す。対の片側だけを消したときは、残った側は対のない普通のパーツになる
       const removing = new Set(targets);
-      if (symmetric) {
-        for (const mesh of targets) {
-          const other = otherOf(recordOf(mesh), mesh);
-          if (other && !other.userData.locked) removing.add(other);
-        }
-      }
       for (let index = records.length - 1; index >= 0; index -= 1) {
         const record = records[index];
         const dropMesh = removing.has(record.mesh);
@@ -9179,8 +9406,12 @@ self.onmessage = (event) => {
         else if (dropMesh) {
           record.mesh = record.mirror;
           record.mirror = null;
+          record.solo = true;
           if (!record.mesh) records.splice(index, 1);
-        } else record.mirror = null;
+        } else {
+          record.mirror = null;
+          record.solo = true;
+        }
       }
       select(null);
       commit();
@@ -10770,8 +11001,12 @@ self.onmessage = (event) => {
         else if (dropMesh) {
           record.mesh = record.mirror;
           record.mirror = null;
+          record.solo = true;
           if (!record.mesh) records.splice(index, 1);
-        } else record.mirror = null;
+        } else {
+          record.mirror = null;
+          record.solo = true;
+        }
       }
       folders = folders.filter((item) => !ids.has(item.id));
       for (const id of ids) collapsedFolders.delete(id);
@@ -11003,8 +11238,10 @@ self.onmessage = (event) => {
         const mesh = subject.mesh;
         const locked = Boolean(mesh.userData.locked);
         const hidden = Boolean(mesh.userData.hidden);
+        const owners = selection.includes(mesh) ? selectionOwners() : [];
+        const multi = owners.length > 1 ? owners.length : 0;
         return {
-          title: `${sideText(mesh)}${mesh.userData.label ?? "パーツ"}`,
+          title: multi ? `${sideText(mesh)}${mesh.userData.label ?? "パーツ"}（ほか${multi - 1}個を選択中）` : `${sideText(mesh)}${mesh.userData.label ?? "パーツ"}`,
           items: [
             { label: "マスク編集", disabled: Boolean(reliefTarget) || Boolean(featureTarget) || Boolean(softTarget) || rigEditing, run: () => beginMaskEdit(mesh) },
             { label: "法線編集", disabled: masking || hidden || Boolean(reliefTarget) || Boolean(featureTarget) || Boolean(softTarget) || rigEditing, run: () => beginReliefEdit(mesh) },
@@ -11018,6 +11255,8 @@ self.onmessage = (event) => {
             },
             { label: "ラスタライズ", disabled: !canRasterize(mesh), run: () => rasterizePart(mesh) },
             null,
+            ...symmetryMenuItems(mesh, masking),
+            null,
             ...bindMenuItems(mesh, masking || locked),
             null,
             ...clipItems([mesh]),
@@ -11027,18 +11266,27 @@ self.onmessage = (event) => {
             { label: "名前の変更", disabled: masking, run: () => beginRename("part", mesh.userData.id) },
             { label: "色を設定…", disabled: masking, run: () => pickPartColor(mesh, subject.x ?? 0, subject.y ?? 0) },
             ...(colorTargets(mesh).some((item) => item.userData.color) ? [{ label: "色を元に戻す", disabled: masking, run: () => clearPartColor(mesh) }] : []),
-            { label: locked ? "ロック解除" : "ロック", disabled: masking, run: () => toggleMeshLock(mesh) },
-            { label: hidden ? "表示" : "非表示", disabled: masking, run: () => toggleMeshHidden(mesh) },
-            null,
-            {
-              label: "削除",
-              danger: true,
-              disabled: masking || locked,
-              run: () => {
-                select(mesh);
-                removeSelected();
-              },
-            },
+            ...(multi
+              ? [
+                { label: `選択中の${multi}個をロック/解除`, disabled: masking, run: () => toggleLock() },
+                { label: `選択中の${multi}個を表示/非表示`, disabled: masking, run: () => toggleHideSelection() },
+                null,
+                { label: `選択中の${multi}個を削除`, danger: true, disabled: masking, run: () => removeSelected() },
+              ]
+              : [
+                { label: locked ? "ロック解除" : "ロック", disabled: masking, run: () => toggleMeshLock(mesh) },
+                { label: hidden ? "表示" : "非表示", disabled: masking, run: () => toggleMeshHidden(mesh) },
+                null,
+                {
+                  label: "削除",
+                  danger: true,
+                  disabled: masking || locked,
+                  run: () => {
+                    select(mesh);
+                    removeSelected();
+                  },
+                },
+              ]),
           ],
         };
       }
@@ -11075,6 +11323,55 @@ self.onmessage = (event) => {
           { label: "フォルダを外す", danger: true, disabled: masking, run: () => removeFolder(subject.id) },
         ],
       };
+    }
+
+    // 右クリックの「左右対称のパーツを作る」「左右対称を解除」の対象（複数選択中ならその中のパーツ）
+    function symmetryTargets(mesh) {
+      const pool = selection.includes(mesh) ? selectionOwners() : [mesh];
+      const seen = new Set();
+      const result = [];
+      for (const item of pool) {
+        const record = recordOf(item);
+        if (!record || seen.has(record) || item.userData.locked) continue;
+        seen.add(record);
+        result.push(record);
+      }
+      return result;
+    }
+
+    function symmetryMenuItems(mesh, masking) {
+      const targets = symmetryTargets(mesh);
+      const makeable = targets.filter((record) => !record.mirror && !onCenterLine(record.mesh));
+      const paired = targets.filter((record) => record.mirror && !record.mirror.userData.locked);
+      return [
+        { label: "左右対称のパーツを作る", disabled: masking || !makeable.length, run: () => makeSymmetricParts(makeable) },
+        { label: "左右対称を解除", disabled: masking || !paired.length, run: () => releaseSymmetricParts(paired) },
+      ];
+    }
+
+    function onCenterLine(mesh) {
+      mesh.updateWorldMatrix(true, false);
+      return Math.abs(mesh.getWorldPosition(new THREE.Vector3()).x - torsoCenter.x) < 0.002;
+    }
+
+    function makeSymmetricParts(list) {
+      const made = mirrorReleased(list);
+      if (!made.length) {
+        setFileStatus("中心にあるパーツは、反対側のパーツを作れません");
+        return;
+      }
+      setSelection([...selection, ...made], selected);
+      renderOutliner();
+      commit();
+      setFileStatus(`左右対称のパーツを${made.length}個作りました`);
+    }
+
+    function releaseSymmetricParts(list) {
+      for (const record of list) unpairRecord(record);
+      setSelection(selection, selected);
+      renderOutliner();
+      commit();
+      setFileStatus(`${list.length}組の左右対称を解除しました（パーツはそのまま残ります）`);
     }
 
     function openContextMenu(subject, x, y) {
@@ -11242,10 +11539,14 @@ self.onmessage = (event) => {
       if (!mesh) return;
       focusedFolder = null;
       if (event.shiftKey && !event.ctrlKey && !event.metaKey) {
-        if (selection.includes(mesh)) setSelection(selection, mesh);
-        else setSelection([...selection, mesh], mesh);
+        // Shift+クリック: 前にクリックした行からこの行までをまとめて追加する
+        const range = outlinerRange(outlinerAnchor, clickKey);
+        const extra = range.length ? range : [mesh];
+        const next = [...selection, ...extra.filter((item) => !selection.includes(item))];
+        setSelection(next, mesh);
         return;
       }
+      outlinerAnchor = clickKey;
       if (event.ctrlKey || event.metaKey) {
         if (selection.includes(mesh)) {
           setSelection(selection.filter((item) => item !== mesh), selected === mesh ? null : selected);
@@ -11254,6 +11555,33 @@ self.onmessage = (event) => {
       }
       select(mesh);
     });
+    // パーツ一覧の Shift+クリックの起点（type:id）
+    let outlinerAnchor = null;
+    function outlinerRowItem(row) {
+      const { type, id } = row.dataset;
+      if (type === "part") {
+        const mesh = meshById(id);
+        return mesh && !mesh.userData.hidden ? mesh : null;
+      }
+      if (type === "link") {
+        const anchor = linkAnchors.get(id);
+        return anchor && !linkById(id)?.hidden ? anchor : null;
+      }
+      if (type === "curve") return curveById(id) ?? null;
+      return null;
+    }
+
+    function outlinerRange(fromKey, toKey) {
+      if (!fromKey) return [];
+      const rows = [...outlinerTree.querySelectorAll(".outliner-row")];
+      const keyOf = (row) => `${row.dataset.type}:${row.dataset.id}`;
+      const from = rows.findIndex((row) => keyOf(row) === fromKey);
+      const to = rows.findIndex((row) => keyOf(row) === toKey);
+      if (from < 0 || to < 0) return [];
+      const [start, end] = from < to ? [from, to] : [to, from];
+      return rows.slice(start, end + 1).map(outlinerRowItem).filter(Boolean);
+    }
+
     outlinerTree.addEventListener("dblclick", (event) => {
       if (event.target.closest("button, input")) return;
       const row = event.target.closest(".outliner-row");
@@ -11481,7 +11809,7 @@ self.onmessage = (event) => {
         else if (reliefTarget) saveReliefEdit();
         else if (featureTarget) saveFeatureEdit();
         else if (softTarget) saveSoftEdit();
-        else saveDocument();
+        else saveDocument(event.shiftKey);
         return;
       }
       if (command && event.code === "KeyZ" && !event.shiftKey) {
@@ -11519,6 +11847,41 @@ self.onmessage = (event) => {
       if (command && event.code === "KeyV" && !event.shiftKey) {
         event.preventDefault();
         pasteClipboard();
+        return;
+      }
+      if (command && event.code === "KeyX" && !event.shiftKey) {
+        if (String(window.getSelection?.() ?? "")) return;
+        event.preventDefault();
+        cutSelection();
+        return;
+      }
+      if (command && event.code === "KeyI" && !event.shiftKey) {
+        event.preventDefault();
+        invertSelection();
+        return;
+      }
+      if (command && event.code === "KeyG" && !event.shiftKey) {
+        event.preventDefault();
+        groupSelection();
+        return;
+      }
+      if (event.code === "KeyH" && !command && !event.shiftKey) {
+        event.preventDefault();
+        if (event.altKey) showAllHidden();
+        else toggleHideSelection();
+        return;
+      }
+      if (event.key === "Escape" && !command && (selection.length || focusedFolder)) {
+        event.preventDefault();
+        focusedFolder = null;
+        folderPick = null;
+        select(null);
+        renderOutliner();
+        return;
+      }
+      if (event.key === "?" && !command) {
+        event.preventDefault();
+        openShortcutHelp();
         return;
       }
       if ((event.key === "l" || event.key === "L") && !event.ctrlKey && !event.metaKey && !event.altKey) {
@@ -13877,7 +14240,10 @@ self.onmessage = (event) => {
         }
         applyFeatureSpec(record.mesh, spec, folder.id);
         record.solo = !mirror;
-        if (mirror) syncFrom(record.mesh, true);
+        if (mirror) {
+          if (record.mirror) syncFrom(record.mesh, true);
+          else createTwin(record);
+        }
         else if (record.mirror) {
           discard(record.mirror);
           record.mirror = null;
@@ -15512,13 +15878,7 @@ self.onmessage = (event) => {
       const folder = folders.find((item) => item.id === folderId);
       for (const record of folderRecords(folderId)) {
         if (!record.mirror || record.mesh.userData.locked || record.mirror.userData.locked) continue;
-        for (const shape of record.mesh.userData.masks || []) {
-          if (shape.userData.twin?.parent === record.mirror) shape.userData.twin = null;
-        }
-        const drop = record.mirror;
-        record.mirror = null;
-        record.solo = true;
-        drop.removeFromParent();
+        unpairRecord(record); // 両方のパーツを残したまま対だけを解除する
       }
       const linked = descendantLinks(folderId).filter((link) => link.mirror);
       for (const link of linked) link.mirror = false;
@@ -15533,10 +15893,8 @@ self.onmessage = (event) => {
       const made = [];
       const groups = new Map();
       for (const record of added) {
-        if (record.mirror) continue;
-        record.solo = false;
-        syncFrom(record.mesh, true);
-        const other = record.mirror;
+        if (record.mirror || onCenterLine(record.mesh)) continue;
+        const other = createTwin(record);
         if (!other) continue;
         for (const shape of record.mesh.userData.masks || []) {
           const twin = createMaskLike(shape);
@@ -17172,6 +17530,8 @@ self.onmessage = (event) => {
         overlap: value.overlap ? number("overlap", 0, -1, 0.9) : undefined,
         bend: Number.isFinite(value.bend) && value.bend < 1 ? number("bend", 1, 0, 1) : undefined,
         mirror: value.mirror ? true : undefined,
+        // 対称側の表示を左右にずらす量（まとめて移動したとき、反転せずに同じ向きへ動かすため）
+        mirrorShift: value.mirror && Number.isFinite(value.mirrorShift) && Math.abs(value.mirrorShift) > 1e-9 ? value.mirrorShift : undefined,
         rest: isVector(value.rest, 4) ? [...value.rest] : undefined,
       };
     }
@@ -17502,9 +17862,10 @@ self.onmessage = (event) => {
           }
           if (bind.mirror && reflect) {
             world.applyMatrix4(reflect);
+            world.x += bind.mirrorShift ?? 0;
             normal.applyMatrix3(reflectNormal);
           } else if (bind.mirror) {
-            world.x = mirrorX - world.x;
+            world.x = mirrorX + (bind.mirrorShift ?? 0) - world.x;
             normal.x = -normal.x;
           }
           world.applyMatrix4(bendInverse);
@@ -18079,6 +18440,15 @@ self.onmessage = (event) => {
           ...folderItems(curve, masking),
           null,
           { label: "名前の変更", disabled: masking, run: () => beginRename("curve", curve.userData.id) },
+          ...(curveMulti(curve)
+            ? [
+              { label: `選択中の${curveMulti(curve)}個をロック/解除`, disabled: masking, run: () => toggleLock() },
+              { label: `選択中の${curveMulti(curve)}個を表示/非表示`, disabled: masking, run: () => toggleHideSelection() },
+              null,
+              { label: `選択中の${curveMulti(curve)}個を削除`, danger: true, disabled: masking, run: () => removeSelected() },
+              null,
+            ]
+            : []),
           { label: curve.userData.locked ? "ロック解除" : "ロック", disabled: masking, run: () => toggleCurveLock(curve) },
           { label: curve.userData.hidden ? "表示" : "非表示", disabled: masking, run: () => toggleCurveHidden(curve) },
           null,
@@ -18094,6 +18464,11 @@ self.onmessage = (event) => {
           },
         ],
       };
+    }
+
+    function curveMulti(curve) {
+      const owners = selectionOwners();
+      return owners.includes(curve) && owners.length > 1 ? owners.length : 0;
     }
 
     function selectableObjects() {
@@ -18168,7 +18543,7 @@ self.onmessage = (event) => {
         const record = recordOf(item);
         if (!record) continue;
         const other = otherOf(record, item);
-        if (other && ((symmetric && !folderId) || chosen.includes(other))) {
+        if (other && chosen.includes(other)) { // 対の相手も選んでいるときだけ対ごとコピーする
           done.add(other);
           clip.records.push({ kind: record.kind, solo: Boolean(record.solo), mesh: serializeMesh(record.mesh), mirror: serializeMesh(record.mirror) });
         } else {
@@ -18526,8 +18901,49 @@ self.onmessage = (event) => {
       }
     });
 
-    function saveDocument() {
-      markSaved();
+    // ===== 保存先とファイル名 =====
+    // 対応ブラウザ（Chrome/Edge など）は「名前を付けて保存」の画面で名前と保存先を選び、以後の Ctrl+S は同じファイルに上書きする。
+    // 非対応ブラウザ（Firefox など）はファイル名を聞いてダウンロードする。
+    const FILE_NAME_KEY = `${STORAGE_KEY}:file-name`;
+    const DEFAULT_FILE_NAME = "figure.json";
+    let saveHandle = null;
+    let namedByUser = false;
+    let docFileName = (() => {
+      try {
+        return localStorage.getItem(FILE_NAME_KEY) || DEFAULT_FILE_NAME;
+      } catch {
+        return DEFAULT_FILE_NAME;
+      }
+    })();
+
+    function cleanFileName(name) {
+      let clean = String(name ?? "").trim().replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_");
+      if (!clean) return "";
+      if (!/\.json$/i.test(clean)) clean += ".json";
+      return clean;
+    }
+
+    function showDocName() {
+      if (MODEL_ID) return;
+      const label = document.getElementById("doc-name");
+      const custom = docFileName !== DEFAULT_FILE_NAME || namedByUser;
+      label.hidden = !custom;
+      label.textContent = custom ? docFileName : "";
+      label.title = custom ? docFileName : "";
+      document.title = custom ? `${docFileName.replace(/\.json$/i, "")} - 図形エディター` : "図形エディター";
+    }
+
+    function setDocFileName(name, handle = null, chosen = true) {
+      docFileName = cleanFileName(name) || DEFAULT_FILE_NAME;
+      saveHandle = handle;
+      namedByUser = chosen;
+      try {
+        localStorage.setItem(FILE_NAME_KEY, docFileName);
+      } catch { /* 名前を覚えられなくても保存はできる */ }
+      showDocName();
+    }
+
+    function documentJson() {
       const data = serialize();
       let stored = true;
       try {
@@ -18541,19 +18957,42 @@ self.onmessage = (event) => {
       } catch {
         models = undefined;
       }
-      const json = JSON.stringify({ ...data, models });
+      return { json: JSON.stringify({ ...data, models }), stored };
+    }
+
+    function downloadJson(json, name) {
       const link = document.createElement("a");
       const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
       link.href = url;
-      link.download = "figure.json";
+      link.download = name;
       document.body.appendChild(link);
       link.click();
       link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      if (stored) setFileStatus("保存しました");
-      else {
-        setFileStatus("ファイルはダウンロードしましたが、ブラウザ内には保存しきれませんでした");
-        alert("ブラウザの保存容量が足りないなどの理由で、ブラウザ内への保存に失敗しました。\nダウンロードした figure.json を保管し、次回は「読み込み」から開いてください。");
+    }
+
+    async function writeHandle(handle, json) {
+      const writable = await handle.createWritable();
+      await writable.write(new Blob([json], { type: "application/json" }));
+      await writable.close();
+    }
+
+    async function pickSaveHandle() {
+      return window.showSaveFilePicker({
+        suggestedName: docFileName,
+        types: [{ description: "図形モデル（JSON）", accept: { "application/json": [".json"] } }],
+      });
+    }
+
+    let saving = false;
+    // asNew: 名前を付けて保存（いつも保存先を聞く）
+    async function saveDocument(asNew = false) {
+      if (saving) return;
+      saving = true;
+      try {
+        await saveDocumentNow(asNew === true);
+      } finally {
+        saving = false;
       }
     }
 
@@ -19095,6 +19534,56 @@ self.onmessage = (event) => {
       event.preventDefault();
       sendPublish();
     });
+
+    async function saveDocumentNow(asNew) {
+      const signature = history[historyIndex]?.signature ?? null;
+      const { json, stored } = documentJson();
+      let savedName = docFileName;
+      if (typeof window.showSaveFilePicker === "function") {
+        let handle = asNew ? null : saveHandle;
+        try {
+          if (handle) {
+            try {
+              await writeHandle(handle, json);
+            } catch (error) {
+              if (error?.name === "AbortError") throw error;
+              // 権限が外れた・ファイルが消えたなど: 保存先を選び直してもらう
+              handle = null;
+            }
+          }
+          if (!handle) {
+            handle = await pickSaveHandle();
+            await writeHandle(handle, json);
+          }
+        } catch (error) {
+          if (error?.name === "AbortError") return false;
+          setFileStatus("保存できませんでした");
+          alert(`ファイルに保存できませんでした。\n${error?.message ?? error}`);
+          return false;
+        }
+        savedName = handle.name || docFileName;
+        setDocFileName(savedName, handle);
+      } else {
+        if (asNew || !namedByUser) {
+          const answer = window.prompt("保存するファイル名を入力してください", docFileName);
+          if (answer === null) return false;
+          const clean = cleanFileName(answer);
+          if (!clean) return false;
+          savedName = clean;
+        }
+        downloadJson(json, savedName);
+        setDocFileName(savedName, null);
+      }
+      // 保存できたときだけ「保存済み」にする（保存中に編集されていたらその分は未保存のまま）
+      if ((history[historyIndex]?.signature ?? null) === signature) markSaved();
+      else savedSignature = signature;
+      if (stored) setFileStatus(`「${savedName}」に保存しました`);
+      else {
+        setFileStatus(`「${savedName}」に保存しましたが、ブラウザ内には保存しきれませんでした`);
+        alert(`ブラウザの保存容量が足りないなどの理由で、ブラウザ内への保存に失敗しました。\n保存した ${savedName} を保管し、次回は「読み込み」から開いてください。`);
+      }
+      return true;
+    }
 
     function applyOverallFactor(factor) {
       for (const mesh of editableMeshes()) {
@@ -22304,11 +22793,13 @@ self.onmessage = (event) => {
       commit();
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(serialize())); } catch { /* 新しい状態の保存に失敗しても画面は空のまま */ }
       markSaved();
+      setDocFileName(DEFAULT_FILE_NAME, null, false);
       setFileStatus("新しいモデルを作りました");
     }
 
     document.getElementById("new-file").addEventListener("click", createNewDocument);
-    document.getElementById("save").addEventListener("click", saveDocument);
+    document.getElementById("save").addEventListener("click", () => saveDocument(false));
+    document.getElementById("save-as").addEventListener("click", () => saveDocument(true));
     document.getElementById("load").addEventListener("click", () => {
       if (!leaveEditModes()) return;
       document.getElementById("file-input").click();
@@ -22534,6 +23025,7 @@ self.onmessage = (event) => {
         return false;
       }
       markSaved();
+      setDocFileName(name, null, true);
       let stored = true;
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(serialize()));
@@ -22627,6 +23119,18 @@ self.onmessage = (event) => {
         else if (item.dataset.view) setView(item.dataset.view);
         else if (item.dataset.action === "select-all") selectAllUnlocked();
         else if (item.dataset.action === "copy") copySelection();
+        else if (item.dataset.action === "cut") cutSelection();
+        else if (item.dataset.action === "duplicate") duplicateSelection();
+        else if (item.dataset.action === "select-invert") invertSelection();
+        else if (item.dataset.action === "select-none") {
+          focusedFolder = null;
+          folderPick = null;
+          select(null);
+          renderOutliner();
+        } else if (item.dataset.action === "group") groupSelection();
+        else if (item.dataset.action === "hide") toggleHideSelection();
+        else if (item.dataset.action === "show-all") showAllHidden();
+        else if (item.dataset.action === "shortcuts") openShortcutHelp();
         else if (item.dataset.action === "paste") pasteClipboard();
         else if (item.dataset.action === "merge") mergeSelected();
         else if (item.dataset.action === "rasterize") rasterizePart(rasterizeTarget());
@@ -22648,6 +23152,11 @@ self.onmessage = (event) => {
       event.stopImmediatePropagation();
       closeMenus();
     }, true);
+    function openShortcutHelp() {
+      const modal = document.getElementById("help-modal");
+      if (!modal.open) modal.showModal();
+      document.getElementById("help-shortcuts").scrollIntoView({ block: "start" });
+    }
     document.getElementById("help-close").addEventListener("click", () => document.getElementById("help-modal").close());
 
     new ResizeObserver(() => resize()).observe(viewport);
@@ -22681,7 +23190,10 @@ self.onmessage = (event) => {
       }
       markSaved();
       if (MODEL_ID) showModelTitle();
-      else openWorkshopParam();
+      else {
+        showDocName();
+        openWorkshopParam();
+      }
     })();
 
     // 影はライト固定なので、影を落とす物の状態が変わったときだけ描き直す。
@@ -23466,6 +23978,7 @@ void main() {
       const span = box.getSize(new THREE.Vector3());
       const unit = span.x;
       const skin = head ? `#${head.material.color.getHexString()}` : "#f2c4ab";
+      // 顔デカールの専用画面では、目・眉・ほおを左右の組で置く（左右の組を 1 つのデカールとして扱うため）
       const paired = preset.part !== "mouth" && placeSymmetric;
       const [ax, ay] = FACE_ANCHORS[preset.part];
       const folder = { id: `folder-${nextFolderId++}`, name: `${FACE_PART_NAMES[preset.part]}：${preset.name}`, parentId: null, order: nextPartOrder() };
@@ -23487,7 +24000,7 @@ void main() {
         edits.add(mesh);
         const record = { mesh, mirror: null, kind, solo: !paired };
         records.push(record);
-        if (paired) syncFrom(mesh, true);
+        if (paired) createTwin(record);
         made.push(mesh);
         if (record.mirror) made.push(record.mirror);
       });
