@@ -6755,9 +6755,9 @@ if (decalOn > 0.5) {
     }
 
     // 4mm の平面は格子（1 マス数 mm〜1cm）より薄く、距離場では面が拾えず消えてしまう。
-    // 印の付いた平面だけ、1 マスぶんの厚みになるまで膨らませて残す
+    // 印の付いた平面だけ、表面から半マスずつ膨らませて（厚み 4mm + 1 マス）どの向きでも格子に拾われるようにする
     function thinGrowth(node, grid) {
-      return node.thin ? Math.max(0, grid.cell * 0.55 - FLAT_THICKNESS / 2) : 0;
+      return node.thin ? grid.cell * 0.5 : 0;
     }
 
     function thickenField(field, node, grid) {
