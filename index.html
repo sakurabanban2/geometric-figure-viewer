@@ -21086,10 +21086,10 @@ self.onmessage = (event) => {
     const chainMatrixPosition = new THREE.Vector3();
     const chainMatrixScale = new THREE.Vector3();
 
-    function chainParentFrame(chain, rest) {
+    function chainParentFrame(chain, rest, matrices = rigPoseFrame) {
       const head = rest.joints[0].clone();
       const rot = new THREE.Quaternion();
-      const matrix = rigPoseFrame?.get(chain.parent);
+      const matrix = matrices?.get(chain.parent);
       if (matrix) {
         head.applyMatrix4(matrix);
         matrix.decompose(chainMatrixPosition, rot, chainMatrixScale);
@@ -21199,7 +21199,7 @@ self.onmessage = (event) => {
 
     function simulateChain(chain, state, rest, frame, dt) {
       const params = chainParams(chain, rest);
-      const elapsed = Math.min(dt, 0.1);
+      const elapsed = Math.min(dt, 0.5); // モーションと同じく重いフレームでも実時間で進める（細かく刻むので安定）
       const steps = Math.max(1, Math.ceil(elapsed * 240));
       const h = elapsed / steps;
       for (let step = 0; step < steps; step += 1) {
@@ -21238,21 +21238,34 @@ self.onmessage = (event) => {
       return { heads, quats };
     }
 
-    function updateChainPoses(dt) {
+    // 重いフレーム（間隔が長い）でも、親ボーンの動きを 1/60 秒ごとにモーションから取り直して揺れを進める（コマ落ちしても揺れ方が変わらないように）
+    function updateChainPoses(dt, sampleMatrices = null) {
       chainPoses.clear();
       const live = new Set();
+      const blocks = dt > 0 ? Math.max(1, Math.ceil(Math.min(dt, 0.5) * 60)) : 0;
+      let blockMatrices = null;
+      const matricesAt = (index) => {
+        blockMatrices ??= Array.from({ length: blocks }, (_, block) => (block === blocks - 1 || !sampleMatrices ? rigPoseFrame : sampleMatrices((block + 1) / blocks)));
+        return blockMatrices[index];
+      };
       for (const chain of rigChains()) {
         live.add(chain.id);
         const rest = chainRest(chain);
         if (rest.total < 1e-6) continue;
         const frame = chainParentFrame(chain, rest);
         let state = chainStates.get(chain.id);
-        const jumped = state && state.head.distanceTo(frame.head) > Math.max(rest.total * 4, rigSize() * 0.25);
+        const firstHead = blocks > 1 && sampleMatrices ? chainParentFrame(chain, rest, matricesAt(0)).head : frame.head;
+        const jumped = state && state.head.distanceTo(firstHead) > Math.max(rest.total * 4, rigSize() * 0.25);
         if (!state || state.key !== rest.key || jumped) {
           state = initChainState(chain, rest, frame);
           chainStates.set(chain.id, state);
         } else if (dt > 0) {
-          simulateChain(chain, state, rest, frame, dt);
+          for (let block = 0; block < blocks; block += 1) {
+            const target = block === blocks - 1 ? frame : chainParentFrame(chain, rest, matricesAt(block));
+            simulateChain(chain, state, rest, target, Math.min(dt, 0.5) / blocks);
+            state.head.copy(target.head);
+            state.rot.copy(target.rot);
+          }
           if (state.tails.some((tail) => !Number.isFinite(tail.x + tail.y + tail.z))) {
             state = initChainState(chain, rest, frame);
             chainStates.set(chain.id, state);
@@ -21740,6 +21753,8 @@ self.onmessage = (event) => {
         if (chainStates.size || chainPoses.size) resetChainMotion();
         return;
       }
+      const startTime = rigPlayer.time;
+      const advance = rigPlayer.playing ? Math.min(dt, 0.5) * rigPlayer.speed : 0;
       if (rigPlayer.playing) {
         rigPlayer.time += Math.min(dt, 0.5) * rigPlayer.speed; // 重いフレームでも実時間で進める（コマ落ち）
         if (rigPlayer.time >= rigMotion.duration) {
@@ -21755,7 +21770,15 @@ self.onmessage = (event) => {
       const pose = computeRigPose(rigMotion.sample(rigPlayer.time));
       rigPoseFrame = pose.matrices;
       rigPosedJoints = pose.joints;
-      updateChainPoses(dt);
+      const motion = rigMotion;
+      const sampleMatrices = advance > 0 && rigChains().length
+        ? (fraction) => {
+          let time = startTime + advance * fraction;
+          time = rigPlayer.loop ? time % motion.duration : Math.min(time, motion.duration);
+          return computeRigPose(motion.sample(time)).matrices;
+        }
+        : null;
+      updateChainPoses(dt, sampleMatrices);
     }
 
     const RIG_COLORS = { center: 0xffd166, left: 0x4cc9f0, right: 0xff5fa2, focus: 0xffffff };
