@@ -19749,7 +19749,7 @@ self.onmessage = (event) => {
       // ボーンの関節はワールド座標なので、体と一緒に拡縮しないとずれる
       if (rig) {
         rig = { ...rig, joints: Object.fromEntries(Object.entries(rig.joints).map(([name, point]) => [name, point.map((value) => value * factor)])) };
-        if (rig.chains) rig.chains = rig.chains.map((chain) => ({ ...chain, points: chain.points.map((point) => point.map((value) => value * factor)) }));
+        if (rig.chains) rig.chains = rig.chains.map((chain) => snapChainMid({ ...chain, points: chain.points.map((point) => point.map((value) => value * factor)) }));
       }
     }
 
@@ -20710,9 +20710,35 @@ self.onmessage = (event) => {
           damping: within(item.damping, 0, 1, CHAIN_DEFAULTS.damping),
           gravity: within(item.gravity, 0, 1, CHAIN_DEFAULTS.gravity),
           maxAngle: within(item.maxAngle, 0, 90, CHAIN_DEFAULTS.maxAngle),
+          ...(item.midline === true ? { midline: true } : {}),
         });
+        snapChainMid(out.at(-1));
       }
       return out;
+    }
+
+    // 体の正中線（左右対称の中心）の X。保存時の丸めでずれないよう、丸めた値にそろえる
+    function chainMidX() {
+      return roundNumber(torsoCenter.x);
+    }
+
+    // 「正中線に固定」の揺れボーンは、休み姿勢の点をすべてちょうど正中線上に置く（揺れは左右にも出る）
+    function snapChainMid(chain) {
+      if (!chain?.midline) return chain;
+      const mid = chainMidX();
+      for (const point of chain.points) point[0] = mid;
+      return chain;
+    }
+
+    // 付け根も先端も正中線の近くにあり、左右対称の相方がいないパーツに沿った鎖は、正中線に固定して始める
+    function chainLooksCentered(points, target) {
+      if (target && !target.userData.isLinkAnchor) {
+        const record = recordOf(target);
+        if (symmetric && record && !record.solo && otherOf(record, target)) return false;
+      }
+      const reach = rigSize() * 0.04;
+      const mid = torsoCenter.x;
+      return Math.abs(points[0][0] - mid) < reach && Math.abs(points.at(-1)[0] - mid) < reach;
     }
 
     function serializeChains() {
@@ -20724,6 +20750,7 @@ self.onmessage = (event) => {
         damping: roundNumber(chain.damping),
         gravity: roundNumber(chain.gravity),
         maxAngle: roundNumber(chain.maxAngle),
+        midline: chain.midline ? true : undefined,
       }));
     }
 
@@ -21871,8 +21898,9 @@ self.onmessage = (event) => {
           const name = `${CHAIN_PREFIX}${chain.id}:${index}`;
           const picked = !pose && chainSel?.chain === chain.id && chainSel.index === index;
           const hovered = !pose && rigHover === name;
-          const grow = rigDrag?.name === name ? 1.6 : picked ? 1.45 : hovered ? 1.35 : 1;
-          mark.scale.setScalar(radius * 1.15 * grow * (index === 0 ? 1.1 : 1));
+          // 揺れボーンの点は画面上でいつも同じ大きさ（近づいても点どうしが重ならない）
+          const pixels = rigDrag?.name === name ? 10 : picked ? 9.5 : hovered ? 9 : index === 0 ? 7.5 : 6.5;
+          mark.scale.setScalar(screenRadius(mark.position, pixels));
           mark.material.color.setHex(picked ? CHAIN_PICK_COLOR : hovered ? CHAIN_HOVER_COLOR : focus ? RIG_COLORS.focus : CHAIN_COLOR);
         });
         for (let index = 1; index < chain.points.length; index += 1) {
@@ -21890,6 +21918,14 @@ self.onmessage = (event) => {
       }
       for (let index = joints; index < chainJointMarks.length; index += 1) chainJointMarks[index].visible = false;
       for (let index = bones; index < chainBoneMarks.length; index += 1) chainBoneMarks[index].group.visible = false;
+    }
+
+    // 画面上で pixels ピクセルの半径になるワールドでの長さ
+    function screenRadius(position, pixels) {
+      const height = Math.max(renderer.domElement.clientHeight, 1);
+      if (camera.isOrthographicCamera) return ((camera.top - camera.bottom) / camera.zoom / height) * pixels;
+      const distance = Math.max(position.distanceTo(camera.position), 1e-4);
+      return ((distance * 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5))) / height) * pixels;
     }
 
     function rigShownJoint(name, target) {
@@ -21933,26 +21969,28 @@ self.onmessage = (event) => {
       return RIG_BONES.find((bone) => bone.tail === name)?.name ?? null;
     }
 
-    // 揺れボーンの点は体の関節より広い範囲（半径 22px）でつかめ、重なったときも優先する
+    // 揺れボーンの点は体の関節より広い範囲（半径 22px）でつかめ、範囲内に揺れボーンの点があれば
+    // 体の関節が重なっていても必ず揺れボーンの点を選ぶ（関節の点と重なりやすいため）
     function pickRigJoint(event) {
       const rect = renderer.domElement.getBoundingClientRect();
-      let best = null;
-      let bestScore = 1;
-      const chainNames = chainJointNames();
-      for (const name of [...chainNames, ...RIG_JOINTS]) {
-        rigJoint(name, rigGuideA).project(camera);
-        if (rigGuideA.z > 1) continue;
-        const x = ((rigGuideA.x + 1) / 2) * rect.width + rect.left;
-        const y = ((1 - rigGuideA.y) / 2) * rect.height + rect.top;
-        const chained = name.startsWith(CHAIN_PREFIX);
-        const reach = chained ? 22 : 14;
-        const score = ((x - event.clientX) ** 2 + (y - event.clientY) ** 2) / (reach * reach) * (chained ? 0.6 : 1);
-        if (score < bestScore) {
-          bestScore = score;
-          best = name;
+      camera.updateMatrixWorld();
+      const nearest = (names, reach) => {
+        let best = null;
+        let bestDistance = reach * reach;
+        for (const name of names) {
+          rigJoint(name, rigGuideA).project(camera);
+          if (rigGuideA.z > 1) continue;
+          const x = ((rigGuideA.x + 1) / 2) * rect.width + rect.left;
+          const y = ((1 - rigGuideA.y) / 2) * rect.height + rect.top;
+          const distance = (x - event.clientX) ** 2 + (y - event.clientY) ** 2;
+          if (distance < bestDistance) {
+            bestDistance = distance;
+            best = name;
+          }
         }
-      }
-      return best;
+        return best;
+      };
+      return nearest(chainJointNames(), 22) ?? nearest(RIG_JOINTS, 14);
     }
 
     function moveRigJoint(name, point, carry = true) {
@@ -21964,6 +22002,7 @@ self.onmessage = (event) => {
         for (let index = ref.index; index <= last; index += 1) {
           ref.chain.points[index] = new THREE.Vector3().fromArray(ref.chain.points[index]).add(delta).toArray().map(roundNumber);
         }
+        snapChainMid(ref.chain);
         return;
       }
       const sided = /^(left|right)/.test(name);
@@ -22037,6 +22076,7 @@ self.onmessage = (event) => {
       document.getElementById("rig-copy-left").disabled = rigPlayer.showing;
       document.getElementById("rig-copy-right").disabled = rigPlayer.showing;
       document.getElementById("chain-add").disabled = rigPlayer.showing;
+      syncChainTool();
       renderChainList();
       showRigTime();
     }
@@ -22121,6 +22161,7 @@ self.onmessage = (event) => {
       chain.points = start.map((point, k) => (k >= index && k <= last
         ? [point[0] + delta.x, point[1] + delta.y, point[2] + delta.z].map(roundNumber)
         : [...point]));
+      snapChainMid(chain);
     }
 
     chainTool.addEventListener("mouseDown", () => {
@@ -22165,6 +22206,7 @@ self.onmessage = (event) => {
         return;
       }
       chainTool.camera = camera;
+      chainTool.showX = !ref.chain.midline; // 正中線に固定中は X（左右）の矢印と X を含む面を出さない
       if (!chainToolDrag) chainHandle.position.fromArray(ref.chain.points[ref.index]);
       chainHandle.updateMatrixWorld();
       if (chainTool.object !== chainHandle) chainTool.attach(chainHandle);
@@ -22212,7 +22254,10 @@ self.onmessage = (event) => {
       const ref = chainJointRef(name);
       if (ref) selectChainJoint(ref.chain, ref.index);
       camera.getWorldDirection(rigHit);
-      rigPlane.setFromNormalAndCoplanarPoint(rigHit, rigJoint(name, rigGuideA));
+      // 正中線に固定した鎖は、画面に向いた面ではなく正中線の面（YZ 面）の上で動かす。真正面から見ていて
+      // その面がほぼ真横になるときだけ画面に向いた面を使い、X は正中線に戻す（どちらでも左右にずれない）
+      if (ref?.chain.midline && Math.abs(rigHit.x) > 0.2) rigPlane.set(new THREE.Vector3(1, 0, 0), -chainMidX());
+      else rigPlane.setFromNormalAndCoplanarPoint(rigHit, rigJoint(name, rigGuideA));
       rigDrag = { name, pointerId: event.pointerId, x: event.clientX, y: event.clientY, moved: false, carry: chainCarry !== event.altKey, start: JSON.stringify(rig) };
       document.body.classList.add("rig-dragging");
       requestRender();
@@ -22587,6 +22632,7 @@ self.onmessage = (event) => {
         gravity: CHAIN_DEFAULTS.gravity,
         maxAngle: CHAIN_DEFAULTS.maxAngle,
       };
+      if (chainLooksCentered(points, fitted ? target : null)) snapChainMid(Object.assign(chain, { midline: true }));
       rig.chains = [...rigChains(), chain];
       if (fitted) setRigItemBone(target, `${CHAIN_PREFIX}${chain.id}`);
       rigBone = `${CHAIN_PREFIX}${chain.id}`;
@@ -22623,12 +22669,13 @@ self.onmessage = (event) => {
         return `<button type="button" data-act="joint" data-index="${index}" aria-pressed="${pressed}" title="この点を選んで動かす">${chainJointLabel(chain, index)}</button>`;
       }).join("");
       const xyz = ref?.chain === chain
-        ? `<div class="chain-xyz">${["X", "Y", "Z"].map((axis, k) => `<label><span>${axis}</span><input type="number" step="0.001" value="${Number(chain.points[ref.index][k].toFixed(4))}" data-field="j${axis.toLowerCase()}" aria-label="「${chainJointLabel(chain, ref.index)}」の ${axis}" /></label>`).join("")}</div>`
+        ? `<div class="chain-xyz">${["X", "Y", "Z"].map((axis, k) => `<label><span>${axis}</span><input type="number" step="0.001" value="${Number(chain.points[ref.index][k].toFixed(4))}" data-field="j${axis.toLowerCase()}"${k === 0 && chain.midline ? ` disabled title="正中線に固定中"` : ""} aria-label="「${chainJointLabel(chain, ref.index)}」の ${axis}" /></label>`).join("")}</div>`
         : "";
       const busy = rigPlayer.showing ? " disabled" : "";
       return `<div class="chain-joints"><span>点</span>${joints}</div>${xyz}
+          <label class="chain-carry" title="オンのあいだは、どの点も体の真ん中（正中線）から左右にずれない。前後と上下だけを動かせる。再生中の揺れは左右にも出る"><input type="checkbox" data-field="midline"${chain.midline ? " checked" : ""}${busy} /> 正中線に固定（正面から見て真ん中に並べる）</label>
           <label class="chain-carry"><input type="checkbox" data-field="carry"${chainCarry ? " checked" : ""} /> 先の点も一緒に動かす（Alt で逆）</label>
-          <div class="chain-quick"><button type="button" data-act="root-to-part"${busy} title="根元の点を、割り当てたパーツ（なければ選んでいるパーツ）の付け根に動かす。先端は動かさない">根元をパーツの付け根に</button><button type="button" data-act="tip-to-part"${busy} title="先端の点を、割り当てたパーツ（なければ選んでいるパーツ）の先端に動かす。根元は動かさない">先端をパーツの先端に</button><button type="button" data-act="straighten"${busy} title="根元と先端のあいだに、点を等間隔に一直線に並べる">まっすぐに並べる</button></div>`;
+          <div class="chain-quick"><button type="button" data-act="root-to-part"${busy} title="根元の点を、割り当てたパーツ（なければ選んでいるパーツ）の付け根に動かす。先端は動かさない">根元をパーツの付け根に</button><button type="button" data-act="tip-to-part"${busy} title="先端の点を、割り当てたパーツ（なければ選んでいるパーツ）の先端に動かす。根元は動かさない">先端をパーツの先端に</button><button type="button" data-act="straighten"${busy} title="根元と先端のあいだに、点を等間隔に一直線に並べる">まっすぐに並べる</button><button type="button" data-act="side-view" title="この揺れボーンを真横から見る（前後・上下の位置を合わせやすい）">横から見る</button></div>`;
     }
 
     // 点をドラッグしている間、選んでいる点の数値欄だけを書き換える（入力中の欄は触らない）
@@ -22706,7 +22753,11 @@ self.onmessage = (event) => {
       } else if (field === "segments") {
         const segments = Math.min(BEND_MAX, Math.max(1, Math.round(Number(event.target.value)) || 1));
         chain.points = resampleChain(chain.points, segments);
+        snapChainMid(chain);
         if (chainSel?.chain === chain.id) chainSel = null;
+      } else if (field === "midline") {
+        if (event.target.checked) snapChainMid(Object.assign(chain, { midline: true }));
+        else delete chain.midline;
       } else if (field === "carry") {
         chainCarry = event.target.checked;
         updateRigChrome();
@@ -22794,6 +22845,7 @@ self.onmessage = (event) => {
           return;
         }
         chain.points = fitted.points;
+        snapChainMid(chain);
         commit();
         setFileStatus(`「${chain.name}」を「${rigItemLabel(rigPart)}」に合わせて置き直しました`);
       } else if (act === "focus") {
@@ -22817,12 +22869,16 @@ self.onmessage = (event) => {
         selectChainJoint(chain, tip ? chain.points.length - 1 : 0);
         commit();
         setFileStatus(tip ? `「${chain.name}」の先端をパーツの先端に合わせました` : `「${chain.name}」の根元をパーツの付け根に合わせました`);
+      } else if (act === "side-view") {
+        viewChainFromSide(chain);
+        return;
       } else if (act === "straighten") {
         if (rigPlayer.showing) return;
         const root = new THREE.Vector3().fromArray(chain.points[0]);
         const tip = new THREE.Vector3().fromArray(chain.points.at(-1));
         const count = chain.points.length - 1;
         chain.points = chain.points.map((_, index) => root.clone().lerp(tip, index / count).toArray().map(roundNumber));
+        snapChainMid(chain);
         commit();
         setFileStatus(`「${chain.name}」の点を根元から先端まで等間隔に並べました`);
       }
@@ -22850,6 +22906,29 @@ self.onmessage = (event) => {
         const weight = tip ? index / count : 1 - index / count;
         return new THREE.Vector3().fromArray(point).addScaledVector(delta, weight).toArray().map(roundNumber);
       });
+      snapChainMid(chain);
+    }
+
+    // 鎖を真横（体の右側）から、鎖全体が入る近さで見る。正中線に固定した鎖の前後・上下を合わせやすい
+    function viewChainFromSide(chain) {
+      const box = new THREE.Box3();
+      for (const point of chain.points) box.expandByPoint(rigGuideA.fromArray(point));
+      const center = box.getCenter(new THREE.Vector3());
+      const radius = Math.max(box.getSize(new THREE.Vector3()).length() * 0.5, rigSize() * 0.04);
+      const fit = (radius / Math.sin(THREE.MathUtils.degToRad(perspectiveCamera.fov * 0.5))) * 1.6;
+      pivotPan = null;
+      controls.minDistance = Math.min(controls.minDistance, 0.15);
+      controls.target.copy(center);
+      camera.up.set(0, 1, 0);
+      if (camera.isOrthographicCamera) {
+        camera.position.copy(center).add(new THREE.Vector3(Math.max(fit, 2), 0, 0));
+        orthoCamera.zoom = orthoHalfHeight / (fit * PERSPECTIVE_TAN);
+        orthoCamera.updateProjectionMatrix();
+      } else {
+        camera.position.copy(center).add(new THREE.Vector3(fit, 0, 0));
+      }
+      controls.update();
+      requestRender();
     }
     document.getElementById("chain-add").addEventListener("click", addChain);
     document.getElementById("chain-xray").addEventListener("change", (event) => {
