@@ -5199,6 +5199,15 @@ if (decalOn > 0.5) {
       return 6;
     }
 
+    function hasThin(node) {
+      return Boolean(node?.thin) || (node?.kind === "merged" && Array.isArray(node.parts) && node.parts.some(hasThin));
+    }
+
+    // 平面（印 thin）を含む距離場の結合は、間引かずに全部の格子点で面を作る（間引くと 1 マス厚の平面が消える）
+    function mergeStepOf(merge, detail) {
+      return merge?.parts?.some(hasThin) ? 1 : mergeStep(detail);
+    }
+
     const TRIANGLE_SPEC = Object.freeze({ sides: 3, height: 0.2, circumradius: 0.1, theta0: 0, cone: true });
     const BOX_SPEC = Object.freeze({ sides: 4, height: 0.16, circumradius: 0.08 * Math.SQRT2, theta0: Math.PI / 4, cone: false });
 
@@ -7717,7 +7726,7 @@ if (decalOn > 0.5) {
     function mergedSurface(merge, detail = 1) {
       if (usesFieldMerge(merge)) {
         const entry = mergeEntry(merge);
-        return surfaceNets(roundField(unionFields(entry.fields, (merge.smooth ?? 0) * MERGE_BLEND), merge, entry.grid), entry.grid, mergeStep(detail));
+        return surfaceNets(roundField(unionFields(entry.fields, (merge.smooth ?? 0) * MERGE_BLEND), merge, entry.grid), entry.grid, mergeStepOf(merge, detail));
       }
       return fusedSurface(merge, detail) ?? contactSurface(merge, detail);
     }
@@ -8243,7 +8252,7 @@ self.onmessage = (event) => {
     async function prefetchMergedGeometry(merge, detail = 1) {
       if (!merge || merge.flat) return;
       const entry = await mergeEntryAsync(merge);
-      const step = mergeStep(detail);
+      const step = mergeStepOf(merge, detail);
       const key = mergeSurfaceKey(merge, entry, step);
       if (mergeSurfaceCache.has(key)) return;
       try {
@@ -8265,14 +8274,14 @@ self.onmessage = (event) => {
     function buildMergedGeometry(mesh) {
       const merge = mesh.userData.merge;
       const entry = merge.flat ? null : mergeEntry(merge);
-      const ready = entry ? mergeSurfaceCache.get(mergeSurfaceKey(merge, entry, mergeStep(detailOf(mesh)))) : null;
+      const ready = entry ? mergeSurfaceCache.get(mergeSurfaceKey(merge, entry, mergeStepOf(merge, detailOf(mesh)))) : null;
       const field = !entry ? null : ready ? ready.field : roundField(unionFields(entry.fields, merge.smooth * MERGE_BLEND), merge, entry.grid);
       const prebuilt = ready?.built && usesFieldMerge(merge)
         ? { positions: ready.built.positions.slice(), normals: ready.built.normals.slice(), indices: ready.built.indices.slice() }
         : null;
       const built = !entry
         ? buildFlatShape(merge, detailOf(mesh))
-        : prebuilt ?? (usesFieldMerge(merge) ? surfaceNets(field, entry.grid, mergeStep(detailOf(mesh))) : mergedSurface(merge, detailOf(mesh)));
+        : prebuilt ?? (usesFieldMerge(merge) ? surfaceNets(field, entry.grid, mergeStepOf(merge, detailOf(mesh))) : mergedSurface(merge, detailOf(mesh)));
       if (merge.mirrored) {
         for (let i = 0; i < built.positions.length; i += 3) {
           built.positions[i] = -built.positions[i];
