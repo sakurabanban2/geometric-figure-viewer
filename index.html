@@ -2006,8 +2006,8 @@
     <p>パーツをパスに沿わせるには、パーツ一覧でパーツの行をパスの行の中央にドラッグするか、右クリックの「パスに沿わせる…」を選んで画面のパスをクリックします（Esc でやめる）。メニューには最近使ったパス・近いパスが 5 つまで並び、ほかのパスは「ほかのパスから選ぶ…」で名前を検索して選べます。沿わせたパーツをパス以外の場所へドラッグするとパスから外れます。</p>
     <p>画面右下のアイコンでワイヤーフレーム・自動回転・パースを切り替えられます。パースをオフにすると遠近感のない平行投影になり、形の比率や左右のずれを確かめやすくなります。平行投影中もホイールで拡大縮小できます。視点を回す中心は、パーツを選ぶとそのパーツの中心（複数なら最初に選んだパーツの中心）に移ります。選択を外しても視点の中心はその場所にとどまります。</p>
     <p>画面の左と上にスケール（cm）が表示されます。回転の中心を通る面での長さです（パースオフなら画面全体で正確です）。左のスケールをドラッグすると上下スケールの起点（0 の位置）を動かせ、ドラッグ中は起点から横に線が表示されます。ダブルクリックで画面下に戻ります。</p>
-    <p>メニューバーの左右対称アイコンがオンのときは、追加した形が左右1組で置かれ、片側の編集がもう一方にも反映されます。オフにすると、追加した形は1つだけ置かれ、編集も片側だけになります。</p>
-    <p>パーツやフォルダを右クリックするとメニューが開き、マスク編集・名前の変更・ロック・非表示・削除を選べます。マスク編集では、置いた図形と重なる範囲が非表示になります。マスク範囲の図形はパーツ作成と同じ立体（球・三角・四角・断面）と平面（円・三角・四角）から選べ、断面は通常のパーツと同じく断面パネルで形を編集できます。パーツを Ctrl+C でコピーしておき、マスク編集中に Ctrl+V で貼り付けると、そのパーツと同じ形・位置・大きさ・回転のマスク範囲になります（傾きと平面のドームは反映されません）。マスク編集中に「カーブ」「ループ」を押すと、パスとそれに沿って曲がる筒状のマスク範囲が追加されます（ループなら輪になります）。パスの点を動かすと切り取る範囲も曲がり、範囲を選ぶとパーツと同じカーブのパネルで始点・終点・太さの変化などを調整できます。ほかのマスク範囲も右クリックから既存のパスに沿わせたり外したりできます。フォルダでマスク編集すると、置いた図形1つでフォルダ内の全パーツをまとめて切り取れます。リンクパーツも右クリックからマスク編集でき、リンク先の中身全体をまとめて切り取れます（マスクは元のモデル側に保存されます）。フォルダを右クリックして「左右対称に配置」を選ぶと、中の片側だけのパーツ（サブフォルダやマスク、リンクパーツも含む）に反対側の鏡像コピーが付きます。「左右対称を解除」で反対側のコピーを外せます。</p>
+    <p>メニューバーの左右対称アイコンがオンのときは、左右の組になっているパーツの片側の編集がもう一方にも反映されます。オフにすると、編集は片側だけになります。左右対称モードでパーツが勝手に増えたり消えたりすることはありません（追加した形は1つだけ置かれます）。反対側のパーツを作りたいときは、パーツを右クリックして「左右対称のパーツを作る」を選びます（複数選んでいれば、選んだパーツのうち相手のないものすべてに作られます。中心線上にあるパーツには作れません）。「左右対称を解除」を選ぶと、両方のパーツを残したまま組だけを解除します。組の片側だけを削除すると、残った側は組のない普通のパーツになります。</p>
+    <p>パーツやフォルダを右クリックするとメニューが開き、マスク編集・名前の変更・ロック・非表示・削除を選べます。マスク編集では、置いた図形と重なる範囲が非表示になります。マスク範囲の図形はパーツ作成と同じ立体（球・三角・四角・断面）と平面（円・三角・四角）から選べ、断面は通常のパーツと同じく断面パネルで形を編集できます。パーツを Ctrl+C でコピーしておき、マスク編集中に Ctrl+V で貼り付けると、そのパーツと同じ形・位置・大きさ・回転のマスク範囲になります（傾きと平面のドームは反映されません）。マスク編集中に「カーブ」「ループ」を押すと、パスとそれに沿って曲がる筒状のマスク範囲が追加されます（ループなら輪になります）。パスの点を動かすと切り取る範囲も曲がり、範囲を選ぶとパーツと同じカーブのパネルで始点・終点・太さの変化などを調整できます。ほかのマスク範囲も右クリックから既存のパスに沿わせたり外したりできます。フォルダでマスク編集すると、置いた図形1つでフォルダ内の全パーツをまとめて切り取れます。リンクパーツも右クリックからマスク編集でき、リンク先の中身全体をまとめて切り取れます（マスクは元のモデル側に保存されます）。フォルダを右クリックして「左右対称に配置」を選ぶと、中の片側だけのパーツ（サブフォルダやマスク、リンクパーツも含む）に反対側の鏡像コピーが付きます。「左右対称を解除」で、両方のパーツを残したまま組を解除します（リンクパーツは反対側のコピーの表示をやめます）。</p>
     <p>「別モデル化して別タブで編集」を選ぶと、そのパーツやフォルダが別モデルになり、別タブで開きます。別タブでの変更は自動で元のモデルに反映されます。元のモデルではリンクアイコン付きの1つのパーツとして扱われ、まとめて移動・回転・拡大縮小できます（中身はリンク先で編集します）。右クリックでリンク先の編集やリンクの解除ができ、「左右対称に配置」を選ぶと反対側に鏡像のコピーが表示されます（移動・回転・マスクも自動で反映）。リンクを残すには、元のモデルを保存してください。リンク先が表示できないときは、右クリックの「リンクをつけなおす…」か、リンク先タブに出るウィンドウから保存したファイル（.json）を選ぶと、つけなおせます。</p>
     <p>「追加」は立体・平面・パスに分かれています。立体は球・三角柱・四角柱・断面、平面は薄い円・三角・四角です。「パス」の「カーブ」でベジエ曲線を置けます。パスは、右のパーツ一覧でそのパスを選んでいるときと、パスに沿わせたパーツやマスク範囲を選んでいるときだけ画面に表示されます。フォルダの表示・非表示を切り替えると、中のパスもまとめて切り替わります。カーブをクリックすると点（黄）とハンドル（ピンク）が表示され、点やハンドルを選んで移動ギズモで形を変えられます。ハンドルは反対側も連動して滑らかにつながります。点を右クリックして「角にする」を選ぶと、点が四角になり、2本のハンドルを別々に動かしてカーブを折り曲げられます（「滑らかな点にする」で元に戻ります）。角の点やそのハンドルを右クリックして「前のハンドルを削除」「次のハンドルを削除」を選ぶとハンドルがなくなり、その側はまっすぐ点に入ります（「…のハンドルを戻す」で再び出せます）。右クリックで点の追加・削除ができます（線の上で右クリックすると、その位置に中間点を追加できます）。パスを右クリックして「中間点で左右対称に編集」をオンにすると、真ん中の点（点が偶数なら真ん中の2点の間）を通る左右の面を境に、パスの形が鏡のように揃います。オンにしたときは右クリックした側（パス全体なら前半）の形がもう半分に写され、以後は点やハンドルを動かす・角にする・ハンドルを削除するといった操作が反対側の対になる点にも反映されます。点の追加と削除も左右で同時に行われ、真ん中の点は境の面の上に留まります。点を選んで回転ギズモを使うと、点のまわりでハンドルの向きがまとめて回ります。赤い輪（カーブの進む方向が軸）で回すと、カーブに沿わせたパーツがその点でねじれます。カーブ全体を選ぶと移動・回転・拡縮できます。パーツを右クリックして「カーブに沿わせる」または「ループに沿わせる」を選ぶと、パーツがそのパスに沿って曲がります。リンクパーツも右クリックから同じようにパスに沿わせられ、リンク先のモデル全体がひとまとまりで曲がります。パスに沿わせたパーツやリンクは、右のパーツ一覧ではそれぞれ元の場所（フォルダや並び順）のまま表示され、パスの行と水色の線でつながります（パスの行は白抜きの丸、沿わせたものは塗りの丸です）。閉じたフォルダの中にあるものは、そのフォルダの行に線がつながります。パスや沿わせたものを選んでいると線が濃くなります。左のパネルで始点・終点の範囲と両端の太さを調整できます。パスに沿わせたパーツを選ぶと、沿わせる前の形が元の位置に半透明の青で表示されます。点を選ぶと左のパネルに「点の太さ」が出て、その点を通る所でパーツを太く・細くできます（「拡縮」を選んで点の拡縮ギズモをドラッグしても変えられ、複数の点を選んでいればまとめて変わります）。点と点のあいだの太さはなめらかにつながり、両端の太さとも掛け合わされます。「曲がり具合」を下げるとパーツの曲がりが弱まり、0%ではパーツはまっすぐのまま、パスの位置と向きにだけ合わせて置かれます（並べたときはそれぞれが1つずつまっすぐになります）。「伸ばす」はパーツ1つをその区間の長さに引き延ばして曲げます。「並べる」は同じ形を引き延ばさず、区間の中に等間隔で置いて、それぞれをパスに沿って曲げます（角をつけた点でも隣同士の間に隙間ができません）。「個数を指定」では個数で並べる数を変えられ、「均等に配置」ではパーツの長さに合わせて入るだけ等間隔に並べ、「重なり」スライダーで間隔を変えられます（0%で隣同士がちょうど接し、プラスにすると重なって数が増え、マイナスにすると隙間が空きます。区間やパーツの長さを変えると数も変わり、ループ一周に並べたときは継ぎ目も同じ間隔になります）。法線編集で描いた模様や法線マップは、曲げたパーツに合わせて一緒に曲がります（左右対称オンなら反対側も鏡像で曲がります。拡縮ギズモで太さや長さも変えられます）。パスに沿わせたパーツやリンクは、「回転」を選ぶと回転ギズモで回せます。パーツ自身の向きの輪で、緑はパスの進む方向を軸にしたねじり、赤と青はパスに対する傾きになります。寸法の「回転」に数値を入れても回せます。回転はパスに沿わせたときの向きを基準にします。</p>
     <p>「パス」の「ループ」は、端を持たない閉じた輪です。カーブの端にあるような視点の終点はなく、最初は左右の2点と、そのあいだの中間点で輪っかになります。線は最後の点から最初の点へ戻ります。点やハンドルの編集、右クリックでの追加・削除、パーツを沿わせる操作はカーブと同じです。</p>
@@ -8171,9 +8171,9 @@ self.onmessage = (event) => {
           const record = recordOf(mesh);
           return record?.mirror && !record.solo && !picked.includes(otherOf(record, mesh));
         });
-      const sources = paired || !symmetric
-        ? picked
-        : withTwins(picked).filter((mesh) => !mesh.userData.locked);
+      // 選んだものだけを結合する（選んでいない対の相手を勝手に巻き込まない）。
+      // 片側だけを選び、そのすべてに相手がいるときは、相手側も同じように結合して対を保つ
+      const sources = picked;
       const bounds = new THREE.Box3();
       for (const mesh of sources) {
         mesh.updateWorldMatrix(true, false);
@@ -8231,7 +8231,7 @@ self.onmessage = (event) => {
       const record = { mesh, mirror: null, kind: "merged", solo: !paired };
       records.push(record);
       if (paired) {
-        syncFrom(mesh, true);
+        createTwin(record);
         if (record.mirror) record.mirror.userData.folderId = twinFolder;
       }
       select(mesh);
@@ -8548,17 +8548,42 @@ self.onmessage = (event) => {
         return;
       }
       if (!symmetric && !force) return;
+      // 左右対称モードは、すでに対になっているパーツを合わせるだけ。相手を勝手に作ったり消したりしない
+      // （相手を作るのは右クリックの「左右対称のパーツを作る」などの明示的な操作だけ）
       const record = records.find((item) => item.mesh === source || item.mirror === source);
       if (!record || record.solo) return;
-      let other = otherOf(record, source);
-      if (other?.userData.locked) return;
-      if (!other) {
-        other = duplicate(source);
-        (source.userData.kind === "body" ? figure : edits).add(other);
-        if (source === record.mesh) record.mirror = other;
-        else record.mesh = other;
-      }
+      const other = otherOf(record, source);
+      if (!other || other.userData.locked) return;
       applyMirror(source, other);
+    }
+
+    // 対の相手を作る（明示的な操作から呼ぶ）。作った相手を返す
+    function createTwin(record) {
+      if (!record || record.mirror) return null;
+      const source = record.mesh;
+      const other = duplicate(source);
+      (source.userData.kind === "body" ? figure : edits).add(other);
+      record.mirror = other;
+      record.solo = false;
+      applyMirror(source, other);
+      return other;
+    }
+
+    // 対を解除して、両方を別々のパーツとして残す
+    function unpairRecord(record) {
+      if (!record?.mirror) return null;
+      const other = record.mirror;
+      for (const shape of record.mesh.userData.masks || []) {
+        if (shape.userData.twin?.parent === other) {
+          shape.userData.twin.userData.twin = null;
+          shape.userData.twin = null;
+        }
+      }
+      record.mirror = null;
+      record.solo = true;
+      const split = { kind: record.kind, mesh: other, mirror: null, solo: true };
+      records.splice(records.indexOf(record) + 1, 0, split);
+      return split;
     }
 
     function setSelection(meshes, active = undefined) {
@@ -9058,13 +9083,13 @@ self.onmessage = (event) => {
       const mesh = createMesh(kind);
       if (kind === "triangle") setDetail(mesh, TRIANGLE_DETAIL);
       const step = records.filter((item) => item.kind !== "body").length * 0.16;
-      const x = placeSymmetric ? torsoCenter.x + 0.28 : torsoCenter.x;
+      const x = torsoCenter.x;
       mesh.position.set(x, torsoCenter.y + 0.06 + step, torsoCenter.z + 0.26);
       mesh.userData.home = mesh.position.toArray();
       edits.add(mesh);
-      const record = { mesh, mirror: null, kind, solo: !placeSymmetric };
+      // 左右対称モードでも 1 個だけ追加する（対にしたいときは右クリックの「左右対称のパーツを作る」）
+      const record = { mesh, mirror: null, kind, solo: true };
       records.push(record);
-      if (placeSymmetric) syncFrom(mesh, true);
       select(mesh);
       commit();
     }
@@ -9257,12 +9282,8 @@ self.onmessage = (event) => {
     function removeSelected() {
       const maskShapes = selection.filter((mesh) => mesh.userData.isMask && !mesh.userData.locked);
       if (maskShapes.length) {
+        // 選んだマスク範囲だけを消す（対の相手は残し、対を解除する）
         const drop = new Set(maskShapes.flatMap((shape) => linkedShapes(shape)));
-        if (symmetric) {
-          for (const shape of [...drop]) {
-            for (const twin of linkedShapes(liveTwin(shape))) drop.add(twin);
-          }
-        }
         for (const shape of drop) {
           const twin = shape.userData.twin;
           if (twin && !drop.has(twin)) twin.userData.twin = null;
@@ -9291,13 +9312,8 @@ self.onmessage = (event) => {
         return;
       }
       removeLinks(anchors.map((anchor) => linkById(anchor.userData.linkId)).filter(Boolean));
+      // 選んだものだけを消す。対の片側だけを消したときは、残った側は対のない普通のパーツになる
       const removing = new Set(targets);
-      if (symmetric) {
-        for (const mesh of targets) {
-          const other = otherOf(recordOf(mesh), mesh);
-          if (other && !other.userData.locked) removing.add(other);
-        }
-      }
       for (let index = records.length - 1; index >= 0; index -= 1) {
         const record = records[index];
         const dropMesh = removing.has(record.mesh);
@@ -9309,8 +9325,12 @@ self.onmessage = (event) => {
         else if (dropMesh) {
           record.mesh = record.mirror;
           record.mirror = null;
+          record.solo = true;
           if (!record.mesh) records.splice(index, 1);
-        } else record.mirror = null;
+        } else {
+          record.mirror = null;
+          record.solo = true;
+        }
       }
       select(null);
       commit();
@@ -10900,8 +10920,12 @@ self.onmessage = (event) => {
         else if (dropMesh) {
           record.mesh = record.mirror;
           record.mirror = null;
+          record.solo = true;
           if (!record.mesh) records.splice(index, 1);
-        } else record.mirror = null;
+        } else {
+          record.mirror = null;
+          record.solo = true;
+        }
       }
       folders = folders.filter((item) => !ids.has(item.id));
       for (const id of ids) collapsedFolders.delete(id);
@@ -11150,6 +11174,8 @@ self.onmessage = (event) => {
             },
             { label: "ラスタライズ", disabled: !canRasterize(mesh), run: () => rasterizePart(mesh) },
             null,
+            ...symmetryMenuItems(mesh, masking),
+            null,
             ...bindMenuItems(mesh, masking || locked),
             null,
             ...clipItems([mesh]),
@@ -11216,6 +11242,55 @@ self.onmessage = (event) => {
           { label: "フォルダを外す", danger: true, disabled: masking, run: () => removeFolder(subject.id) },
         ],
       };
+    }
+
+    // 右クリックの「左右対称のパーツを作る」「左右対称を解除」の対象（複数選択中ならその中のパーツ）
+    function symmetryTargets(mesh) {
+      const pool = selection.includes(mesh) ? selectionOwners() : [mesh];
+      const seen = new Set();
+      const result = [];
+      for (const item of pool) {
+        const record = recordOf(item);
+        if (!record || seen.has(record) || item.userData.locked) continue;
+        seen.add(record);
+        result.push(record);
+      }
+      return result;
+    }
+
+    function symmetryMenuItems(mesh, masking) {
+      const targets = symmetryTargets(mesh);
+      const makeable = targets.filter((record) => !record.mirror && !onCenterLine(record.mesh));
+      const paired = targets.filter((record) => record.mirror && !record.mirror.userData.locked);
+      return [
+        { label: "左右対称のパーツを作る", disabled: masking || !makeable.length, run: () => makeSymmetricParts(makeable) },
+        { label: "左右対称を解除", disabled: masking || !paired.length, run: () => releaseSymmetricParts(paired) },
+      ];
+    }
+
+    function onCenterLine(mesh) {
+      mesh.updateWorldMatrix(true, false);
+      return Math.abs(mesh.getWorldPosition(new THREE.Vector3()).x - torsoCenter.x) < 0.002;
+    }
+
+    function makeSymmetricParts(list) {
+      const made = mirrorReleased(list);
+      if (!made.length) {
+        setFileStatus("中心にあるパーツは、反対側のパーツを作れません");
+        return;
+      }
+      setSelection([...selection, ...made], selected);
+      renderOutliner();
+      commit();
+      setFileStatus(`左右対称のパーツを${made.length}個作りました`);
+    }
+
+    function releaseSymmetricParts(list) {
+      for (const record of list) unpairRecord(record);
+      setSelection(selection, selected);
+      renderOutliner();
+      commit();
+      setFileStatus(`${list.length}組の左右対称を解除しました（パーツはそのまま残ります）`);
     }
 
     function openContextMenu(subject, x, y) {
@@ -14084,7 +14159,10 @@ self.onmessage = (event) => {
         }
         applyFeatureSpec(record.mesh, spec, folder.id);
         record.solo = !mirror;
-        if (mirror) syncFrom(record.mesh, true);
+        if (mirror) {
+          if (record.mirror) syncFrom(record.mesh, true);
+          else createTwin(record);
+        }
         else if (record.mirror) {
           discard(record.mirror);
           record.mirror = null;
@@ -15719,13 +15797,7 @@ self.onmessage = (event) => {
       const folder = folders.find((item) => item.id === folderId);
       for (const record of folderRecords(folderId)) {
         if (!record.mirror || record.mesh.userData.locked || record.mirror.userData.locked) continue;
-        for (const shape of record.mesh.userData.masks || []) {
-          if (shape.userData.twin?.parent === record.mirror) shape.userData.twin = null;
-        }
-        const drop = record.mirror;
-        record.mirror = null;
-        record.solo = true;
-        drop.removeFromParent();
+        unpairRecord(record); // 両方のパーツを残したまま対だけを解除する
       }
       const linked = descendantLinks(folderId).filter((link) => link.mirror);
       for (const link of linked) link.mirror = false;
@@ -15740,10 +15812,8 @@ self.onmessage = (event) => {
       const made = [];
       const groups = new Map();
       for (const record of added) {
-        if (record.mirror) continue;
-        record.solo = false;
-        syncFrom(record.mesh, true);
-        const other = record.mirror;
+        if (record.mirror || onCenterLine(record.mesh)) continue;
+        const other = createTwin(record);
         if (!other) continue;
         for (const shape of record.mesh.userData.masks || []) {
           const twin = createMaskLike(shape);
@@ -18392,7 +18462,7 @@ self.onmessage = (event) => {
         const record = recordOf(item);
         if (!record) continue;
         const other = otherOf(record, item);
-        if (other && ((symmetric && !folderId) || chosen.includes(other))) {
+        if (other && chosen.includes(other)) { // 対の相手も選んでいるときだけ対ごとコピーする
           done.add(other);
           clip.records.push({ kind: record.kind, solo: Boolean(record.solo), mesh: serializeMesh(record.mesh), mirror: serializeMesh(record.mirror) });
         } else {
@@ -23157,6 +23227,7 @@ void main() {
       const span = box.getSize(new THREE.Vector3());
       const unit = span.x;
       const skin = head ? `#${head.material.color.getHexString()}` : "#f2c4ab";
+      // 顔デカールの専用画面では、目・眉・ほおを左右の組で置く（左右の組を 1 つのデカールとして扱うため）
       const paired = preset.part !== "mouth" && placeSymmetric;
       const [ax, ay] = FACE_ANCHORS[preset.part];
       const folder = { id: `folder-${nextFolderId++}`, name: `${FACE_PART_NAMES[preset.part]}：${preset.name}`, parentId: null, order: nextPartOrder() };
@@ -23178,7 +23249,7 @@ void main() {
         edits.add(mesh);
         const record = { mesh, mirror: null, kind, solo: !paired };
         records.push(record);
-        if (paired) syncFrom(mesh, true);
+        if (paired) createTwin(record);
         made.push(mesh);
         if (record.mirror) made.push(record.mirror);
       });
