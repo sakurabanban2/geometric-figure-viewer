@@ -4760,11 +4760,19 @@ if (decalOn > 0.5) {
       const locked = selected?.userData.locked || (isCurvePart(selected) && curveOf(selected)?.userData.locked);
       const target = !reliefDrawing && selected && selected.visible && !locked ? selected : null;
       toolByMode.rotate.setSpace(target?.userData.isCurvePoint || target?.userData.curveBind ? "local" : "world");
-      for (const control of toolList) {
-        const holder = target && toolAllowed(target, control.mode) ? target : groupToolHolder(control.mode);
-        if (holder) control.attach(holder);
-        else control.detach();
+      const holders = toolList.map((control) => (target && toolAllowed(target, control.mode) ? target : groupToolHolder(control.mode)));
+      // 複数選択では、選んでいるツール（移動・回転・拡縮）のハンドルだけを出す。
+      // パスに沿わせたパーツは単独では移動の代わりに拡縮ハンドルを出すが、まとめて動かすときは出さない。
+      const multi = selection.length > 1 && !isCurvePart(selected);
+      if (multi && toolList.some((control, index) => holders[index] && toolModes.has(control.mode))) {
+        toolList.forEach((control, index) => {
+          if (!toolModes.has(control.mode)) holders[index] = null;
+        });
       }
+      toolList.forEach((control, index) => {
+        if (holders[index]) control.attach(holders[index]);
+        else control.detach();
+      });
     }
 
     // 複数選択（フォルダの選択など）で、選択の中心になっているものにハンドルが付けられないとき
@@ -4802,6 +4810,7 @@ if (decalOn > 0.5) {
         groupDrag = false;
         anchorScale = null;
         dragOrigins.clear();
+        mirrorShiftOrigins.clear();
         pointSizeOrigins.clear();
         settleCurveSelection();
         if (liveSignature() !== dragSignature) commit();
@@ -8381,14 +8390,49 @@ self.onmessage = (event) => {
       return result;
     }
 
+    // 左右の両方が選択に入っているものの、もう片方（対称の相手）
+    function selectedTwin(item) {
+      const twin = item.userData.isMask ? liveTwin(item) : otherOf(recordOf(item), item);
+      return twin && dragOrigins.has(twin) ? twin : null;
+    }
+
     function captureDragOrigins() {
       dragOrigins.clear();
-      for (const mesh of [...leaders(), ...followedCurves(selection)]) {
+      mirrorShiftOrigins.clear();
+      // まとめて移動するときは、左右の両方が選択されていれば両方を同じ向きに動かす（反転させない）
+      const rigid = activeTool?.mode === "translate" && selection.length > 1;
+      const movers = rigid ? selection.filter((item) => !item.userData.locked) : leaders();
+      for (const mesh of [...movers, ...followedCurves(selection)]) {
         mesh.updateWorldMatrix(true, false);
         const pos = new THREE.Vector3().setFromMatrixPosition(mesh.matrixWorld);
         const quat = worldQuaternionOf(mesh);
         const scl = worldScaleOf(mesh);
         dragOrigins.set(mesh, { pos, quat, scl, localScale: mesh.scale.clone() });
+      }
+      if (!rigid) return;
+      // パスの対称側に表示しているパーツは、パスを動かすと反対向きに動いてしまうので、ずらす量で打ち消す
+      const shiftable = (bind) => bind?.mirror && dragOrigins.has(curveById(bind.curveId));
+      for (const item of selection) {
+        if (item.userData.locked) continue;
+        if (isLinkAnchor(item)) {
+          const link = linkById(item.userData.linkId);
+          if (shiftable(link?.curveBind)) mirrorShiftOrigins.set(item, { link, shift: link.curveBind.mirrorShift ?? 0 });
+        } else if (shiftable(item.userData.curveBind)) mirrorShiftOrigins.set(item, { shift: item.userData.curveBind.mirrorShift ?? 0 });
+        for (const shape of item.userData.masks ?? []) {
+          if (!shape.userData.locked && !mirrorShiftOrigins.has(shape) && shiftable(shape.userData.curveBind)) mirrorShiftOrigins.set(shape, { shift: shape.userData.curveBind.mirrorShift ?? 0 });
+        }
+      }
+    }
+
+    const mirrorShiftOrigins = new Map();
+
+    function applyMirrorShifts(dx) {
+      for (const [item, start] of mirrorShiftOrigins) {
+        const shift = start.shift + 2 * dx;
+        if (start.link) {
+          start.link.curveBind = readCurveBind({ ...start.link.curveBind, mirrorShift: shift });
+          item.userData.curveBind = start.link.curveBind;
+        } else setCurveBind(item, { ...item.userData.curveBind, mirrorShift: shift });
       }
     }
 
@@ -8433,7 +8477,12 @@ self.onmessage = (event) => {
           writeWorldTransform(mesh, pivot.clone().add(offset), start.quat.clone(), start.localScale.clone().multiply(ratio));
         }
       }
-      for (const mesh of dragOrigins.keys()) syncFrom(mesh);
+      if (activeTool.mode === "translate" && mirrorShiftOrigins.size) applyMirrorShifts(deltaPos.x);
+      for (const mesh of dragOrigins.keys()) {
+        const twin = activeTool.mode === "translate" ? selectedTwin(mesh) : null;
+        if (!twin) syncFrom(mesh);
+        else if (mesh.userData.isMask) syncMaskShapes(mesh, false);
+      }
     }
 
     function linkedShapes(shape) {
@@ -17330,6 +17379,8 @@ self.onmessage = (event) => {
         overlap: value.overlap ? number("overlap", 0, -1, 0.9) : undefined,
         bend: Number.isFinite(value.bend) && value.bend < 1 ? number("bend", 1, 0, 1) : undefined,
         mirror: value.mirror ? true : undefined,
+        // 対称側の表示を左右にずらす量（まとめて移動したとき、反転せずに同じ向きへ動かすため）
+        mirrorShift: value.mirror && Number.isFinite(value.mirrorShift) && Math.abs(value.mirrorShift) > 1e-9 ? value.mirrorShift : undefined,
         rest: isVector(value.rest, 4) ? [...value.rest] : undefined,
       };
     }
@@ -17660,9 +17711,10 @@ self.onmessage = (event) => {
           }
           if (bind.mirror && reflect) {
             world.applyMatrix4(reflect);
+            world.x += bind.mirrorShift ?? 0;
             normal.applyMatrix3(reflectNormal);
           } else if (bind.mirror) {
-            world.x = mirrorX - world.x;
+            world.x = mirrorX + (bind.mirrorShift ?? 0) - world.x;
             normal.x = -normal.x;
           }
           world.applyMatrix4(bendInverse);
