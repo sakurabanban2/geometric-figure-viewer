@@ -6291,7 +6291,8 @@ if (decalOn > 0.5) {
       if (!shapes.length || !mesh.geometry?.attributes.position) return null;
       mesh.updateWorldMatrix(true, false);
       const { boxes, probes, target } = pushRegions(mesh, shapes);
-      const geometry = refinePushGeometry(mesh.geometry, boxes, probes, target);
+      // 表示用より 1 段粗く分割する（結合の計算量を約 1/4 に抑える。押し込みはなだらかなので形はほぼ変わらない）
+      const geometry = refinePushGeometry(mesh.geometry, boxes, probes, target * 2);
       if (!geometry.attributes.normal) geometry.computeVertexNormals();
       const sums = pushDirections(geometry, probes);
       const world = mesh.matrixWorld;
