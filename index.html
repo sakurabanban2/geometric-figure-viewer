@@ -448,6 +448,17 @@
     .chain-card .slider-row .chain-value { min-width: 40px; color: var(--muted); font-size: 11px; text-align: right; font-variant-numeric: tabular-nums; }
     .chain-card .rig-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: #c77dff; }
     .chain-card .chain-note { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
+    .chain-card .chain-joints { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; align-items: center; font-size: 12px; }
+    .chain-card .chain-joints > span { min-width: 64px; color: var(--muted); }
+    .chain-card .chain-joints button { min-width: 30px; padding: 2px 6px; font-size: 12px; }
+    .chain-card .chain-joints button[aria-pressed="true"] { border-color: #ffe066; background: rgba(255, 224, 102, 0.18); color: inherit; }
+    .chain-card .chain-xyz { display: flex; gap: 4px; margin-bottom: 6px; font-size: 12px; align-items: center; }
+    .chain-card .chain-xyz label { display: flex; align-items: center; gap: 2px; flex: 1; min-width: 0; }
+    .chain-card .chain-xyz label span { color: var(--muted); }
+    .chain-card .chain-xyz input { flex: 1; min-width: 0; width: 100%; font-variant-numeric: tabular-nums; }
+    .chain-card .chain-carry { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; font-size: 12px; color: var(--muted); }
+    .chain-card .chain-quick { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+    .chain-card .chain-quick button { flex: 1 1 auto; font-size: 12px; padding: 3px 6px; }
     .rig-time { min-width: 72px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; text-align: right; }
     #sag-open-edit { margin: 0 0 8px; }
     #sag-open-edit[hidden],
@@ -1774,6 +1785,8 @@
       <h2>揺れボーン（追加ボーン）</h2>
       <p class="hint">体のボーンに、しなって揺れる鎖状のボーンを付け足します。先にビューか下の一覧で付けたいパーツをクリックしてから追加すると、そのパーツの形に沿って置かれ、そのまま割り当てられます。</p>
       <div class="wide"><button id="chain-add" type="button" title="選んでいるパーツに沿って（選んでいなければ選んでいるボーンか腰から前に）揺れボーンを追加する">揺れボーンを追加</button></div>
+      <p class="hint">紫の点をクリックすると選ばれ、矢印（X・Y・Z の向きだけに動かす）と四角（その面の中で動かす）が出ます。点をそのままドラッグすると画面に沿って動きます。ふつうはその先の点も一緒に動き、Alt を押しながら動かすとその点だけが動きます。</p>
+      <label class="relief-check"><input id="chain-xray" type="checkbox" checked /> 揺れボーンを選んでいる間はパーツを透かす</label>
       <div id="chain-list" role="list" aria-label="揺れボーンの一覧"></div>
     </section>
     <section id="rig-assign-section" class="rig-panel">
@@ -2119,7 +2132,7 @@
     <p>パス（カーブ・ループ）やリンクパーツを選んだときも「柔らかさ」が出て、「なし」「柔らかく」から選べます（「付いて動く」と「ひとまとめにする」はパーツだけです）。パスを「柔らかく」にすると、「起点」で選んだ始点か終点の点は動かず、そこから離れた点ほど重力の向きへ曲がって垂れ、動かすと遅れて揺れます。点どうしの間隔は保たれるので、真下に垂れ下がったパスはそれ以上伸びません。パスに沿わせたパーツやリンクパーツ、マスク範囲も一緒に曲がるので、髪の房やしっぽ、ひもなどに使えます。点やハンドルを選んで形を直している間は、そのパスは元の形で表示されます。リンクパーツを「柔らかく」にすると、中のパーツ全体が1つのかたまりとして、起点の側（リンクパーツ自身の向きで、後ろ・前・上・下・右・左）を残して垂れたり揺れたりします。リンク先で付けた柔らかさよりこちらが優先され、左右対称のコピーも鏡写しで同じように動きます。どちらも「揺れやすさ」やモーション再生中の揺れ、「編集モードで動きを確認」が使えます。</p>
     <p>「柔らかさ」の「編集モードで動きを確認」（パーツの右クリックや編集メニューの「柔らかさの編集」からも入れます）を押すと、柔らかさの編集モードになります。編集するパーツと、その反対側や付いているパーツだけがはっきり表示され、左のパネルで垂れ・揺れ・起点・付き先を変えると、その場ですぐ形と動きに反映されます。起点・重力・弾みの表示は、傾けたときの重力の向きや揺らしたときの弾みにも合わせて動きます。「動きの確認」の「重力」の「大きさ」では、重力の強さを 0%（無重力）〜300% で変えて、垂れ方の違いを確かめられます（青の矢印の長さも変わります）。「体の傾き」や「立ち・前かがみ・仰向け・うつ伏せ・右を下・左を下」で重力の向きを変えると、姿勢を変えたときの垂れ方を確かめられます。「上下・左右・前後」で一度だけ揺らし、「跳ね続ける」で跳ねている間の揺れを見られます。「強さ」で揺らす大きさを 10%〜300% で変えます。100% を超えると、ドラッグで揺らしたときの動きも大きくなり、より大きく揺れるようになります。ビューで左ドラッグすると、体をつかんで揺らしたように揺れ、離すと反動で揺れ戻ります。右ドラッグで視点を回し、パーツをクリックすると編集するパーツを切り替えます。傾きや揺らしは確認用で保存されません。設定は「保存」（Ctrl+S）で確定し、「破棄」で編集モードに入る前に戻します。Esc か「メインエディターに戻る」で終わります。</p>
     <p>編集メニューの「ボーンとモーション」で、体にボーン（骨組み）を入れて、ダンスなどのモーションを再生できます。左のパネルは「モーション」「ボーンの配置」「揺れボーン（追加ボーン）」「パーツの割り当て」に分かれていて、見出しをクリックすると折りたためます。初めて開くと、モデルの大きさに合わせて腰・背骨・胸・首・頭・肩・上腕・前腕・手・太もも・すね・足のボーンが置かれます（中央は黄色、左は水色、右はピンク）。関節の点をドラッグすると位置を変えられます。「左右対称に動かす」がオンのときは、反対側の関節も鏡写しで一緒に動き、中央のボーンは左右の真ん中から外れません。オンのまま置き直すと、左右がそろった配置になります。「左 → 右に写す」「右 → 左に写す」で、片側のボーンの位置を反対側にそのまま写して左右対称にできます。「自動で置き直す」で体の大きさに合わせた最初の配置に戻せます。それぞれのパーツは、いちばん近いボーンに自動で付いて動きます。「パーツの割り当て」には、ボーンごとにそのボーンで動くパーツが並びます。各パーツの右の欄でボーンを選ぶと付け替えられ、「自動（〜）」に戻すと再びいちばん近いボーン（かっこの中）に付きます。「動かさない」にすると、その場に残ります。ビューの点やパーツをクリックしても、そのボーンで動くパーツだけがはっきり表示され、一覧の行も強調されます。ボーン名やパーツ名をクリックすると、ビューでそのボーンやパーツが強調されます。「モーションを読み込む」で、無料で配布されている MMD のモーション（.vmd）や、モーションキャプチャーの .bvh を読み込むと再生が始まります。足の動きが IK で付けられた VMD にも対応しています。「再生／一時停止」（Space キーでも切り替え）、「位置」で好きな場面へ移動、「速さ」で再生の速さ、「くり返す」で最後まで行ったら最初に戻ります。「移動もする」をオフにすると、前後左右には動かずその場で踊ります。膝立ち・四つんばい・寝そべりのように最初から低い姿勢のモーションでは、体がそのぶん床まで下がります（「移動もする」がオフでも上下には動きます）。「停止」で元の姿勢に戻り、関節を動かせるようになります。柔らかさを付けたパーツは、踊りに合わせて揺れます。再生中の揺れは体の動きの勢いで決まり、柔らかさの編集モードの「強さ」は効きません。パーツごとの揺れ方は「柔らかさ」の「揺れやすさ」で変え、すべてのパーツをまとめて大きく揺らしたいときは、モーションの「全体の揺れ」を 100% より上げてください（最大 500%）。「全体の揺れ」を 0% にすると再生中は揺れません。ボーンの配置とパーツごとのボーンの選び方はモデルと一緒に保存されますが、モーションそのものは保存されません。モデルの腕の向きや体型がモーションの元のモデルと違っても、ボーンの向きに合わせて動きを置き換えます。</p>
-    <p>「揺れボーン（追加ボーン）」で、体のボーンに鎖状のボーンを付け足せます。しっぽ・髪の房・男性器など、動きに合わせてしなって揺れてほしいパーツに使います。ビューか「パーツの割り当て」の一覧で付けたいパーツ（リンクも可）をクリックしてから「揺れボーンを追加」を押すと、そのパーツの形に沿って紫の鎖が置かれ、パーツがその鎖に割り当てられます（何も選んでいないときは、選んでいるボーンか腰から前向きに置かれます）。紫の点をドラッグすると位置を直せます。点をつかむと、その点から先がまとめて動きます（根元をつかむと鎖ごと移動）。カードでは、名前、付け根になる「親ボーン」、「節の数」（1〜8、多いほどなめらかにしなる）、揺れ方を変えられます。「硬さ」を上げると速く小さく揺れ、下げるとゆっくり大きく揺れます。「落ち着き」を上げると揺れがすぐ収まり、下げるといつまでも揺れます。「重力」で垂れ下がる強さ、「曲がる角度」で 1 節あたりに曲がれる最大の角度を決めます。「割り当て」の欄で、選んでいるパーツ、フォルダの中身すべて、リンクをまとめてこの揺れボーンに付けたり、すべて外したりできます。一覧の各パーツの欄で「揺れ：〜」を選んでも付けられます。揺れボーンに付けたパーツは、再生中に鎖に沿って曲がります。節は曲がるだけで長さは変わらないので、伸びたり縮んだりしません。揺れはモーションの「全体の揺れ」の倍率も受けます。「停止」で揺れはリセットされます。揺れボーンはモデルと一緒に保存され、元に戻す／やり直しもできます。パーツを動かしたあとは「選んだパーツに合わせる」で鎖を置き直してください。</p>
+    <p>「揺れボーン（追加ボーン）」で、体のボーンに鎖状のボーンを付け足せます。しっぽ・髪の房・男性器など、動きに合わせてしなって揺れてほしいパーツに使います。ビューか「パーツの割り当て」の一覧で付けたいパーツ（リンクも可）をクリックしてから「揺れボーンを追加」を押すと、そのパーツの形に沿って紫の鎖が置かれ、パーツがその鎖に割り当てられます（何も選んでいないときは、選んでいるボーンか腰から前向きに置かれます）。紫の点はパーツの手前に透けて描かれ、ポインターを乗せると明るくなります。点をクリックすると黄色になって選ばれ、移動ハンドルが出ます。矢印をドラッグするとその向き（X・Y・Z）だけに、四角をドラッグするとその面の中だけで動きます。点そのものをドラッグすると画面に沿って動きます。ふつうはその点から先がまとめて動き（根元をつかむと鎖ごと移動）、Alt を押しながら動かすとその点だけが動きます。カードの「先の点も一緒に動かす」をオフにすると、その逆になります。カードの「点」の欄でも点を選べ、選んだ点の X・Y・Z を数字で直せます。「根元をパーツの付け根に」「先端をパーツの先端に」で、割り当てたパーツ（なければ選んでいるパーツ）の端に根元や先端を合わせられ（反対の端は動かず、あいだの点はなだらかについてきます）、「まっすぐに並べる」で根元と先端のあいだに点を等間隔に一直線に並べます。節の長さは、点を置いた位置からそのつど決まります。揺れボーンを選んでいる間は、点が見やすいようにパーツが半透明になります（「揺れボーンを選んでいる間はパーツを透かす」で切り替え）。Esc で点の選択を外せます。どの操作も 1 回ごとに元に戻せます。カードでは、名前、付け根になる「親ボーン」、「節の数」（1〜8、多いほどなめらかにしなる）、揺れ方を変えられます。「硬さ」を上げると速く小さく揺れ、下げるとゆっくり大きく揺れます。「落ち着き」を上げると揺れがすぐ収まり、下げるといつまでも揺れます。「重力」で垂れ下がる強さ、「曲がる角度」で 1 節あたりに曲がれる最大の角度を決めます。「割り当て」の欄で、選んでいるパーツ、フォルダの中身すべて、リンクをまとめてこの揺れボーンに付けたり、すべて外したりできます。一覧の各パーツの欄で「揺れ：〜」を選んでも付けられます。揺れボーンに付けたパーツは、再生中に鎖に沿って曲がります。節は曲がるだけで長さは変わらないので、伸びたり縮んだりしません。揺れはモーションの「全体の揺れ」の倍率も受けます。「停止」で揺れはリセットされます。揺れボーンはモデルと一緒に保存され、元に戻す／やり直しもできます。パーツを動かしたあとは「選んだパーツに合わせる」で鎖を置き直してください。</p>
     <p>平面（円・三角・四角）を選ぶと、左のパネルに「盛り上がり」が出ます。「高さ」を上げると、面の中央点を頂点にして前面が盛り上がります（100% で幅の半分の高さ）。ふだん裏面は平らなままですが、「裏面にも盛り上げる」を入れると、後ろの面も同じ高さとカーブで盛り上がり、前後対称の形になります。「円形」は中央点からの距離で高さが決まり、角に向かって低くなります。「輪郭に沿う」は面の輪郭と同じ形の等高線で、辺に向かって低くなります。トーンカーブは横が中央点（左）から縁（右）、縦が高さです。空いた所をクリックすると点が増え、点をドラッグすると盛り上げ方が変わります。ダブルクリックか右クリックで点を消せます。「ドーム」「山形」「台地」で代表的な形を選べ、「リセット」でなだらかな初期のカーブに戻ります。盛り上げた平面は立体として扱われ、ほかのパーツと結合したり、ラスタライズしたりできます。</p>
     <p>「追加」の「断面」は、輪切りにした断面の形を上下につないで作る立体です（円柱から始まります）。選ぶと左のパネルに「断面」が出て、3D 表示にも断面の輪が重なります（選んでいる断面はオレンジ）。縦棒は2本あり、どちらも横から見た形で、下が根元、上が先端です。いちばん左の細い縦棒は全体図で、上下にドラッグして範囲を囲むと、その範囲が中央の縦棒に拡大表示されます。青い枠はドラッグで移動、上下の端をドラッグで伸縮でき、枠の外をクリックするとその位置へ枠が移ります。ダブルクリックか「全体を表示」で範囲指定をやめます。中央の縦棒の上でホイールを回しても、カーソルの位置を中心に拡大・縮小できます。全身のような長い形でも、範囲を絞れば胸やくびれなどの断面を細かく並べられます。中央の縦棒の空いた所をクリックすると断面が増え（最大 60 個）、目盛りをドラッグすると上下に動き、ダブルクリックか右クリックで消せます。右の図は選んだ断面を真上から見た形で、下が正面側です。前後の断面が点線で重なります。線の近くをクリックで点を追加、ドラッグで移動、ダブルクリックで削除、右クリックで角／なめらかを切り替えます。その下の「輪郭で編集」には、正面から見た輪郭（幅）と横から見た輪郭（厚み、右が正面側）が並びます。輪郭の点をドラッグすると、その高さの断面の幅や厚みと高さが変わり（反対側の輪郭は動きません。Shift を押しながらなら高さは固定）、断面の形を1枚ずつ描き直さなくても全体のシルエットを作れます。輪郭の外の空いた所をクリックすると、その高さに前後の断面から補間した断面が増え、そのままドラッグで形を決められます。点をダブルクリックか右クリックするとその断面を消せます。「左右対称に編集」が入っていると右半分だけを編集し、左半分は自動で鏡写しになります。「大きさ」「傾き」（＋で後ろ側が上がる）「左右」「前後」は選んだ断面ごとの値です。形は中心から放射状に読み取るので、中心から見て裏側に回り込む形は外側の線だけが使われます（そのときは警告が出ます）。「端の形」で先端と根元を平ら・丸く・とがるから選べ、「長さ」で丸みやとがりの長さを変えられます。「ペニス」のテンプレートは、竿・くびれ・傾いたカリ首・切れ込みのある亀頭・先端の断面を並べた形です（正面側が裏筋側。上に向いて立った向きなので、回転させて使ってください）。軸はまっすぐですが、曲げたいときは「パスに沿わせる」が使えます。モーフと盛り上がりは効きません。ほかのパーツと結合したり、ラスタライズしたりできます。</p>
     <p>パーツを右クリックして「法線編集」を選ぶと、そのパーツだけに光で浮き出て見える模様を描けます。編集中はほかのパーツが薄くなり、そのパーツの前を向いた面に左ドラッグで盛ります。右ドラッグで視点を回せます。左右のもう片方には付きません。「削る」で盛りを減らせます。「浮き出し」は凹凸の強さ、「厚み」は模様を載せた面から前後に広げる距離です。「法線マップ」の「読み込む」で、そのパーツの正面に画像を貼れます。緑チャンネルが下向きの画像は「法線の緑を上」を外してください。「裏面にも貼る」を入れると、描いた模様と法線マップがそのパーツの後ろを向いた面にも付き、後ろから見ても正面と同じ向きに読めるよう左右反転して貼られます。読み込んだ法線マップは「法線マップ」の横位置・縦位置・回転・大きさで動かせます。「法線マップを動かす」を押すと、パーツの上で左ドラッグで移動、Shift＋左ドラッグで回転、ホイールで拡大縮小できます（もう一度押すか「描く」で筆に戻ります）。「繰り返す」で画像を敷き詰め、「位置を戻す」で元に戻ります。回しても光の当たり方は正しく保たれます。「投影」を「巻き付け」にすると、缶のラベルのようにパーツの縦軸のまわりへ画像を巻いて貼ります。画像の横は正面を中心に軸のまわりの角度（弧の長さ）に、縦は高さに対応し、横へ行っても引き伸ばされず、後ろ側にも回り込みます。「巻く角度」で何度ぶん巻くかを決め、画像の横幅はいつもその角度ぶんに合わせ、高さは画像の縦横比で決まります（範囲より高い部分は上下が切れるので、大きさで縮めてください）。360°では継ぎ目なく一周し、横にずらすと反対側へ回り込みます。四角柱など円柱でない形にも、軸から放射状に投影して貼れます。模様はそのパーツに付いたまま動き、保存ファイルに含まれます。Escで編集を終えます。</p>
@@ -9152,12 +9165,12 @@ self.onmessage = (event) => {
       setFileStatus(`${added.length}個をマスク範囲として貼り付けました${notes ? `（${notes}）` : ""}`);
     }
 
-    function setMaskLook(mesh, faded) {
+    function setMaskLook(mesh, faded, opacity = 0.16) {
       const material = mesh.material;
-      if (Boolean(material.userData.faded) === faded) return;
+      if (Boolean(material.userData.faded) === faded && (!faded || material.opacity === opacity)) return;
       material.userData.faded = faded;
       material.transparent = faded;
-      material.opacity = faded ? 0.16 : 1;
+      material.opacity = faded ? opacity : 1;
       material.depthWrite = !faded;
       material.needsUpdate = true;
       mesh.castShadow = !faded;
@@ -11906,6 +11919,13 @@ self.onmessage = (event) => {
       }
       if (event.key === "Escape" && rigEditing) {
         event.preventDefault();
+        if (chainSel) {
+          // 揺れボーンの点を選んでいるときは、まず選択だけを外す
+          chainSel = null;
+          updateRigChrome();
+          requestRender();
+          return;
+        }
         leaveRigEdit();
         return;
       }
@@ -20651,6 +20671,8 @@ self.onmessage = (event) => {
     const CHAIN_LIMIT = 16;
     const CHAIN_DEFAULTS = { segments: 4, stiffness: 0.6, damping: 0.4, gravity: 0.2, maxAngle: 20 };
     const CHAIN_COLOR = 0xc77dff;
+    const CHAIN_PICK_COLOR = 0xffe066; // 選んでいる点
+    const CHAIN_HOVER_COLOR = 0xf0d9ff; // ポインターが乗っている点
 
     function isChainBone(name) {
       return typeof name === "string" && name.startsWith(CHAIN_PREFIX);
@@ -21846,9 +21868,12 @@ self.onmessage = (event) => {
           joints += 1;
           mark.visible = true;
           at(index, mark.position);
-          const dragged = rigDrag?.name === `${CHAIN_PREFIX}${chain.id}:${index}`;
-          mark.scale.setScalar(radius * (dragged ? 1.5 : index === 0 ? 1 : 0.8));
-          mark.material.color.setHex(focus ? RIG_COLORS.focus : CHAIN_COLOR);
+          const name = `${CHAIN_PREFIX}${chain.id}:${index}`;
+          const picked = !pose && chainSel?.chain === chain.id && chainSel.index === index;
+          const hovered = !pose && rigHover === name;
+          const grow = rigDrag?.name === name ? 1.6 : picked ? 1.45 : hovered ? 1.35 : 1;
+          mark.scale.setScalar(radius * 1.15 * grow * (index === 0 ? 1.1 : 1));
+          mark.material.color.setHex(picked ? CHAIN_PICK_COLOR : hovered ? CHAIN_HOVER_COLOR : focus ? RIG_COLORS.focus : CHAIN_COLOR);
         });
         for (let index = 1; index < chain.points.length; index += 1) {
           const arrow = chainBoneMark(bones);
@@ -21878,13 +21903,14 @@ self.onmessage = (event) => {
 
     function updateRigGuide() {
       rigGuide.visible = rigEditing && Boolean(rig);
+      syncChainTool();
       if (!rigGuide.visible) return;
       const size = rigSize();
       const radius = size * 0.011;
       const thickness = size * 0.0035;
       for (const [name, mark] of rigJointMarks) {
         rigShownJoint(name, mark.position);
-        mark.scale.setScalar(name === rigDrag?.name ? radius * 1.5 : radius);
+        mark.scale.setScalar(name === rigDrag?.name ? radius * 1.5 : name === rigHover && !rigPosedJoints ? radius * 1.3 : radius);
       }
       for (const bone of RIG_BONES) {
         const arrow = rigBoneMarks.get(bone.name);
@@ -21907,31 +21933,36 @@ self.onmessage = (event) => {
       return RIG_BONES.find((bone) => bone.tail === name)?.name ?? null;
     }
 
+    // 揺れボーンの点は体の関節より広い範囲（半径 22px）でつかめ、重なったときも優先する
     function pickRigJoint(event) {
       const rect = renderer.domElement.getBoundingClientRect();
       let best = null;
-      let bestDistance = 14 * 14;
-      for (const name of [...chainJointNames(), ...RIG_JOINTS]) {
+      let bestScore = 1;
+      const chainNames = chainJointNames();
+      for (const name of [...chainNames, ...RIG_JOINTS]) {
         rigJoint(name, rigGuideA).project(camera);
         if (rigGuideA.z > 1) continue;
         const x = ((rigGuideA.x + 1) / 2) * rect.width + rect.left;
         const y = ((1 - rigGuideA.y) / 2) * rect.height + rect.top;
-        const distance = (x - event.clientX) ** 2 + (y - event.clientY) ** 2;
-        if (distance < bestDistance) {
-          bestDistance = distance;
+        const chained = name.startsWith(CHAIN_PREFIX);
+        const reach = chained ? 22 : 14;
+        const score = ((x - event.clientX) ** 2 + (y - event.clientY) ** 2) / (reach * reach) * (chained ? 0.6 : 1);
+        if (score < bestScore) {
+          bestScore = score;
           best = name;
         }
       }
       return best;
     }
 
-    function moveRigJoint(name, point) {
+    function moveRigJoint(name, point, carry = true) {
       const ref = chainJointRef(name);
       if (ref) {
-        // 揺れボーンの点は、その先の点も一緒に動かす（根元をつかむと鎖ごと動く）
+        // 揺れボーンの点は、ふつうはその先の点も一緒に動かす（根元をつかむと鎖ごと動く）。carry が false ならその点だけ
         const delta = point.clone().sub(rigJoint(name, rigGuideA));
-        for (let index = ref.index; index < ref.chain.points.length; index += 1) {
-          ref.chain.points[index] = new THREE.Vector3().fromArray(ref.chain.points[index]).add(delta).toArray();
+        const last = carry ? ref.chain.points.length - 1 : ref.index;
+        for (let index = ref.index; index <= last; index += 1) {
+          ref.chain.points[index] = new THREE.Vector3().fromArray(ref.chain.points[index]).add(delta).toArray().map(roundNumber);
         }
         return;
       }
@@ -21957,10 +21988,13 @@ self.onmessage = (event) => {
       const focus = rigEditing ? rigBone : null;
       if (!focus && !rigLookActive) return;
       rigLookActive = Boolean(focus);
-      for (const mesh of editableMeshes()) setMaskLook(mesh, Boolean(focus) && rigBoneOf(mesh) !== focus);
+      // 揺れボーンを選んでいる間（再生中を除く）は、そのボーンのパーツも半透明にして中の点を見やすくする
+      const xray = Boolean(focus) && chainXray && !rigPlayer.showing && isChainBone(focus);
+      const look = (mesh, mine) => setMaskLook(mesh, !mine || xray, mine ? 0.38 : 0.16);
+      for (const mesh of editableMeshes()) look(mesh, !focus || rigBoneOf(mesh) === focus);
       for (const holder of [...activeAnchors(), ...linkMirrors()]) {
-        const faded = Boolean(focus) && rigBoneOf(holder) !== focus;
-        for (const mesh of holder.userData.inner.children) setMaskLook(mesh, faded);
+        const mine = !focus || rigBoneOf(holder) === focus;
+        for (const mesh of holder.userData.inner.children) look(mesh, mine);
       }
     }
 
@@ -22029,6 +22063,8 @@ self.onmessage = (event) => {
       rigBone = null;
       rigPart = null;
       rigDrag = null;
+      rigHover = null;
+      chainSel = null;
       rigPlayer.playing = false;
       rigPlayer.showing = false;
       rigPlayer.time = 0;
@@ -22047,6 +22083,111 @@ self.onmessage = (event) => {
 
     let rigDrag = null;
     let rigPress = null;
+    let rigHover = null; // ポインターが乗っている関節（強調表示用）
+    let chainSel = null; // 選んでいる揺れボーンの点 { chain: id, index }
+    let chainCarry = true; // 点を動かすと、その先の点も一緒に動かす（Alt で逆）
+    let chainXray = true; // 揺れボーンを選んでいる間はパーツを透かす
+    let altHeld = false;
+
+    function selectedChainJoint() {
+      if (!chainSel) return null;
+      const chain = chainById(chainSel.chain);
+      if (!chain || chainSel.index >= chain.points.length) return null;
+      return { chain, index: chainSel.index };
+    }
+
+    function selectChainJoint(chain, index) {
+      chainSel = chain ? { chain: chain.id, index } : null;
+      if (chain) {
+        rigBone = `${CHAIN_PREFIX}${chain.id}`;
+        rigPart = null;
+      }
+    }
+
+    // 揺れボーンの点用の移動ハンドル（X・Y・Z の矢印と面の四角）。編集用の見えない目印に付けて、動いた分を点に写す
+    const chainHandle = new THREE.Object3D();
+    scene.add(chainHandle);
+    const chainTool = new TransformControls(camera, renderer.domElement);
+    chainTool.setMode("translate");
+    chainTool.setSpace("world");
+    chainTool.setSize(0.85);
+    scene.add(chainTool.getHelper());
+    chainTool.addEventListener("change", () => requestRender());
+    let chainToolDrag = null;
+    let chainToolGrabbed = false;
+
+    function chainMoveFrom(chain, start, index, delta, carry) {
+      const last = carry ? start.length - 1 : index;
+      chain.points = start.map((point, k) => (k >= index && k <= last
+        ? [point[0] + delta.x, point[1] + delta.y, point[2] + delta.z].map(roundNumber)
+        : [...point]));
+    }
+
+    chainTool.addEventListener("mouseDown", () => {
+      const ref = selectedChainJoint();
+      chainToolGrabbed = true;
+      if (!ref) return;
+      controls.enabled = false;
+      chainToolDrag = {
+        chain: ref.chain.id,
+        index: ref.index,
+        start: ref.chain.points.map((point) => [...point]),
+        origin: chainHandle.position.clone(),
+        carry: chainCarry !== altHeld,
+      };
+      document.body.classList.add("rig-dragging");
+    });
+    chainTool.addEventListener("objectChange", () => {
+      const drag = chainToolDrag;
+      const chain = drag ? chainById(drag.chain) : null;
+      if (!chain) return;
+      chainMoveFrom(chain, drag.start, drag.index, chainHandle.position.clone().sub(drag.origin), drag.carry);
+      syncChainJointFields();
+    });
+    chainTool.addEventListener("mouseUp", () => {
+      controls.enabled = true;
+      const drag = chainToolDrag;
+      chainToolDrag = null;
+      document.body.classList.remove("rig-dragging");
+      const chain = drag ? chainById(drag.chain) : null;
+      if (chain && JSON.stringify(chain.points) !== JSON.stringify(drag.start)) commit(); // ドラッグ 1 回で履歴 1 つ
+      updateRigChrome();
+    });
+
+    function syncChainTool() {
+      const ref = rigEditing && rig && !rigPlayer.showing ? selectedChainJoint() : null;
+      if (!ref) {
+        if (chainTool.object) chainTool.detach();
+        if (chainToolDrag) {
+          chainToolDrag = null;
+          controls.enabled = true;
+        }
+        return;
+      }
+      chainTool.camera = camera;
+      if (!chainToolDrag) chainHandle.position.fromArray(ref.chain.points[ref.index]);
+      chainHandle.updateMatrixWorld();
+      if (chainTool.object !== chainHandle) chainTool.attach(chainHandle);
+    }
+
+    function chainToolHit(event) {
+      if (!chainTool.object || !chainTool.enabled) return false;
+      const rect = renderer.domElement.getBoundingClientRect();
+      rigPointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
+      rigRay.setFromCamera(rigPointer, camera);
+      chainTool.getHelper().updateMatrixWorld(true);
+      return rigRay.intersectObject(chainTool._gizmo.picker.translate, true).some((hit) => hit.object.visible);
+    }
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Alt") altHeld = true;
+    });
+    window.addEventListener("keyup", (event) => {
+      if (event.key === "Alt") altHeld = false;
+    });
+    window.addEventListener("blur", () => {
+      altHeld = false;
+    });
     const rigPlane = new THREE.Plane();
     const rigRay = new THREE.Raycaster();
     const rigPointer = new THREE.Vector2();
@@ -22061,27 +22202,39 @@ self.onmessage = (event) => {
 
     renderer.domElement.parentElement.addEventListener("pointerdown", (event) => {
       if (!rigEditing || !rig || event.button !== 0 || event.target !== renderer.domElement || rigPlayer.showing) return;
+      chainToolGrabbed = false;
+      altHeld = event.altKey;
+      if (chainToolHit(event)) return; // 移動ハンドルに任せる
       const name = pickRigJoint(event);
       if (!name) return;
       event.stopPropagation();
       event.preventDefault();
+      const ref = chainJointRef(name);
+      if (ref) selectChainJoint(ref.chain, ref.index);
       camera.getWorldDirection(rigHit);
       rigPlane.setFromNormalAndCoplanarPoint(rigHit, rigJoint(name, rigGuideA));
-      rigDrag = { name, pointerId: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
+      rigDrag = { name, pointerId: event.pointerId, x: event.clientX, y: event.clientY, moved: false, carry: chainCarry !== event.altKey, start: JSON.stringify(rig) };
       document.body.classList.add("rig-dragging");
+      requestRender();
     }, true);
     window.addEventListener("pointermove", (event) => {
       if (!rigEditing) return;
       if (!rigDrag) {
         if (event.target === renderer.domElement && event.buttons === 0) {
-          document.body.classList.toggle("rig-hover", !rigPlayer.showing && Boolean(pickRigJoint(event)));
+          const name = rigPlayer.showing || chainToolDrag || chainTool.axis ? null : pickRigJoint(event);
+          if (name !== rigHover) {
+            rigHover = name;
+            requestRender();
+          }
+          document.body.classList.toggle("rig-hover", Boolean(name));
         }
         return;
       }
       if (event.pointerId !== rigDrag.pointerId) return;
       if ((event.clientX - rigDrag.x) ** 2 + (event.clientY - rigDrag.y) ** 2 > 16) rigDrag.moved = true;
       if (!rigDrag.moved || !rigCastPointer(event)) return;
-      moveRigJoint(rigDrag.name, rigHit);
+      moveRigJoint(rigDrag.name, rigHit, rigDrag.carry);
+      syncChainJointFields();
     });
     const endRigDrag = (event) => {
       if (!rigDrag || event.pointerId !== rigDrag.pointerId) return;
@@ -22089,9 +22242,11 @@ self.onmessage = (event) => {
       rigDrag = null;
       document.body.classList.remove("rig-dragging");
       if (drag.moved) {
-        commit();
+        if (JSON.stringify(rig) !== drag.start) commit();
+        updateRigChrome();
         return;
       }
+      if (!chainJointRef(drag.name)) chainSel = null;
       rigBone = rigJointBone(drag.name);
       rigPart = null;
       updateRigChrome();
@@ -22104,8 +22259,13 @@ self.onmessage = (event) => {
     renderer.domElement.addEventListener("pointerup", (event) => {
       const start = rigPress;
       rigPress = null;
+      if (chainToolGrabbed) {
+        chainToolGrabbed = false;
+        return;
+      }
       if (!rigEditing || event.button !== 0 || !start || rigPlayer.showing) return;
       if ((event.clientX - start.x) ** 2 + (event.clientY - start.y) ** 2 > 16) return;
+      chainSel = null;
       const hit = pickScene(event);
       rigPart = hit && (editableMeshes().includes(hit) || (hit.userData.isLinkAnchor && !hit.userData.isLinkMirror)) ? hit : null;
       rigBone = hit && !hit.userData.isMask ? rigBoneOf(hit) : null;
@@ -22306,6 +22466,7 @@ self.onmessage = (event) => {
     }
 
     function chainObjectPoints(object) {
+      if (Array.isArray(object)) return object.flatMap((item) => chainObjectPoints(item));
       const meshes = object.userData.isLinkAnchor ? object.userData.inner.children.filter((mesh) => mesh.isMesh) : [object];
       const points = [];
       for (const mesh of meshes) {
@@ -22445,10 +22606,46 @@ self.onmessage = (event) => {
       return options.join("");
     }
 
+    function chainListSignature() {
+      const chains = rigChains();
+      return JSON.stringify([chains, rigBone, rigPart ? rigItemLabel(rigPart) : "", folders.map((folder) => [folder.id, folder.name]), links.map((link) => [link.id, link.name]),
+        chains.map((chain) => chainItems(chain).length), selectedChainJoint() ? chainSel : null, chainCarry, rigPlayer.showing]);
+    }
+
+    function chainJointLabel(chain, index) {
+      return index === 0 ? "根元" : index === chain.points.length - 1 ? "先端" : String(index + 1);
+    }
+
+    function chainJointFields(chain) {
+      const ref = selectedChainJoint();
+      const joints = chain.points.map((_, index) => {
+        const pressed = ref?.chain === chain && ref.index === index;
+        return `<button type="button" data-act="joint" data-index="${index}" aria-pressed="${pressed}" title="この点を選んで動かす">${chainJointLabel(chain, index)}</button>`;
+      }).join("");
+      const xyz = ref?.chain === chain
+        ? `<div class="chain-xyz">${["X", "Y", "Z"].map((axis, k) => `<label><span>${axis}</span><input type="number" step="0.001" value="${Number(chain.points[ref.index][k].toFixed(4))}" data-field="j${axis.toLowerCase()}" aria-label="「${chainJointLabel(chain, ref.index)}」の ${axis}" /></label>`).join("")}</div>`
+        : "";
+      const busy = rigPlayer.showing ? " disabled" : "";
+      return `<div class="chain-joints"><span>点</span>${joints}</div>${xyz}
+          <label class="chain-carry"><input type="checkbox" data-field="carry"${chainCarry ? " checked" : ""} /> 先の点も一緒に動かす（Alt で逆）</label>
+          <div class="chain-quick"><button type="button" data-act="root-to-part"${busy} title="根元の点を、割り当てたパーツ（なければ選んでいるパーツ）の付け根に動かす。先端は動かさない">根元をパーツの付け根に</button><button type="button" data-act="tip-to-part"${busy} title="先端の点を、割り当てたパーツ（なければ選んでいるパーツ）の先端に動かす。根元は動かさない">先端をパーツの先端に</button><button type="button" data-act="straighten"${busy} title="根元と先端のあいだに、点を等間隔に一直線に並べる">まっすぐに並べる</button></div>`;
+    }
+
+    // 点をドラッグしている間、選んでいる点の数値欄だけを書き換える（入力中の欄は触らない）
+    function syncChainJointFields() {
+      const ref = selectedChainJoint();
+      if (!ref) return;
+      const card = chainList.querySelector(`.chain-card[data-chain="${ref.chain.id}"]`);
+      if (!card) return;
+      ["x", "y", "z"].forEach((axis, k) => {
+        const input = card.querySelector(`[data-field="j${axis}"]`);
+        if (input && document.activeElement !== input) input.value = String(Number(ref.chain.points[ref.index][k].toFixed(4)));
+      });
+    }
+
     function renderChainList() {
       const chains = rigChains();
-      const key = JSON.stringify([chains, rigBone, rigPart ? rigItemLabel(rigPart) : "", folders.map((folder) => [folder.id, folder.name]), links.map((link) => [link.id, link.name]),
-        chains.map((chain) => chainItems(chain).length)]);
+      const key = chainListSignature();
       if (key === chainListKey) return;
       const editing = document.activeElement;
       if (editing && chainList.contains(editing) && (editing.type === "range" || editing.type === "text")) return;
@@ -22469,6 +22666,7 @@ self.onmessage = (event) => {
           <div class="chain-row"><span class="rig-dot"></span><input type="text" maxlength="40" value="${escapeHtml(chain.name)}" data-field="name" aria-label="揺れボーンの名前" /><button type="button" data-act="delete" title="この揺れボーンを削除する（割り当てたパーツは自動に戻る）">削除</button></div>
           <label class="chain-field"><span>親ボーン</span><select data-field="parent" aria-label="付け根になるボーン">${parents}</select></label>
           <label class="chain-field"><span>節の数</span><input type="number" min="1" max="${BEND_MAX}" step="1" value="${chain.points.length - 1}" data-field="segments" aria-label="節の数" /></label>
+          ${chainJointFields(chain)}
           ${sliders}
           <div class="chain-row"><select data-act="assign" aria-label="この揺れボーンに割り当てる">${chainAssignOptions(chain)}</select></div>
           <div class="rig-transport"><button type="button" data-act="fit" title="選んでいるパーツの形に沿って点を置き直す">選んだパーツに合わせる</button><button type="button" data-act="focus" title="この揺れボーンで動くパーツを強調する">強調</button></div>
@@ -22508,6 +22706,26 @@ self.onmessage = (event) => {
       } else if (field === "segments") {
         const segments = Math.min(BEND_MAX, Math.max(1, Math.round(Number(event.target.value)) || 1));
         chain.points = resampleChain(chain.points, segments);
+        if (chainSel?.chain === chain.id) chainSel = null;
+      } else if (field === "carry") {
+        chainCarry = event.target.checked;
+        updateRigChrome();
+        return;
+      } else if (/^j[xyz]$/.test(field)) {
+        const ref = selectedChainJoint();
+        const value = Number(event.target.value);
+        if (!ref || ref.chain !== chain || rigPlayer.showing || !Number.isFinite(value)) {
+          syncChainJointFields();
+          return;
+        }
+        const axis = "xyz".indexOf(field[1]);
+        const delta = new THREE.Vector3();
+        delta.setComponent(axis, value - chain.points[ref.index][axis]);
+        chainMoveFrom(chain, chain.points, ref.index, delta, chainCarry);
+        chainListKey = chainListSignature(); // 入力欄を作り直さない（Tab で X→Y→Z と続けて打てるように）
+        commit();
+        requestRender();
+        return;
       } else if (CHAIN_SLIDERS.some((item) => item[0] === field)) {
         // 値は input で反映済み。ここで履歴に積む
       } else if (act === "assign") {
@@ -22581,10 +22799,64 @@ self.onmessage = (event) => {
       } else if (act === "focus") {
         rigBone = rigBone === bone && !rigPart ? null : bone;
         rigPart = null;
+      } else if (act === "joint") {
+        const index = Number(event.target.closest("button").dataset.index);
+        const ref = selectedChainJoint();
+        if (ref?.chain === chain && ref.index === index) chainSel = null;
+        else selectChainJoint(chain, index);
+        requestRender();
+      } else if (act === "root-to-part" || act === "tip-to-part") {
+        if (rigPlayer.showing) return;
+        const ends = chainPartEnds(chain);
+        if (!ends) {
+          setFileStatus("先に揺れボーンへパーツを割り当てるか、ビューか一覧でパーツをクリックしてください");
+          return;
+        }
+        const tip = act === "tip-to-part";
+        moveChainEnd(chain, tip, ends[tip ? 1 : 0]);
+        selectChainJoint(chain, tip ? chain.points.length - 1 : 0);
+        commit();
+        setFileStatus(tip ? `「${chain.name}」の先端をパーツの先端に合わせました` : `「${chain.name}」の根元をパーツの付け根に合わせました`);
+      } else if (act === "straighten") {
+        if (rigPlayer.showing) return;
+        const root = new THREE.Vector3().fromArray(chain.points[0]);
+        const tip = new THREE.Vector3().fromArray(chain.points.at(-1));
+        const count = chain.points.length - 1;
+        chain.points = chain.points.map((_, index) => root.clone().lerp(tip, index / count).toArray().map(roundNumber));
+        commit();
+        setFileStatus(`「${chain.name}」の点を根元から先端まで等間隔に並べました`);
       }
       updateRigChrome();
     });
+
+    // 割り当てたパーツ（なければ選んでいるパーツ）の両端。今の鎖の向きに近いほうを根元とする
+    function chainPartEnds(chain) {
+      const owned = chainItems(chain);
+      const targets = owned.length ? owned : rigPart ? [rigPart] : [];
+      const fitted = targets.length ? fitChainPoints(targets, chain.points.length - 1) : null;
+      if (!fitted) return null;
+      const a = new THREE.Vector3().fromArray(fitted.points[0]);
+      const b = new THREE.Vector3().fromArray(fitted.points.at(-1));
+      const root = new THREE.Vector3().fromArray(chain.points[0]);
+      const tip = new THREE.Vector3().fromArray(chain.points.at(-1));
+      return root.distanceTo(a) + tip.distanceTo(b) <= root.distanceTo(b) + tip.distanceTo(a) ? [a, b] : [b, a];
+    }
+
+    // 片端だけを目標へ動かし、あいだの点は反対の端へ向かって少しずつ動く量を減らす（形を保ったまま伸び縮み）
+    function moveChainEnd(chain, tip, target) {
+      const count = chain.points.length - 1;
+      const delta = target.clone().sub(new THREE.Vector3().fromArray(chain.points[tip ? count : 0]));
+      chain.points = chain.points.map((point, index) => {
+        const weight = tip ? index / count : 1 - index / count;
+        return new THREE.Vector3().fromArray(point).addScaledVector(delta, weight).toArray().map(roundNumber);
+      });
+    }
     document.getElementById("chain-add").addEventListener("click", addChain);
+    document.getElementById("chain-xray").addEventListener("change", (event) => {
+      chainXray = event.target.checked;
+      updateRigLook();
+      requestRender();
+    });
 
     function domeOf(mesh) {
       return readDome(mesh?.userData.dome) ?? { height: 0, contour: "round", curve: DOME_DEFAULT_CURVE.map((knot) => [...knot]) };
