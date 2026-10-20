@@ -2837,7 +2837,20 @@ ${withNormal ? `  #ifndef FLAT_SHADED
 if (squishOn > 0.5 && squishCount > 0) {
   vec3 squishWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;
   vec3 squishN = normalize(transpose(inverse(mat3(modelMatrix))) * normal);
-  transformed = (inverse(modelMatrix) * vec4(squishWorld + squishOffset(squishWorld, squishN), 1.0)).xyz;
+  vec3 squishD = squishOffset(squishWorld, squishN);
+${withNormal ? `  if (dot(squishD, squishD) > 0.0) {
+    float squishStep = max(squishParams.y * 0.25, 0.00001);
+    vec3 squishT1 = normalize(cross(squishN, abs(squishN.y) < 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0)));
+    vec3 squishT2 = cross(squishN, squishT1);
+    vec3 squishW1 = squishT1 * squishStep + squishOffset(squishWorld + squishT1 * squishStep, squishN) - squishD;
+    vec3 squishW2 = squishT2 * squishStep + squishOffset(squishWorld + squishT2 * squishStep, squishN) - squishD;
+    vec3 squishM = normalize(cross(squishW1, squishW2));
+    if (dot(squishM, squishN) < 0.0) squishM = -squishM;
+    #ifndef FLAT_SHADED
+    vNormal = normalize((viewMatrix * vec4(squishM, 0.0)).xyz);
+    #endif
+  }
+` : ""}  transformed = (inverse(modelMatrix) * vec4(squishWorld + squishD, 1.0)).xyz;
 }`);
     }
 
@@ -3546,7 +3559,7 @@ if (decalOn > 0.5) {
         shader.vertexShader = patchPushVertex(patchMaskVertex(patchSagVertex(shader.vertexShader, withNormal)), withNormal);
         shader.fragmentShader = patchMaskFragment(shader.fragmentShader, BODY_LIB, BODY_EXEC);
       };
-      material.customProgramCacheKey = () => "mask-discard-v17";
+      material.customProgramCacheKey = () => "mask-discard-v18";
       material.onBeforeCompile = (shader) => {
         patch(shader, true);
         Object.assign(shader.uniforms, material.userData.reliefGpu.uniforms, decalGpu.uniforms);
@@ -4283,7 +4296,7 @@ if (decalOn > 0.5) {
       };
       const material = skin.clone();
       material.side = THREE.BackSide;
-      material.customProgramCacheKey = () => "mask-cap-v13";
+      material.customProgramCacheKey = () => "mask-cap-v14";
       material.onBeforeCompile = (shader) => patch(shader, true);
       material.userData.capUniforms = uniforms;
       const depth = new THREE.MeshDepthMaterial();
@@ -22057,7 +22070,7 @@ self.onmessage = (event) => {
       }
       // 離れた当たりは、戻りの速さのばね（少し行き過ぎて戻る）で 0 に戻す
       const omega = 2 * Math.PI * (0.6 + 6 * squish.speed);
-      const zeta = 0.35;
+      const zeta = 0.5;
       const step = Math.min(Math.max(dt, 0), 0.05);
       for (const [id, contact] of state.contacts) {
         if (contact.touching) continue;
