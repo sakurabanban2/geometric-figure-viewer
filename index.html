@@ -2678,6 +2678,45 @@ ${withNormal ? "    #ifndef FLAT_SHADED\n    vNormal = normalize((viewMatrix * v
     // 接線の長さが常に 1 なので、鎖に沿った長さは変わらず、曲がるだけになる。
     // 区間ごとの始点・回転・回る速さは CPU で求め、小さな浮動小数点テクスチャ（bendMap）で渡す。
     const BEND_MAX = 8;
+    const SQUISH_MAX = 8;
+    // 柔らかいパーツのへこみ。当たっている形（カプセル・球・平面）の外へ頂点を出し、まわりはなめらかに一緒にへこませ、
+    // 押しつぶされた分は横向きの面をふくらませる（体積をおおよそ保つ）。squishC = (当たりの深さ, 戻りのばね, ふくらみ, -)
+    const SQUISH_LIB = `
+      uniform float squishOn;
+      uniform int squishCount;
+      uniform vec4 squishA[${SQUISH_MAX}];
+      uniform vec4 squishB[${SQUISH_MAX}];
+      uniform vec4 squishC[${SQUISH_MAX}];
+      uniform vec4 squishParams;
+      vec3 squishOffset(vec3 wp, vec3 wn) {
+        vec3 disp = vec3(0.0);
+        float k = max(squishParams.y, 0.000001);
+        for (int i = 0; i < ${SQUISH_MAX}; i++) {
+          if (i >= squishCount) break;
+          vec4 A = squishA[i];
+          vec4 B = squishB[i];
+          vec4 C = squishC[i];
+          float d;
+          vec3 n;
+          if (B.w > 0.5) {
+            n = A.xyz;
+            d = dot(wp, n) - A.w;
+          } else {
+            vec3 ab = B.xyz - A.xyz;
+            float t = clamp(dot(wp - A.xyz, ab) / max(dot(ab, ab), 1e-12), 0.0, 1.0);
+            vec3 v = wp - (A.xyz + ab * t);
+            float l = length(v);
+            n = l > 1e-7 ? v / l : -wn;
+            d = l - A.w;
+          }
+          float amount = d < -k ? -d : (d > k ? 0.0 : (k - d) * (k - d) / (4.0 * k));
+          float gate = clamp(C.x / (0.25 * k), 0.0, 1.0);
+          disp += n * min(amount * gate, squishParams.x) * C.y;
+          disp += wn * C.z * C.y * (1.0 - abs(dot(wn, n))) * exp(-max(d, 0.0) / max(squishParams.z, 0.000001));
+        }
+        return disp;
+      }
+    `;
     const BEND_ROWS = 3 * BEND_MAX + BEND_MAX + 2;
     const BEND_LIB = `
       uniform float bendOn;
@@ -2752,7 +2791,7 @@ ${withNormal ? "    #ifndef FLAT_SHADED\n    vNormal = normalize((viewMatrix * v
 
     function patchSagVertex(source, withNormal) {
       return source
-        .replace("#include <common>", `#include <common>\n${SAG_LIB}\n${BEND_LIB}`)
+        .replace("#include <common>", `#include <common>\n${SAG_LIB}\n${BEND_LIB}\n${SQUISH_LIB}`)
         .replace("#include <skinning_vertex>", `#include <skinning_vertex>
 if (sagOn > 0.5) {
   vec3 sagWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;
@@ -2780,6 +2819,11 @@ ${withNormal ? `  #ifndef FLAT_SHADED
   vNormal = normalize(mat3(viewMatrix) * bendN);
   #endif
 ` : ""}  transformed = (inverse(modelMatrix) * vec4(bendWorld, 1.0)).xyz;
+}
+if (squishOn > 0.5 && squishCount > 0) {
+  vec3 squishWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;
+  vec3 squishN = normalize(transpose(inverse(mat3(modelMatrix))) * normal);
+  transformed = (inverse(modelMatrix) * vec4(squishWorld + squishOffset(squishWorld, squishN), 1.0)).xyz;
 }`);
     }
 
@@ -3444,6 +3488,12 @@ if (decalOn > 0.5) {
         bendOn: { value: 0 },
         bendCount: { value: 0 },
         bendMap: { value: emptyBendMap },
+        squishOn: { value: 0 },
+        squishCount: { value: 0 },
+        squishA: { value: Array.from({ length: SQUISH_MAX }, () => new THREE.Vector4()) },
+        squishB: { value: Array.from({ length: SQUISH_MAX }, () => new THREE.Vector4()) },
+        squishC: { value: Array.from({ length: SQUISH_MAX }, () => new THREE.Vector4()) },
+        squishParams: { value: new THREE.Vector4(0, 1, 1, 0) },
       };
     }
 
@@ -3482,7 +3532,7 @@ if (decalOn > 0.5) {
         shader.vertexShader = patchPushVertex(patchMaskVertex(patchSagVertex(shader.vertexShader, withNormal)), withNormal);
         shader.fragmentShader = patchMaskFragment(shader.fragmentShader, BODY_LIB, BODY_EXEC);
       };
-      material.customProgramCacheKey = () => "mask-discard-v16";
+      material.customProgramCacheKey = () => "mask-discard-v17";
       material.onBeforeCompile = (shader) => {
         patch(shader, true);
         Object.assign(shader.uniforms, material.userData.reliefGpu.uniforms, decalGpu.uniforms);
@@ -3490,7 +3540,7 @@ if (decalOn > 0.5) {
         shader.fragmentShader = patchDecalFragment(patchReliefFragment(shader.fragmentShader));
       };
       const depth = new THREE.MeshDepthMaterial();
-      depth.customProgramCacheKey = () => "mask-discard-depth-v12";
+      depth.customProgramCacheKey = () => "mask-discard-depth-v13";
       depth.onBeforeCompile = (shader) => patch(shader);
       material.userData.depthMaterial = depth;
     }
@@ -4219,11 +4269,11 @@ if (decalOn > 0.5) {
       };
       const material = skin.clone();
       material.side = THREE.BackSide;
-      material.customProgramCacheKey = () => "mask-cap-v12";
+      material.customProgramCacheKey = () => "mask-cap-v13";
       material.onBeforeCompile = (shader) => patch(shader, true);
       material.userData.capUniforms = uniforms;
       const depth = new THREE.MeshDepthMaterial();
-      depth.customProgramCacheKey = () => "mask-cap-depth-v12";
+      depth.customProgramCacheKey = () => "mask-cap-depth-v13";
       depth.onBeforeCompile = (shader) => patch(shader);
       const cap = new THREE.Mesh(mesh.geometry, material);
       cap.customDepthMaterial = depth;
@@ -9796,6 +9846,7 @@ self.onmessage = (event) => {
         + (mesh.userData.color ? `|color:${mesh.userData.color}` : "")
         + (mesh.userData.sag ? `|sag:${JSON.stringify(mesh.userData.sag)}` : "")
         + (mesh.userData.collider ? `|collider:${JSON.stringify(mesh.userData.collider)}` : "")
+        + (mesh.userData.squish ? `|squish:${JSON.stringify(mesh.userData.squish)}` : "")
         + (mesh.userData.curveBind ? `|${JSON.stringify(mesh.userData.curveBind)}` : "")
         + (mesh.userData.shear ? `|shear:${mesh.userData.shear.join(",")}` : "")
         + (mesh.userData.dome ? `|${JSON.stringify(mesh.userData.dome)}` : "")
@@ -9851,6 +9902,7 @@ self.onmessage = (event) => {
         color: mesh.userData.color ?? null,
         sag: mesh.userData.sag ?? null,
         collider: mesh.userData.collider ? structuredClone(mesh.userData.collider) : null,
+        squish: mesh.userData.squish ? { ...mesh.userData.squish } : null,
         bone: mesh.userData.bone ?? null,
         linkId: mesh.userData.linkId ?? null,
         curveBind: mesh.userData.curveBind ? { ...mesh.userData.curveBind } : null,
@@ -9931,6 +9983,7 @@ self.onmessage = (event) => {
       setSag(packed.mesh, packed.sag ?? null);
       setPartBone(packed.mesh, packed.bone ?? null);
       if (!packed.mesh.userData.isMask) setCollider(packed.mesh, packed.collider ?? null);
+      if (!packed.mesh.userData.isMask) setSquish(packed.mesh, packed.squish ?? null);
       setCurveBind(packed.mesh, packed.curveBind ?? null);
       if (packed.relief) packed.mesh.userData.relief = packed.relief;
       else delete packed.mesh.userData.relief;
@@ -14700,6 +14753,7 @@ self.onmessage = (event) => {
         sag: mesh.userData.sag ? { ...mesh.userData.sag, amount: roundNumber(mesh.userData.sag.amount), wobble: roundNumber(mesh.userData.sag.wobble) } : undefined,
         bone: mesh.userData.bone ?? undefined,
         collider: serializeCollider(mesh.userData.collider),
+        squish: serializeSquish(mesh.userData.squish),
         home: mesh.userData.home?.map(roundNumber),
         size: mesh.userData.kind === "body" && Array.isArray(mesh.userData.size) ? mesh.userData.size.map(roundNumber) : undefined,
         merge: mesh.userData.merge ? { ...mesh.userData.merge } : undefined,
@@ -15034,6 +15088,7 @@ self.onmessage = (event) => {
       setSag(mesh, readSag(part.sag));
       setPartBone(mesh, part.bone);
       setCollider(mesh, part.collider);
+      setSquish(mesh, part.squish);
       mesh.userData.linkId = typeof part.linkId === "string" ? part.linkId : null;
       mesh.userData.home = isVector(part.home, 3) ? [...part.home] : undefined;
       setDecal(mesh, readDecal(part.decal));
@@ -15633,6 +15688,7 @@ self.onmessage = (event) => {
       setSag(mesh, readSag(part.sag));
       setPartBone(mesh, part.bone);
       setCollider(mesh, part.collider);
+      setSquish(mesh, part.squish);
       mesh.userData.home = isVector(part.home, 3) ? [...part.home] : undefined;
       setDecal(mesh, readDecal(part.decal));
       setConform(mesh, readConform(part.conform));
@@ -18793,6 +18849,7 @@ self.onmessage = (event) => {
       setSag(mesh, readSag(part.sag));
       setPartBone(mesh, part.bone);
       setCollider(mesh, part.collider);
+      setSquish(mesh, part.squish);
       const parent = parentByKey(part.parent);
       parent.add(mesh);
       mesh.position.fromArray(part.position);
@@ -21706,7 +21763,7 @@ self.onmessage = (event) => {
     const sagPushPoint = new THREE.Vector3();
 
     function collideSagTip(owner, tip, motion, sag, length) {
-      if (!(sag.wobble > 0)) return;
+      if (!(sag.wobble > 0) || !owner.userData?.squish) return;
       const shapes = frameColliderShapes();
       if (!shapes.length) return;
       const radius = Math.max((sagSpans.get(owner)?.cross ?? length * 0.3) * 0.5, length * 0.05);
@@ -21793,6 +21850,317 @@ self.onmessage = (event) => {
       if (collider.shape === "capsule" && Number.isFinite(length) && length >= 0) {
         const along = colliderTmpA.fromArray(collider.axis).applyMatrix3(colliderTmpM3.setFromMatrix4(matrix)).length() || 1;
         collider.length = length / along;
+      }
+    }
+
+    // ===== 柔らかさ（へこみ・つぶれ） =====
+    // 「柔らかくする」を付けたパーツだけが、ほかのパーツの当たり判定・平面・「衝突する」揺れボーンに押されてへこむ。
+    // 変形は頂点シェーダー（squishOffset）で行い、CPU はパーツごとに当たっている形（最大 SQUISH_MAX 個）と、
+    // 当たりの深さ・接している割合・戻りのばねの値だけを求める。何も変わらないフレームでは何もしない。
+    const SQUISH_PRESETS = {
+      soft: { label: "柔らかめ", softness: 0.8, depth: 0.5, speed: 0.3 },
+      normal: { label: "普通", softness: 0.5, depth: 0.35, speed: 0.5 },
+      firm: { label: "弾力", softness: 0.25, depth: 0.25, speed: 0.85 },
+    };
+    const SQUISH_SAMPLES = 2048;
+    const squishSamples = new WeakMap();
+    const squishStates = new WeakMap();
+    const squishSphere = new THREE.Sphere();
+    const squishPoint = new THREE.Vector3();
+    const squishOut = new THREE.Vector3();
+
+    function readSquish(value) {
+      if (!value || typeof value !== "object") return null;
+      const within = (number, fallback) => (typeof number === "number" && Number.isFinite(number) ? Math.min(1, Math.max(0, number)) : fallback);
+      const base = SQUISH_PRESETS.normal;
+      return { softness: within(value.softness, base.softness), depth: within(value.depth, base.depth), speed: within(value.speed, base.speed) };
+    }
+
+    function setSquish(mesh, value) {
+      const squish = readSquish(value);
+      if (squish) mesh.userData.squish = squish;
+      else delete mesh.userData.squish;
+    }
+
+    function serializeSquish(squish) {
+      return squish ? { softness: roundNumber(squish.softness), depth: roundNumber(squish.depth), speed: roundNumber(squish.speed) } : undefined;
+    }
+
+    function syncSquishTwin(mesh) {
+      if (!symmetric) return null;
+      const other = otherOf(recordOf(mesh), mesh);
+      if (!other || other.userData.locked) return null;
+      setSquish(other, mesh.userData.squish ?? null);
+      return other;
+    }
+
+    // パーツの頂点から最大 SQUISH_SAMPLES 個を間引いて取っておく（当たりの深さと接している割合を見積もる）
+    function squishSampleOf(geometry) {
+      const position = geometry.attributes.position;
+      let cached = squishSamples.get(geometry);
+      if (cached && cached.version === position.version && cached.count === position.count) return cached.points;
+      const stride = Math.max(1, Math.floor(position.count / SQUISH_SAMPLES));
+      const points = new Float32Array(Math.ceil(position.count / stride) * 3);
+      let used = 0;
+      for (let index = 0; index < position.count; index += stride) {
+        points[used * 3] = position.getX(index);
+        points[used * 3 + 1] = position.getY(index);
+        points[used * 3 + 2] = position.getZ(index);
+        used += 1;
+      }
+      cached = { version: position.version, count: position.count, points: points.subarray(0, used * 3) };
+      squishSamples.set(geometry, cached);
+      return cached.points;
+    }
+
+    // 「衝突する」揺れボーンの節を、太さのカプセルとして返す（そのパーツが割り当てられた揺れボーンは除く）
+    function chainSegmentShapes(skipBone) {
+      const shapes = [];
+      for (const chain of rigChains()) {
+        if (!chain.collide || `${CHAIN_PREFIX}${chain.id}` === skipBone) continue;
+        const rest = chainRest(chain);
+        const n = Math.max(rest.dirs.length, 1);
+        const radius = (chain.radius ?? CHAIN_DEFAULTS.radius) * (rest.total / n);
+        const pose = (rigPoseFrame ? chainPoses.get(chain.id) : staticChainPoses.get(chain.id)) ?? null;
+        const heads = pose?.heads ?? rest.joints;
+        for (let index = 1; index < heads.length; index += 1) {
+          shapes.push({ type: "capsule", a: heads[index - 1], b: heads[index], r: radius, owner: null, key: `chain:${chain.id}:${index}`, group: "" });
+        }
+      }
+      return shapes;
+    }
+
+    function shapeKey(shape) {
+      if (shape.key) return shape.key;
+      if (shape.type === "plane") return `plane:${shape.owner.id}`;
+      return `part:${shape.owner.uuid}`;
+    }
+
+    function snapshotShape(shape) {
+      if (shape.type === "plane") return { type: "plane", point: shape.point.clone(), normal: shape.normal.clone() };
+      return { type: shape.type, a: shape.a.clone(), b: shape.b.clone(), r: shape.r };
+    }
+
+    function squishTargets() {
+      const list = [];
+      for (const mesh of editableMeshes()) if (mesh.userData.squish && mesh.material?.userData?.maskUniforms?.squishOn && shownInScene(mesh)) list.push(mesh);
+      return list;
+    }
+
+    function clearSquish(mesh) {
+      const uniforms = mesh.material?.userData?.maskUniforms;
+      if (uniforms?.squishOn) {
+        uniforms.squishOn.value = 0;
+        uniforms.squishCount.value = 0;
+      }
+      for (const cap of maskCaps.get(mesh) ?? []) {
+        const capUniforms = cap.material.userData.capUniforms;
+        if (capUniforms?.squishOn) capUniforms.squishOn.value = 0;
+      }
+      squishStates.delete(mesh);
+    }
+
+    let squishLive = new Set();
+
+    function updateSquish(dt) {
+      const targets = squishTargets();
+      const live = new Set(targets);
+      for (const mesh of squishLive) if (!live.has(mesh)) clearSquish(mesh);
+      squishLive = live;
+      if (!targets.length) return;
+      const parts = frameColliderShapes();
+      for (const mesh of targets) updateSquishMesh(mesh, parts, dt);
+    }
+
+    function updateSquishMesh(mesh, parts, dt) {
+      const squish = mesh.userData.squish;
+      const geometry = mesh.geometry;
+      if (!geometry?.attributes?.position) return;
+      if (!geometry.boundingSphere) geometry.computeBoundingSphere();
+      mesh.updateWorldMatrix(true, false);
+      squishSphere.copy(geometry.boundingSphere).applyMatrix4(mesh.matrixWorld);
+      const size = Math.max(squishSphere.radius, 1e-6);
+      const reach = size * (0.05 + 0.3 * squish.softness);
+      const shapes = [];
+      const bone = rig ? rigBoneOf(mesh) : null;
+      for (const shape of [...parts, ...(rig ? chainSegmentShapes(bone) : [])]) {
+        if (shape.owner === mesh) continue;
+        if (shape.type === "plane") {
+          if (squishPoint.subVectors(squishSphere.center, shape.point).dot(shape.normal) > size + reach) continue;
+        } else {
+          const near = closestOnSegment(shape.a, shape.b, squishSphere.center, squishPoint);
+          if (near.distanceTo(squishSphere.center) > size + shape.r + reach) continue;
+        }
+        shapes.push(shape);
+      }
+      let state = squishStates.get(mesh);
+      if (!state) {
+        state = { key: "", contacts: new Map() };
+        squishStates.set(mesh, state);
+      }
+      const key = `${mesh.matrixWorld.elements.map((value) => value.toFixed(5)).join(",")}|${JSON.stringify(squish)}|${geometry.attributes.position.version}|${shapes.map((shape) => shape.type === "plane"
+        ? `${shapeKey(shape)}:${shape.point.toArray().join(",")}:${shape.normal.toArray().join(",")}`
+        : `${shapeKey(shape)}:${shape.a.toArray().map((v) => v.toFixed(5)).join(",")}:${shape.b.toArray().map((v) => v.toFixed(5)).join(",")}:${shape.r.toFixed(5)}`).join(";")}`;
+      const springing = [...state.contacts.values()].some((contact) => !contact.touching);
+      if (key === state.key && !springing) return;
+      const changed = key !== state.key;
+      state.key = key;
+      if (changed) {
+        const samples = squishSampleOf(geometry);
+        const count = samples.length / 3;
+        const world = new Float32Array(samples.length);
+        const e = mesh.matrixWorld.elements;
+        for (let index = 0; index < count; index += 1) {
+          const x = samples[index * 3];
+          const y = samples[index * 3 + 1];
+          const z = samples[index * 3 + 2];
+          world[index * 3] = e[0] * x + e[4] * y + e[8] * z + e[12];
+          world[index * 3 + 1] = e[1] * x + e[5] * y + e[9] * z + e[13];
+          world[index * 3 + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
+        }
+        const seen = new Set();
+        for (const shape of shapes) {
+          let deepest = 0;
+          let inside = 0;
+          for (let index = 0; index < count; index += 1) {
+            squishPoint.set(world[index * 3], world[index * 3 + 1], world[index * 3 + 2]);
+            const depth = pushPointOut(squishPoint, 0, shape, squishOut);
+            if (depth > 0) {
+              inside += 1;
+              if (depth > deepest) deepest = depth;
+            }
+          }
+          if (!(deepest > 0)) continue;
+          const id = shapeKey(shape);
+          seen.add(id);
+          const contact = state.contacts.get(id) ?? { s: 1, v: 0 };
+          Object.assign(contact, { shape: snapshotShape(shape), depth: deepest, fraction: inside / Math.max(count, 1), touching: true, s: 1, v: 0 });
+          state.contacts.set(id, contact);
+        }
+        for (const [id, contact] of state.contacts) if (!seen.has(id)) contact.touching = false;
+      }
+      // 離れた当たりは、戻りの速さのばね（少し行き過ぎて戻る）で 0 に戻す
+      const omega = 2 * Math.PI * (0.6 + 6 * squish.speed);
+      const zeta = 0.35;
+      const step = Math.min(Math.max(dt, 0), 0.05);
+      for (const [id, contact] of state.contacts) {
+        if (contact.touching) continue;
+        if (step > 0) {
+          const pieces = Math.max(1, Math.ceil(step * 240));
+          const h = step / pieces;
+          for (let piece = 0; piece < pieces; piece += 1) {
+            contact.v += (-omega * omega * contact.s - 2 * zeta * omega * contact.v) * h;
+            contact.s += contact.v * h;
+          }
+        }
+        if (Math.abs(contact.s) < 0.002 && Math.abs(contact.v) < 0.02) state.contacts.delete(id);
+        else sagSettling = true;
+      }
+      writeSquishUniforms(mesh, state, size, reach, squish);
+    }
+
+    function writeSquishUniforms(mesh, state, size, reach, squish) {
+      const uniforms = mesh.material.userData.maskUniforms;
+      const contacts = [...state.contacts.values()].sort((a, b) => b.depth * Math.abs(b.s) - a.depth * Math.abs(a.s)).slice(0, SQUISH_MAX);
+      contacts.forEach((contact, index) => {
+        const shape = contact.shape;
+        const a = uniforms.squishA.value[index];
+        const b = uniforms.squishB.value[index];
+        if (shape.type === "plane") {
+          a.set(shape.normal.x, shape.normal.y, shape.normal.z, shape.normal.dot(shape.point));
+          b.set(0, 0, 0, 1);
+        } else {
+          a.set(shape.a.x, shape.a.y, shape.a.z, shape.r);
+          b.set(shape.b.x, shape.b.y, shape.b.z, 0);
+        }
+        const bulge = Math.min(contact.depth, (contact.depth * contact.fraction) / Math.max(1 - contact.fraction, 0.2)) * 0.7;
+        uniforms.squishC.value[index].set(contact.depth, contact.s, bulge, 0);
+      });
+      uniforms.squishCount.value = contacts.length;
+      uniforms.squishOn.value = contacts.length ? 1 : 0;
+      uniforms.squishParams.value.set(Math.max(squish.depth, 0.01) * size, reach, size * 0.5, 0);
+      for (const cap of maskCaps.get(mesh) ?? []) {
+        const capUniforms = cap.material.userData.capUniforms;
+        if (!capUniforms?.squishOn) continue;
+        for (const name of ["squishA", "squishB", "squishC"]) capUniforms[name].value = uniforms[name].value;
+        capUniforms.squishParams.value = uniforms.squishParams.value;
+        capUniforms.squishCount.value = uniforms.squishCount.value;
+        capUniforms.squishOn.value = uniforms.squishOn.value;
+      }
+    }
+
+    // ===== 編集中（再生していないとき）の揺れボーンの衝突 =====
+    // 「衝突する」揺れボーンを、休み姿勢から当たり判定の外へ曲げる（重力や揺れは付けない）。形や当たり判定が変わったときだけ解き直す
+    const staticChainPoses = new Map();
+    const staticChainUniforms = [];
+    let staticChainKey = "";
+
+    function clearStaticChains() {
+      for (const uniforms of staticChainUniforms) {
+        uniforms.bendOn.value = 0;
+        uniforms.bendMap.value = emptyBendMap;
+      }
+      staticChainUniforms.length = 0;
+      staticChainPoses.clear();
+      staticChainKey = "";
+    }
+
+    function solveStaticChain(rest, frame, params) {
+      const heads = [frame.head.clone()];
+      const quats = [frame.rot.clone()];
+      const q = frame.rot.clone();
+      const root = frame.head.clone();
+      let moved = false;
+      for (let index = 0; index < rest.dirs.length; index += 1) {
+        const length = rest.lengths[index];
+        const dir = rest.dirs[index].clone().applyQuaternion(q);
+        const tip = root.clone().addScaledVector(dir, length);
+        if (params.colliders && collideChainBone(root, tip, length, params)) {
+          moved = true;
+          q.premultiply(new THREE.Quaternion().setFromUnitVectors(dir, tip.clone().sub(root).normalize()));
+        }
+        quats.push(q.clone());
+        heads.push(tip.clone());
+        root.copy(tip);
+      }
+      return { heads, quats, moved };
+    }
+
+    function updateStaticChains() {
+      const chains = rig && !rigPoseFrame ? rigChains().filter((chain) => chain.collide) : [];
+      if (!chains.length || !hasColliders()) {
+        if (staticChainKey || staticChainUniforms.length) clearStaticChains();
+        return;
+      }
+      const owners = colliderOwners();
+      const bones = owners.map((mesh) => rigBoneOf(mesh));
+      const shapes = colliderShapes(owners, null, bones);
+      const key = `${JSON.stringify(chains)}|${shapes.map((shape) => (shape.type === "plane" ? JSON.stringify(shape.owner) : `${shape.bone}:${shape.a.toArray().map((v) => v.toFixed(5))}:${shape.b.toArray().map((v) => v.toFixed(5))}:${shape.r.toFixed(5)}`)).join(";")}|${editableMeshes().map((mesh) => `${mesh.uuid}:${mesh.userData.bone ?? ""}`).join(",")}`;
+      if (key === staticChainKey) return;
+      clearStaticChains();
+      staticChainKey = key;
+      const bentChains = new Map();
+      for (const chain of chains) {
+        const rest = chainRest(chain);
+        if (rest.total < 1e-6) continue;
+        const frame = chainParentFrame(chain, rest, null);
+        const pose = solveStaticChain(rest, frame, chainParams(chain, rest, shapes));
+        staticChainPoses.set(chain.id, pose);
+        if (pose.moved) bentChains.set(`${CHAIN_PREFIX}${chain.id}`, { chain, pose });
+      }
+      if (!bentChains.size) return;
+      for (const [object, bone] of rigPoseTargets()) {
+        const bent = bentChains.get(bone);
+        if (!bent || isCurve(object)) continue;
+        const map = chainBendMap(bent.chain, bent.pose);
+        for (const mesh of bendRenderMeshes(object)) {
+          const uniforms = bendUniformsOf(mesh);
+          if (!uniforms) continue;
+          uniforms.bendOn.value = 1;
+          uniforms.bendCount.value = bent.pose.quats.length - 1;
+          uniforms.bendMap.value = map;
+          staticChainUniforms.push(uniforms);
+        }
       }
     }
 
@@ -27367,6 +27735,7 @@ void main() {
       for (const shape of boundMasks) updateCurveBinding(shape);
       colliderFrameShapes = null;
       updateRigMotion(frameDt);
+      updateStaticChains();
       applyRigPose();
       colliderFrameShapes = null;
       applyPathSags(frameDt);
@@ -27381,6 +27750,7 @@ void main() {
       updateSags(maskMeshes, frameDt);
       updateSagGuides();
       updateColliderGuide();
+      updateSquish(frameDt);
       syncFolderColors();
       updateReliefFrame();
       for (const mesh of maskMeshes) if (shownInScene(mesh)) updateDecal(mesh);
