@@ -1728,6 +1728,33 @@
       <div class="sag-legend" aria-hidden="true"><span class="root">起点</span><span class="gravity">重力</span><span class="bounce">弾み</span></div>
       <button id="sag-open-edit" class="wide" type="button" title="柔らかさの編集モードで、傾けたり揺らしたりしながら設定を確かめる">編集モードで動きを確認</button>
     </section>
+    <section id="collider-section" hidden>
+      <h2>当たり判定</h2>
+      <p class="hint" id="collider-hint"></p>
+      <div id="collider-none">
+        <button id="collider-add" class="wide" type="button" title="パーツの大きさに合わせてカプセルか球の当たり判定を付ける">当たり判定を追加</button>
+      </div>
+      <div id="collider-edit">
+        <div class="curve-modes" role="radiogroup" aria-label="当たり判定の形">
+          <label><input type="radio" name="collider-shape" value="capsule" /> カプセル</label>
+          <label><input type="radio" name="collider-shape" value="sphere" /> 球</label>
+        </div>
+        <label class="chain-field" title="当たり判定の半径（ビューの水色のハンドルでも変えられます）"><span>半径</span><input id="collider-radius" type="number" min="0" step="any" aria-label="当たり判定の半径" /></label>
+        <label class="chain-field" id="collider-length-row" title="カプセルの筒の長さ（両端の半球は含まない。橙のハンドルでも変えられます）"><span>長さ</span><input id="collider-length" type="number" min="0" step="any" aria-label="カプセルの長さ" /></label>
+        <label class="chain-field" title="揺れボーンの「当たるグループ」で絞り込むときの名前（空なら名前なし）"><span>グループ</span><input id="collider-group" type="text" maxlength="24" aria-label="当たり判定のグループ" /></label>
+        <div class="rig-transport">
+          <button id="collider-refit" type="button" title="パーツの今の大きさに合わせて置き直す">形に合わせ直す</button>
+          <button id="collider-remove" type="button" title="このパーツの当たり判定を外す">外す</button>
+        </div>
+      </div>
+      <h3 class="sub-heading">平面（床・壁）</h3>
+      <div class="rig-transport">
+        <button id="collider-plane-floor" type="button" title="足元に、上向きの床を追加する">床を追加</button>
+        <button id="collider-plane-wall" type="button" title="体の後ろに、前向きの壁を追加する">壁を追加</button>
+      </div>
+      <div id="collider-plane-list" role="list" aria-label="平面の当たり判定の一覧"></div>
+      <label class="relief-check" title="ビューに当たり判定をワイヤーフレームで表示する"><input id="collider-show" type="checkbox" checked /> 当たり判定を表示</label>
+    </section>
     <section id="soft-section">
       <h2>動きの確認</h2>
       <p class="hint">ビューを左ドラッグすると体をつかんで揺らせます（右ドラッグで視点、パーツをクリックで切り替え）。ここでの傾きや揺れは確認用で、保存されません。</p>
@@ -3054,6 +3081,9 @@ if (decalOn > 0.5) {
     let sagGuidesOn = true;
     const softPreview = { pitch: 0, roll: 0, power: 0.5, bounce: false, time: 0, kicks: [], drag: null, held: new THREE.Vector3(), release: null };
     let rig = null;
+    let colliderPlanes = [];
+    let colliderPlaneKey = "";
+    let collidersShown = localStorage.getItem("gfv-colliders-shown") !== "0";
     let rigEditing = false;
     let rigBone = null;
     let rigPart = null;
@@ -3730,6 +3760,7 @@ if (decalOn > 0.5) {
         motion.offset.addScaledVector(motion.speed, step);
       }
       if (motion.offset.length() > length * 0.6 * boost) motion.offset.setLength(length * 0.6 * boost);
+      collideSagTip(owner, tip, motion, sag, length);
       wobble.copy(motion.offset).multiplyScalar(sag.wobble);
       if (motion.offset.length() > length * 1e-4 || motion.speed.length() > length * 1e-3) sagSettling = true;
     }
@@ -9758,6 +9789,7 @@ self.onmessage = (event) => {
         + `|${mesh.userData.folderId ?? "-"}|${mesh.userData.label ?? ""}`
         + (mesh.userData.color ? `|color:${mesh.userData.color}` : "")
         + (mesh.userData.sag ? `|sag:${JSON.stringify(mesh.userData.sag)}` : "")
+        + (mesh.userData.collider ? `|collider:${JSON.stringify(mesh.userData.collider)}` : "")
         + (mesh.userData.curveBind ? `|${JSON.stringify(mesh.userData.curveBind)}` : "")
         + (mesh.userData.shear ? `|shear:${mesh.userData.shear.join(",")}` : "")
         + (mesh.userData.dome ? `|${JSON.stringify(mesh.userData.dome)}` : "")
@@ -9784,7 +9816,7 @@ self.onmessage = (event) => {
           record.solo ? 1 : 0,
           sideSig(record.mesh),
           record.mirror ? sideSig(record.mirror) : "-",
-        ].join("|")).join(";")}|folders:${folderSig}|links:${linkSignature()}|curves:${curveSignature()}|sketches:${sketchSignature()}|rig:${rigSignature()}`;
+        ].join("|")).join(";")}|folders:${folderSig}|links:${linkSignature()}|curves:${curveSignature()}|sketches:${sketchSignature()}|rig:${rigSignature()}|planes:${colliderPlaneSignature()}`;
     }
 
     function packMesh(mesh) {
@@ -9812,6 +9844,7 @@ self.onmessage = (event) => {
         label: mesh.userData.label ?? "",
         color: mesh.userData.color ?? null,
         sag: mesh.userData.sag ?? null,
+        collider: mesh.userData.collider ? structuredClone(mesh.userData.collider) : null,
         bone: mesh.userData.bone ?? null,
         linkId: mesh.userData.linkId ?? null,
         curveBind: mesh.userData.curveBind ? { ...mesh.userData.curveBind } : null,
@@ -9862,6 +9895,7 @@ self.onmessage = (event) => {
         curves: packCurves(),
         sketches: packSketches(),
         rig: rig ? structuredClone(rig) : null,
+        colliderPlanes: structuredClone(colliderPlanes),
         anchorMasks: activeAnchors().map((anchor) => ({ anchor, masks: packMaskList(anchor) })),
         records: records.map((record) => ({
           kind: record.kind,
@@ -9890,6 +9924,7 @@ self.onmessage = (event) => {
       setPartColor(packed.mesh, packed.color ?? null);
       setSag(packed.mesh, packed.sag ?? null);
       setPartBone(packed.mesh, packed.bone ?? null);
+      if (!packed.mesh.userData.isMask) setCollider(packed.mesh, packed.collider ?? null);
       setCurveBind(packed.mesh, packed.curveBind ?? null);
       if (packed.relief) packed.mesh.userData.relief = packed.relief;
       else delete packed.mesh.userData.relief;
@@ -9987,6 +10022,7 @@ self.onmessage = (event) => {
       sketches = packSketches(state.sketches ?? []);
       if (sketchDrawing && !sketchById(sketchDrawing)) endSketchDraw();
       rig = readRig(state.rig);
+      colliderPlanes = readColliderPlanes(state.colliderPlanes);
       if (rigEditing) {
         if (!rig) dropRigMode();
         else if (rigPart && !keep.has(rigPart)) rigPart = null;
@@ -10372,6 +10408,7 @@ self.onmessage = (event) => {
       document.getElementById("dome-section").hidden = !domeable;
       if (domeable) refreshDomeUI();
       refreshSagUI();
+      refreshColliderUI();
       const loftable = morphKind === "loft" && (selected.userData.isMask || !maskTarget);
       document.getElementById("loft-section").hidden = !loftable;
       if (loftable) refreshLoftUI();
@@ -11382,6 +11419,8 @@ self.onmessage = (event) => {
               run: () => mergeSelected(),
             },
             { label: "ラスタライズ", disabled: !canRasterize(mesh), run: () => rasterizePart(mesh) },
+            null,
+            ...colliderMenuItems(mesh, masking),
             null,
             ...symmetryMenuItems(mesh, masking),
             null,
@@ -14654,6 +14693,7 @@ self.onmessage = (event) => {
         color: mesh.userData.color ?? undefined,
         sag: mesh.userData.sag ? { ...mesh.userData.sag, amount: roundNumber(mesh.userData.sag.amount), wobble: roundNumber(mesh.userData.sag.wobble) } : undefined,
         bone: mesh.userData.bone ?? undefined,
+        collider: serializeCollider(mesh.userData.collider),
         home: mesh.userData.home?.map(roundNumber),
         size: mesh.userData.kind === "body" && Array.isArray(mesh.userData.size) ? mesh.userData.size.map(roundNumber) : undefined,
         merge: mesh.userData.merge ? { ...mesh.userData.merge } : undefined,
@@ -14716,6 +14756,7 @@ self.onmessage = (event) => {
         curves: curves.length ? packCurves() : undefined,
         sketches: sketches.length ? sketches.map(serializeSketch) : undefined,
         rig: rig ? { joints: Object.fromEntries(Object.entries(rig.joints).map(([name, point]) => [name, point.map(roundNumber)])), chains: serializeChains() } : undefined,
+        colliderPlanes: serializeColliderPlanes(),
         name: MODEL_ID ? modelName : undefined,
         records: records.map((record) => ({
           kind: record.kind,
@@ -14986,6 +15027,7 @@ self.onmessage = (event) => {
       setPartColor(mesh, readColor(part.color));
       setSag(mesh, readSag(part.sag));
       setPartBone(mesh, part.bone);
+      setCollider(mesh, part.collider);
       mesh.userData.linkId = typeof part.linkId === "string" ? part.linkId : null;
       mesh.userData.home = isVector(part.home, 3) ? [...part.home] : undefined;
       setDecal(mesh, readDecal(part.decal));
@@ -15408,6 +15450,7 @@ self.onmessage = (event) => {
       applyCurves(sanitizeCurves(data.curves, folderIds));
       sketches = sanitizeSketches(data.sketches, folderIds);
       rig = readRig(data.rig);
+      colliderPlanes = readColliderPlanes(data.colliderPlanes);
       updateMaskView();
       for (const [mesh, packed] of reliefJobs) await restorePartRelief(mesh, packed);
       history.length = 0;
@@ -15583,6 +15626,7 @@ self.onmessage = (event) => {
       setPartColor(mesh, readColor(part.color));
       setSag(mesh, readSag(part.sag));
       setPartBone(mesh, part.bone);
+      setCollider(mesh, part.collider);
       mesh.userData.home = isVector(part.home, 3) ? [...part.home] : undefined;
       setDecal(mesh, readDecal(part.decal));
       setConform(mesh, readConform(part.conform));
@@ -18742,6 +18786,7 @@ self.onmessage = (event) => {
       setPartColor(mesh, readColor(part.color));
       setSag(mesh, readSag(part.sag));
       setPartBone(mesh, part.bone);
+      setCollider(mesh, part.collider);
       const parent = parentByKey(part.parent);
       parent.add(mesh);
       mesh.position.fromArray(part.position);
@@ -20669,7 +20714,7 @@ self.onmessage = (event) => {
 
     const CHAIN_PREFIX = "chain:";
     const CHAIN_LIMIT = 16;
-    const CHAIN_DEFAULTS = { segments: 4, stiffness: 0.6, damping: 0.4, gravity: 0.2, maxAngle: 20 };
+    const CHAIN_DEFAULTS = { segments: 4, stiffness: 0.6, damping: 0.4, gravity: 0.2, maxAngle: 20, radius: 0.15 };
     const CHAIN_COLOR = 0xc77dff;
     const CHAIN_PICK_COLOR = 0xffe066; // 選んでいる点
     const CHAIN_HOVER_COLOR = 0xf0d9ff; // ポインターが乗っている点
@@ -20711,6 +20756,9 @@ self.onmessage = (event) => {
           gravity: within(item.gravity, 0, 1, CHAIN_DEFAULTS.gravity),
           maxAngle: within(item.maxAngle, 0, 90, CHAIN_DEFAULTS.maxAngle),
           ...(item.midline === true ? { midline: true } : {}),
+          ...(item.collide === true ? { collide: true } : {}),
+          ...(typeof item.radius === "number" && Number.isFinite(item.radius) ? { radius: within(item.radius, 0, 1, CHAIN_DEFAULTS.radius) } : {}),
+          ...(readColliderGroup(item.collideGroup) ? { collideGroup: readColliderGroup(item.collideGroup) } : {}),
         });
         snapChainMid(out.at(-1));
       }
@@ -20751,6 +20799,9 @@ self.onmessage = (event) => {
         gravity: roundNumber(chain.gravity),
         maxAngle: roundNumber(chain.maxAngle),
         midline: chain.midline ? true : undefined,
+        collide: chain.collide ? true : undefined,
+        radius: chain.radius != null ? roundNumber(chain.radius) : undefined,
+        collideGroup: chain.collideGroup || undefined,
       }));
     }
 
@@ -21151,10 +21202,13 @@ self.onmessage = (event) => {
     // 「重力」100% で、中くらいの硬さなら鎖全体がおよそ 70° 垂れる。硬いほど垂れにくい
     const CHAIN_REFERENCE_OMEGA = 2 * Math.PI * 0.6 * Math.sqrt(20);
 
-    function chainParams(chain, rest) {
+    function chainParams(chain, rest, shapes = null) {
       const hz = 0.6 * Math.pow(20, chain.stiffness);
       const n = Math.max(rest.dirs.length, 1);
       return {
+        colliders: chainColliderList(chain, shapes),
+        radius: (chain.radius ?? CHAIN_DEFAULTS.radius) * (rest.total / n),
+        midline: Boolean(chain.midline),
         omega: 2 * Math.PI * hz,
         zeta: 0.03 + chain.damping * 1.2,
         gravity: new THREE.Vector3(0, -chain.gravity * 1.2 * CHAIN_REFERENCE_OMEGA ** 2 * (rest.total / n) / n, 0),
@@ -21200,6 +21254,7 @@ self.onmessage = (event) => {
         else chainDir.normalize();
         limitChainDir(chainDir, targetDir, params.maxAngle);
         chainNext.copy(root).addScaledVector(chainDir, length);
+        if (params.colliders && collideChainBone(root, chainNext, length, params)) chainDir.subVectors(chainNext, root).divideScalar(length);
         velocity.copy(chainNext).sub(tail).divideScalar(h);
         tail.copy(chainNext);
         state.devs[index].setFromUnitVectors(targetDir, chainDir);
@@ -21219,7 +21274,7 @@ self.onmessage = (event) => {
       return tails;
     }
 
-    function initChainState(chain, rest, frame) {
+    function initChainState(chain, rest, frame, shapes = null) {
       const tails = chainRigidTails(rest, frame.head, frame.rot);
       const state = {
         key: rest.key,
@@ -21236,7 +21291,7 @@ self.onmessage = (event) => {
         moving: false,
       };
       // 最初から重力で垂れた形で始める（再生開始の瞬間に落ちて揺れないように）
-      const params = chainParams(chain, rest);
+      const params = chainParams(chain, rest, shapes);
       const h = 1 / 240;
       for (let step = 0; step < 240; step += 1) stepChainOnce(state, rest, frame.head, frame.rot, h, params, step === 0);
       for (const velocity of state.velocities) velocity.set(0, 0, 0);
@@ -21246,8 +21301,8 @@ self.onmessage = (event) => {
     const chainStepHead = new THREE.Vector3();
     const chainStepRot = new THREE.Quaternion();
 
-    function simulateChain(chain, state, rest, frame, dt) {
-      const params = chainParams(chain, rest);
+    function simulateChain(chain, state, rest, frame, dt, shapes = null) {
+      const params = chainParams(chain, rest, shapes);
       const elapsed = Math.min(dt, 0.5); // モーションと同じく重いフレームでも実時間で進める（細かく刻むので安定）
       const steps = Math.max(1, Math.ceil(elapsed * 240));
       const h = elapsed / steps;
@@ -21297,6 +21352,18 @@ self.onmessage = (event) => {
         blockMatrices ??= Array.from({ length: blocks }, (_, block) => (block === blocks - 1 || !sampleMatrices ? rigPoseFrame : sampleMatrices((block + 1) / blocks)));
         return blockMatrices[index];
       };
+      const owners = rigChains().some((chain) => chain.collide) && hasColliders() ? colliderOwners() : null;
+      const ownerBones = owners?.map((mesh) => rigBoneOf(mesh));
+      const shapeCache = new Map();
+      const shapesAt = (matrices) => {
+        if (!owners) return null;
+        let shapes = shapeCache.get(matrices);
+        if (!shapes) {
+          shapes = colliderShapes(owners, matrices, ownerBones);
+          shapeCache.set(matrices, shapes);
+        }
+        return shapes;
+      };
       for (const chain of rigChains()) {
         live.add(chain.id);
         const rest = chainRest(chain);
@@ -21306,17 +21373,17 @@ self.onmessage = (event) => {
         const firstHead = blocks > 1 && sampleMatrices ? chainParentFrame(chain, rest, matricesAt(0)).head : frame.head;
         const jumped = state && state.head.distanceTo(firstHead) > Math.max(rest.total * 4, rigSize() * 0.25);
         if (!state || state.key !== rest.key || jumped) {
-          state = initChainState(chain, rest, frame);
+          state = initChainState(chain, rest, frame, chain.collide ? shapesAt(rigPoseFrame) : null);
           chainStates.set(chain.id, state);
         } else if (dt > 0) {
           for (let block = 0; block < blocks; block += 1) {
             const target = block === blocks - 1 ? frame : chainParentFrame(chain, rest, matricesAt(block));
-            simulateChain(chain, state, rest, target, Math.min(dt, 0.5) / blocks);
+            simulateChain(chain, state, rest, target, Math.min(dt, 0.5) / blocks, chain.collide ? shapesAt(matricesAt(block)) : null);
             state.head.copy(target.head);
             state.rot.copy(target.rot);
           }
           if (state.tails.some((tail) => !Number.isFinite(tail.x + tail.y + tail.z))) {
-            state = initChainState(chain, rest, frame);
+            state = initChainState(chain, rest, frame, chain.collide ? shapesAt(rigPoseFrame) : null);
             chainStates.set(chain.id, state);
           }
         }
@@ -21331,6 +21398,396 @@ self.onmessage = (event) => {
     function resetChainMotion() {
       chainStates.clear();
       chainPoses.clear();
+    }
+
+    // ===== 当たり判定（カプセル・球・平面） =====
+    // パーツの当たり判定はパーツのローカル座標で持つ（パーツの移動・回転・拡大、ボーン、モーションに付いていく）。
+    // 平面は文書に直接置く独立した当たり判定（床・壁）。法線の向きが外側で、裏側が中になる。
+    // ここの関数（colliderShapes・pushPointOut・pushSegmentOut）は、揺れボーン以外の押し出しにも使えるようにしてある。
+    const COLLIDER_GROUP_MAX = 24;
+    const COLLIDER_PLANE_LIMIT = 16;
+    const COLLIDER_COLOR = 0x4dd8e6;
+    const COLLIDER_PICK_COLOR = 0xffe066;
+    const COLLIDER_PLANE_COLOR = 0xffa94d;
+    const COLLIDER_SPHERE_RATIO = 1.35;
+    const COLLIDER_PLANE_NORMALS = {
+      up: [0, 1, 0], down: [0, -1, 0], front: [0, 0, 1], back: [0, 0, -1], right: [-1, 0, 0], left: [1, 0, 0],
+    };
+    const colliderTmpA = new THREE.Vector3();
+    const colliderTmpB = new THREE.Vector3();
+    const colliderTmpC = new THREE.Vector3();
+    const colliderTmpD = new THREE.Vector3();
+    const colliderTmpM = new THREE.Matrix4();
+    const colliderTmpM3 = new THREE.Matrix3();
+
+    function readColliderGroup(value) {
+      return typeof value === "string" ? value.trim().slice(0, COLLIDER_GROUP_MAX) : "";
+    }
+
+    function readCollider(value) {
+      if (!value || typeof value !== "object") return null;
+      const shape = value.shape === "sphere" || value.shape === "capsule" ? value.shape : null;
+      const radius = Number(value.radius);
+      if (!shape || !isVector(value.center, 3) || !Number.isFinite(radius) || radius <= 0) return null;
+      const out = { shape, center: [...value.center], radius };
+      if (shape === "capsule") {
+        const axis = new THREE.Vector3().fromArray(isVector(value.axis, 3) ? value.axis : [0, 1, 0]);
+        if (axis.lengthSq() < 1e-12) axis.set(0, 1, 0);
+        out.axis = axis.normalize().toArray();
+        const length = Number(value.length);
+        out.length = Number.isFinite(length) && length > 0 ? length : 0;
+      }
+      const group = readColliderGroup(value.group);
+      if (group) out.group = group;
+      return out;
+    }
+
+    function setCollider(mesh, value) {
+      const collider = readCollider(value);
+      if (collider) mesh.userData.collider = collider;
+      else delete mesh.userData.collider;
+    }
+
+    function serializeCollider(collider) {
+      if (!collider) return undefined;
+      return {
+        shape: collider.shape,
+        center: collider.center.map(roundNumber),
+        ...(collider.shape === "capsule" ? { axis: collider.axis.map(roundNumber), length: roundNumber(collider.length) } : {}),
+        radius: roundNumber(collider.radius),
+        ...(collider.group ? { group: collider.group } : {}),
+      };
+    }
+
+    function readColliderPlanes(value) {
+      if (!Array.isArray(value)) return [];
+      const out = [];
+      const ids = new Set();
+      for (const item of value.slice(0, COLLIDER_PLANE_LIMIT)) {
+        if (!item || typeof item !== "object" || !isVector(item.point, 3) || !isVector(item.normal, 3)) continue;
+        const normal = new THREE.Vector3().fromArray(item.normal);
+        if (normal.lengthSq() < 1e-12) continue;
+        let id = typeof item.id === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(item.id) ? item.id : null;
+        if (!id || ids.has(id)) id = `plane-${out.length + 1}-${Math.random().toString(36).slice(2, 7)}`;
+        ids.add(id);
+        const size = Number(item.size);
+        const group = readColliderGroup(item.group);
+        out.push({
+          id,
+          name: typeof item.name === "string" && item.name.trim() ? item.name.trim().slice(0, 40) : "平面",
+          point: [...item.point],
+          normal: normal.normalize().toArray(),
+          size: Number.isFinite(size) && size > 0 ? size : 1,
+          ...(group ? { group } : {}),
+          ...(item.hidden === true ? { hidden: true } : {}),
+        });
+      }
+      return out;
+    }
+
+    function serializeColliderPlanes() {
+      if (!colliderPlanes.length) return undefined;
+      return colliderPlanes.map((plane) => ({
+        ...plane,
+        point: plane.point.map(roundNumber),
+        normal: plane.normal.map(roundNumber),
+        size: roundNumber(plane.size),
+      }));
+    }
+
+    function colliderPlaneSignature() {
+      return colliderPlanes.length ? JSON.stringify(colliderPlanes) : "-";
+    }
+
+    // 拡大率は行列の体積比の 3 乗根（半径はこの倍率で大きさが変わる。長さは軸方向の倍率に従う）
+    function colliderScaleOf(matrix) {
+      return Math.cbrt(Math.abs(matrix.determinant())) || 1;
+    }
+
+    // パーツの当たり判定を world 座標の形にする。a〜b の線分から半径 r 以内が中（球は a = b）
+    function colliderWorldShape(mesh, matrix, out = {}) {
+      const collider = mesh.userData.collider;
+      out.type = collider.shape;
+      out.owner = mesh;
+      out.group = collider.group ?? "";
+      out.a ??= new THREE.Vector3();
+      out.b ??= new THREE.Vector3();
+      out.r = collider.radius * colliderScaleOf(matrix);
+      if (collider.shape === "sphere") {
+        out.a.fromArray(collider.center).applyMatrix4(matrix);
+        out.b.copy(out.a);
+      } else {
+        const half = collider.length / 2;
+        colliderTmpA.fromArray(collider.axis);
+        out.a.fromArray(collider.center).addScaledVector(colliderTmpA, -half).applyMatrix4(matrix);
+        out.b.fromArray(collider.center).addScaledVector(colliderTmpA, half).applyMatrix4(matrix);
+      }
+      return out;
+    }
+
+    function planeWorldShape(plane, out = {}) {
+      out.type = "plane";
+      out.owner = plane;
+      out.group = plane.group ?? "";
+      out.point = (out.point ?? new THREE.Vector3()).fromArray(plane.point);
+      out.normal = (out.normal ?? new THREE.Vector3()).fromArray(plane.normal);
+      out.r = 0;
+      return out;
+    }
+
+    function colliderOwners() {
+      const owners = [];
+      for (const mesh of editableMeshes()) {
+        if (mesh.userData.collider && !mesh.userData.hidden && !mesh.userData.isMask) owners.push(mesh);
+      }
+      return owners;
+    }
+
+    function hasColliders() {
+      return colliderPlanes.some((plane) => !plane.hidden) || editableMeshes().some((mesh) => mesh.userData.collider && !mesh.userData.hidden);
+    }
+
+    // モーションの姿勢（matrices）を掛けた当たり判定の一覧。matrices が無ければ今の matrixWorld のまま
+    // bones は colliderOwners と同じ並びのボーン名（毎ブロック探し直さないよう、呼ぶ側で 1 回だけ求める）
+    function colliderShapes(owners = colliderOwners(), matrices = null, bones = null) {
+      const shapes = [];
+      owners.forEach((mesh, index) => {
+        mesh.updateWorldMatrix(true, false);
+        let matrix = mesh.matrixWorld;
+        if (matrices) {
+          const bone = bones?.[index] ?? rigBoneOf(mesh);
+          const pose = matrices.get(bone) ?? (isChainBone(bone) ? matrices.get(chainOfBone(bone)?.parent ?? "hips") : null);
+          if (pose) matrix = new THREE.Matrix4().multiplyMatrices(pose, mesh.matrixWorld);
+        }
+        const shape = colliderWorldShape(mesh, matrix);
+        shape.bone = bones?.[index] ?? null;
+        shapes.push(shape);
+      });
+      for (const plane of colliderPlanes) if (!plane.hidden) shapes.push(planeWorldShape(plane));
+      return shapes;
+    }
+
+    let colliderFrameShapes = null;
+
+    // 今のフレームの（ポーズを当てた後の）当たり判定。フレームごとに 1 回だけ作る
+    function frameColliderShapes() {
+      colliderFrameShapes ??= hasColliders() ? colliderShapes() : [];
+      return colliderFrameShapes;
+    }
+
+    function closestOnSegment(a, b, p, target) {
+      colliderTmpD.subVectors(b, a);
+      const lengthSq = colliderTmpD.lengthSq();
+      const t = lengthSq > 1e-18 ? Math.min(1, Math.max(0, colliderTmpD.dot(colliderTmp(p, a)) / lengthSq)) : 0;
+      return target.copy(a).addScaledVector(colliderTmpD, t);
+    }
+
+    function colliderTmp(p, a) {
+      return colliderTmpC.subVectors(p, a);
+    }
+
+    // 点 p（半径 r の球）を形の外へ出すずれを out に入れ、めり込みの深さを返す（当たっていなければ 0）
+    function pushPointOut(p, r, shape, out) {
+      if (shape.type === "plane") {
+        const depth = r - colliderTmpA.subVectors(p, shape.point).dot(shape.normal);
+        if (depth <= 0) return 0;
+        out.copy(shape.normal).multiplyScalar(depth);
+        return depth;
+      }
+      const q = closestOnSegment(shape.a, shape.b, p, colliderTmpB);
+      out.subVectors(p, q);
+      const distance = out.length();
+      const reach = r + shape.r;
+      if (distance >= reach) return 0;
+      if (distance > 1e-9) out.divideScalar(distance);
+      else out.set(0, 1, 0);
+      out.multiplyScalar(reach - distance);
+      return reach - distance;
+    }
+
+    // 2 本の線分の最も近い点の位置（0〜1）。s は p0→p1、u は q0→q1
+    function segmentClosestParams(p0, p1, q0, q1) {
+      const d1 = colliderTmpA.subVectors(p1, p0);
+      const d2 = colliderTmpB.subVectors(q1, q0);
+      const r = colliderTmpC.subVectors(p0, q0);
+      const a = d1.dot(d1);
+      const e = d2.dot(d2);
+      const f = d2.dot(r);
+      let s = 0;
+      let u = 0;
+      if (a <= 1e-18 && e <= 1e-18) return [0, 0];
+      if (a <= 1e-18) return [0, Math.min(1, Math.max(0, f / e))];
+      const c = d1.dot(r);
+      if (e <= 1e-18) return [Math.min(1, Math.max(0, -c / a)), 0];
+      const b = d1.dot(d2);
+      const denom = a * e - b * b;
+      s = denom > 1e-18 ? Math.min(1, Math.max(0, (b * f - c * e) / denom)) : 0;
+      u = (b * s + f) / e;
+      if (u < 0) {
+        u = 0;
+        s = Math.min(1, Math.max(0, -c / a));
+      } else if (u > 1) {
+        u = 1;
+        s = Math.min(1, Math.max(0, (b - c) / a));
+      }
+      return [s, u];
+    }
+
+    const segmentPoint = new THREE.Vector3();
+    const segmentOther = new THREE.Vector3();
+
+    // 太さ r の線分 root→tip が形にめり込んでいたら、いちばん深い点を外へ出すずれを out に入れ、その点の位置（0〜1）を返す（当たっていなければ 0）
+    function pushSegmentOut(root, tip, r, shape, out) {
+      if (shape.type === "plane") {
+        const depth = r - colliderTmpA.subVectors(tip, shape.point).dot(shape.normal);
+        if (depth <= 0) return 0;
+        out.copy(shape.normal).multiplyScalar(depth);
+        return 1;
+      }
+      const [s, u] = segmentClosestParams(root, tip, shape.a, shape.b);
+      segmentPoint.lerpVectors(root, tip, s);
+      segmentOther.lerpVectors(shape.a, shape.b, u);
+      out.subVectors(segmentPoint, segmentOther);
+      const distance = out.length();
+      const reach = r + shape.r;
+      if (distance >= reach) return 0;
+      if (distance > 1e-9) out.divideScalar(distance);
+      else {
+        // 軸の上に乗っている：線分の向きと直交する向きへ出す
+        out.subVectors(tip, root).cross(colliderTmpD.set(0, 0, 1));
+        if (out.lengthSq() < 1e-18) out.set(1, 0, 0);
+        out.normalize();
+      }
+      out.multiplyScalar(reach - distance);
+      return Math.max(s, 1e-3);
+    }
+
+    // 揺れボーンが当たる形（「衝突する」がオンの鎖だけ。グループの指定があればそのグループだけ。自分に割り当てたパーツの形とは当たらない）
+    function chainColliderList(chain, shapes) {
+      if (!chain.collide || !shapes?.length) return null;
+      const own = `${CHAIN_PREFIX}${chain.id}`;
+      const list = shapes.filter((shape) => (!chain.collideGroup || shape.group === chain.collideGroup) && shape.bone !== own);
+      return list.length ? list : null;
+    }
+
+    const chainPush = new THREE.Vector3();
+    const chainPushDir = new THREE.Vector3();
+
+    // 節の先（tip）を当たり判定の外へ出し、付け根（root）からの長さを元に戻す。向きが変わるだけなので、曲がり（一定の曲率）はそのまま保たれる
+    function collideChainBone(root, tip, length, params) {
+      let moved = false;
+      for (let pass = 0; pass < 3; pass += 1) {
+        let any = false;
+        for (const shape of params.colliders) {
+          const at = pushSegmentOut(root, tip, params.radius, shape, chainPush);
+          if (!at) continue;
+          if (params.midline) chainPush.x = 0;
+          tip.addScaledVector(chainPush, 1 / Math.max(at, 0.25));
+          chainPushDir.subVectors(tip, root);
+          if (params.midline) chainPushDir.x = 0;
+          if (chainPushDir.lengthSq() < 1e-18) continue;
+          tip.copy(root).addScaledVector(chainPushDir.normalize(), length);
+          any = true;
+          moved = true;
+        }
+        if (!any) break;
+      }
+      return moved;
+    }
+
+    // 柔らかいパーツ（揺れ）の先端を当たり判定の外へ出す。自分の当たり判定とは当たらない
+    const sagPushOut = new THREE.Vector3();
+    const sagPushPoint = new THREE.Vector3();
+
+    function collideSagTip(owner, tip, motion, sag, length) {
+      if (!(sag.wobble > 0)) return;
+      const shapes = frameColliderShapes();
+      if (!shapes.length) return;
+      const radius = Math.max((sagSpans.get(owner)?.cross ?? length * 0.3) * 0.5, length * 0.05);
+      for (const shape of shapes) {
+        if (shape.owner === owner || (shape.owner?.isObject3D && sagHost(shape.owner) === owner)) continue;
+        sagPushPoint.copy(tip).addScaledVector(motion.offset, sag.wobble);
+        if (!pushPointOut(sagPushPoint, radius, shape, sagPushOut)) continue;
+        motion.offset.addScaledVector(sagPushOut, 1 / sag.wobble);
+        const into = motion.speed.dot(sagPushOut.normalize());
+        if (into < 0) motion.speed.addScaledVector(sagPushOut, -into);
+      }
+    }
+
+    // パーツの形（ローカルの外接箱）から、カプセルか球を当てはめる
+    function fitCollider(mesh) {
+      if (!mesh.geometry) return null;
+      if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+      const box = mesh.geometry.boundingBox;
+      if (!box || box.isEmpty()) return null;
+      mesh.updateWorldMatrix(true, false);
+      const matrix = mesh.matrixWorld;
+      const center = box.getCenter(new THREE.Vector3());
+      const half = box.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+      const columns = [0, 1, 2].map((axis) => colliderTmpA.setFromMatrixColumn(matrix, axis).length() || 1);
+      const extents = [0, 1, 2].map((axis) => ({ axis, local: half.getComponent(axis), world: half.getComponent(axis) * columns[axis] }));
+      extents.sort((a, b) => b.world - a.world);
+      const scale = colliderScaleOf(matrix);
+      if (!(extents[0].world > 1e-9)) return null;
+      if (extents[0].world < extents[1].world * COLLIDER_SPHERE_RATIO) {
+        const radius = (extents[0].world + extents[1].world + extents[2].world) / 3;
+        return { shape: "sphere", center: center.toArray(), radius: radius / scale };
+      }
+      const radius = Math.max((extents[1].world + extents[2].world) / 2, extents[0].world * 0.02);
+      const lengthWorld = Math.max(0, 2 * (extents[0].world - radius));
+      const axis = [0, 0, 0];
+      axis[extents[0].axis] = 1;
+      return { shape: "capsule", center: center.toArray(), axis, length: lengthWorld / columns[extents[0].axis], radius: radius / scale };
+    }
+
+    // 左右対称の相方に、鏡写しにした当たり判定を付ける（パーツは作らない。相方がいなければ何もしない）
+    function syncColliderTwin(mesh) {
+      if (!symmetric) return null;
+      const other = otherOf(recordOf(mesh), mesh);
+      if (!other || other.userData.locked) return null;
+      const collider = mesh.userData.collider;
+      if (!collider) {
+        delete other.userData.collider;
+        return other;
+      }
+      mesh.updateWorldMatrix(true, false);
+      other.updateWorldMatrix(true, false);
+      const shape = colliderWorldShape(mesh, mesh.matrixWorld);
+      const mid = torsoCenter.x;
+      const inverse = new THREE.Matrix4().copy(other.matrixWorld).invert();
+      const a = shape.a.clone().setX(2 * mid - shape.a.x).applyMatrix4(inverse);
+      const b = shape.b.clone().setX(2 * mid - shape.b.x).applyMatrix4(inverse);
+      const out = { shape: collider.shape, center: a.clone().add(b).multiplyScalar(0.5).toArray(), radius: shape.r / colliderScaleOf(other.matrixWorld) };
+      if (collider.shape === "capsule") {
+        const axis = b.clone().sub(a);
+        const length = axis.length();
+        out.axis = length > 1e-12 ? axis.divideScalar(length).toArray() : [...collider.axis];
+        out.length = length;
+      }
+      if (collider.group) out.group = collider.group;
+      setCollider(other, out);
+      return other;
+    }
+
+    function colliderWorldSize(mesh) {
+      const collider = mesh.userData.collider;
+      mesh.updateWorldMatrix(true, false);
+      const matrix = mesh.matrixWorld;
+      const radius = collider.radius * colliderScaleOf(matrix);
+      const length = collider.shape === "capsule" ? collider.length * colliderTmpA.fromArray(collider.axis).applyMatrix3(colliderTmpM3.setFromMatrix4(matrix)).length() : 0;
+      return { radius, length };
+    }
+
+    function setColliderWorldSize(mesh, { radius, length }) {
+      const collider = mesh.userData.collider;
+      if (!collider) return;
+      mesh.updateWorldMatrix(true, false);
+      const matrix = mesh.matrixWorld;
+      if (Number.isFinite(radius) && radius > 0) collider.radius = radius / colliderScaleOf(matrix);
+      if (collider.shape === "capsule" && Number.isFinite(length) && length >= 0) {
+        const along = colliderTmpA.fromArray(collider.axis).applyMatrix3(colliderTmpM3.setFromMatrix4(matrix)).length() || 1;
+        collider.length = length / along;
+      }
     }
 
     function computeRigPose(sample) {
@@ -22506,6 +22963,7 @@ self.onmessage = (event) => {
       ["damping", "落ち着き", 100, "%", "上げると揺れがすぐ収まり、下げると長く揺れ続ける"],
       ["gravity", "重力", 100, "%", "垂れ下がる強さ"],
       ["maxAngle", "曲がる角度", 1, "°", "1 節あたりに曲がれる最大の角度"],
+      ["radius", "太さ", 100, "%", "当たり判定に使うボーンの太さ（半径）。1 節の長さに対する割合"],
     ];
 
     function chainItems(chain) {
@@ -22713,7 +23171,7 @@ self.onmessage = (event) => {
       chainList.innerHTML = chains.map((chain) => {
         const count = chainItems(chain).length;
         const sliders = CHAIN_SLIDERS.map(([field, label, scale, unit, tip]) => {
-          const value = Math.round(chain[field] * scale);
+          const value = Math.round((chain[field] ?? CHAIN_DEFAULTS[field]) * scale);
           const max = field === "maxAngle" ? 90 : 100;
           return `<div class="slider-row" title="${tip}"><span>${label}</span><input type="range" min="0" max="${max}" step="1" value="${value}" data-field="${field}" aria-label="${escapeHtml(chain.name)}の${label}" /><span class="chain-value">${value}${unit}</span></div>`;
         }).join("");
@@ -22723,6 +23181,8 @@ self.onmessage = (event) => {
           <label class="chain-field"><span>節の数</span><input type="number" min="1" max="${BEND_MAX}" step="1" value="${chain.points.length - 1}" data-field="segments" aria-label="節の数" /></label>
           ${chainJointFields(chain)}
           ${sliders}
+          <label class="relief-check" title="パーツの当たり判定（カプセル・球）や平面にめり込まないよう押し出す"><input type="checkbox" data-field="collide"${chain.collide ? " checked" : ""} /> 衝突する</label>
+          <label class="chain-field" title="空なら、すべての当たり判定と衝突する。名前を入れると、そのグループの当たり判定とだけ衝突する"><span>当たるグループ</span><input type="text" maxlength="24" value="${escapeHtml(chain.collideGroup ?? "")}" placeholder="すべて" data-field="collideGroup" aria-label="衝突する当たり判定のグループ" /></label>
           <div class="chain-row"><select data-act="assign" aria-label="この揺れボーンに割り当てる">${chainAssignOptions(chain)}</select></div>
           <div class="rig-transport"><button type="button" data-act="fit" title="選んでいるパーツの形に沿って点を置き直す">選んだパーツに合わせる</button><button type="button" data-act="focus" title="この揺れボーンで動くパーツを強調する">強調</button></div>
           <p class="chain-note">割り当て ${count} 個${count ? "" : "（「割り当て…」か下の一覧で付けます）"}</p>
@@ -22766,6 +23226,15 @@ self.onmessage = (event) => {
       } else if (field === "midline") {
         if (event.target.checked) snapChainMid(Object.assign(chain, { midline: true }));
         else delete chain.midline;
+      } else if (field === "collide") {
+        if (event.target.checked) chain.collide = true;
+        else delete chain.collide;
+        resetChainMotion();
+      } else if (field === "collideGroup") {
+        const group = readColliderGroup(event.target.value);
+        if (group) chain.collideGroup = group;
+        else delete chain.collideGroup;
+        event.target.value = group;
       } else if (field === "carry") {
         chainCarry = event.target.checked;
         updateRigChrome();
@@ -26367,6 +26836,499 @@ void main() {
     }, true);
     refreshFaceEditUI();
 
+
+    // 当たり判定のワイヤーフレーム表示と、半径・長さをドラッグで変えるハンドル
+    const colliderGuide = new THREE.Group();
+    colliderGuide.visible = false;
+    scene.add(colliderGuide);
+    const COLLIDER_LINE_CAPACITY = 320;
+    const colliderLines = [];
+    const colliderHandleGeometry = new THREE.SphereGeometry(1, 12, 8);
+    const colliderHandles = {
+      radius: sagGuideLook(new THREE.Mesh(colliderHandleGeometry, new THREE.MeshBasicMaterial({ color: 0x4dd8e6 }))),
+      length: sagGuideLook(new THREE.Mesh(colliderHandleGeometry, new THREE.MeshBasicMaterial({ color: 0xff9f43 }))),
+    };
+    for (const [kind, handle] of Object.entries(colliderHandles)) {
+      handle.userData.colliderHandle = kind;
+      handle.renderOrder = 13;
+      handle.visible = false;
+      colliderGuide.add(handle);
+    }
+    let colliderDrag = null;
+    let colliderHover = null;
+    let colliderClickGuard = false;
+
+    function colliderLine(index) {
+      while (colliderLines.length <= index) {
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(COLLIDER_LINE_CAPACITY * 3), 3));
+        const line = sagGuideLook(new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ color: COLLIDER_COLOR, opacity: 0.85 })));
+        line.frustumCulled = false;
+        colliderGuide.add(line);
+        colliderLines.push(line);
+      }
+      return colliderLines[index];
+    }
+
+    const guideU = new THREE.Vector3();
+    const guideV = new THREE.Vector3();
+    const guideW = new THREE.Vector3();
+    const guideP = new THREE.Vector3();
+
+    function guideBasis(axis) {
+      guideU.copy(axis);
+      if (guideU.lengthSq() < 1e-18) guideU.set(0, 1, 0);
+      guideU.normalize();
+      guideV.set(Math.abs(guideU.y) < 0.9 ? 0 : 1, Math.abs(guideU.y) < 0.9 ? 1 : 0, 0).cross(guideU).normalize();
+      guideW.crossVectors(guideU, guideV);
+    }
+
+    function writeShapeLines(shape, line) {
+      const array = line.geometry.attributes.position.array;
+      let count = 0;
+      const push = (point) => {
+        if (count >= COLLIDER_LINE_CAPACITY) return;
+        array[count * 3] = point.x;
+        array[count * 3 + 1] = point.y;
+        array[count * 3 + 2] = point.z;
+        count += 1;
+      };
+      const arc = (center, x, y, radius, from, to, steps) => {
+        for (let step = 0; step < steps; step += 1) {
+          const t0 = from + ((to - from) * step) / steps;
+          const t1 = from + ((to - from) * (step + 1)) / steps;
+          push(guideP.copy(center).addScaledVector(x, Math.cos(t0) * radius).addScaledVector(y, Math.sin(t0) * radius));
+          push(guideP.copy(center).addScaledVector(x, Math.cos(t1) * radius).addScaledVector(y, Math.sin(t1) * radius));
+        }
+      };
+      if (shape.type === "plane") {
+        const plane = shape.owner;
+        guideBasis(shape.normal);
+        const half = plane.size / 2;
+        for (let index = 0; index <= 4; index += 1) {
+          const t = -half + (index * plane.size) / 4;
+          push(guideP.copy(shape.point).addScaledVector(guideV, t).addScaledVector(guideW, -half));
+          push(guideP.copy(shape.point).addScaledVector(guideV, t).addScaledVector(guideW, half));
+          push(guideP.copy(shape.point).addScaledVector(guideW, t).addScaledVector(guideV, -half));
+          push(guideP.copy(shape.point).addScaledVector(guideW, t).addScaledVector(guideV, half));
+        }
+        push(shape.point);
+        push(guideP.copy(shape.point).addScaledVector(guideU, half * 0.4));
+      } else {
+        const r = shape.r;
+        guideBasis(guideP.subVectors(shape.b, shape.a));
+        if (shape.type === "sphere") {
+          arc(shape.a, guideV, guideW, r, 0, Math.PI * 2, 32);
+          arc(shape.a, guideU, guideV, r, 0, Math.PI * 2, 32);
+          arc(shape.a, guideU, guideW, r, 0, Math.PI * 2, 32);
+        } else {
+          arc(shape.a, guideV, guideW, r, 0, Math.PI * 2, 32);
+          arc(shape.b, guideV, guideW, r, 0, Math.PI * 2, 32);
+          for (const [x, sign] of [[guideV, 1], [guideV, -1], [guideW, 1], [guideW, -1]]) {
+            push(guideP.copy(shape.a).addScaledVector(x, r * sign));
+            push(guideP.copy(shape.b).addScaledVector(x, r * sign));
+          }
+          arc(shape.b, guideV, guideU, r, 0, Math.PI, 16);
+          arc(shape.b, guideW, guideU, r, 0, Math.PI, 16);
+          arc(shape.a, guideV, guideU, r, Math.PI, Math.PI * 2, 16);
+          arc(shape.a, guideW, guideU, r, Math.PI, Math.PI * 2, 16);
+        }
+      }
+      line.geometry.attributes.position.needsUpdate = true;
+      line.geometry.setDrawRange(0, count);
+    }
+
+    function colliderEditable(mesh) {
+      return Boolean(mesh?.userData.collider) && !mesh.userData.locked && !mesh.userData.hidden && !rigPoseFrame && !maskTarget;
+    }
+
+    function colliderHandleTarget() {
+      if (!collidersShown || !selected || !selection.includes(selected)) return null;
+      return colliderEditable(selected) ? selected : null;
+    }
+
+    function updateColliderGuide() {
+      const shapes = collidersShown ? frameColliderShapes() : [];
+      colliderGuide.visible = shapes.length > 0;
+      let used = 0;
+      for (const shape of shapes) {
+        const line = colliderLine(used);
+        used += 1;
+        line.visible = true;
+        const picked = shape.owner?.isObject3D && selection.includes(shape.owner);
+        line.material.color.setHex(shape.type === "plane" ? COLLIDER_PLANE_COLOR : picked ? COLLIDER_PICK_COLOR : COLLIDER_COLOR);
+        writeShapeLines(shape, line);
+      }
+      for (let index = used; index < colliderLines.length; index += 1) colliderLines[index].visible = false;
+      const target = colliderHandleTarget();
+      const shape = target ? shapes.find((item) => item.owner === target) : null;
+      colliderHandles.radius.visible = Boolean(shape);
+      colliderHandles.length.visible = Boolean(shape) && shape.type === "capsule";
+      if (!shape) return;
+      const handle = colliderHandleFrame(shape);
+      const size = camera.position.distanceTo(handle.center) * 0.012;
+      colliderHandles.radius.position.copy(handle.radiusAt);
+      colliderHandles.length.position.copy(handle.lengthAt);
+      for (const [kind, mark] of Object.entries(colliderHandles)) {
+        mark.scale.setScalar(size * (colliderHover === kind || colliderDrag?.kind === kind ? 1.5 : 1));
+      }
+    }
+
+    // ハンドルの位置：半径は真ん中から画面の横向き、長さは先端の球の頂点
+    function colliderHandleFrame(shape) {
+      const center = new THREE.Vector3().addVectors(shape.a, shape.b).multiplyScalar(0.5);
+      const axis = new THREE.Vector3().subVectors(shape.b, shape.a);
+      if (axis.lengthSq() < 1e-18) axis.set(0, 1, 0);
+      axis.normalize();
+      const view = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 2);
+      const side = new THREE.Vector3().crossVectors(axis, view);
+      if (side.lengthSq() < 1e-10) side.setFromMatrixColumn(camera.matrixWorld, 0);
+      side.normalize();
+      return {
+        center,
+        axis,
+        side,
+        radiusAt: center.clone().addScaledVector(side, shape.r),
+        lengthAt: shape.b.clone().addScaledVector(axis, shape.r),
+      };
+    }
+
+    const colliderRaycaster = new THREE.Raycaster();
+    const colliderPointer = new THREE.Vector2();
+
+    function colliderRay(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      colliderPointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
+      colliderRaycaster.setFromCamera(colliderPointer, camera);
+      return colliderRaycaster.ray;
+    }
+
+    function pickColliderHandle(event) {
+      if (!colliderGuide.visible) return null;
+      const marks = Object.values(colliderHandles).filter((mark) => mark.visible);
+      if (!marks.length) return null;
+      colliderRay(event);
+      const hit = colliderRaycaster.intersectObjects(marks, false)[0];
+      return hit ? hit.object.userData.colliderHandle : null;
+    }
+
+    // ポインターの光線と、ハンドルが動く直線の最も近い点の、直線上の位置
+    function rayLineParam(ray, origin, direction) {
+      const w = new THREE.Vector3().subVectors(origin, ray.origin);
+      const b = ray.direction.dot(direction);
+      const d = ray.direction.dot(w);
+      const e = direction.dot(w);
+      const denom = 1 - b * b;
+      if (denom < 1e-8) return null;
+      return (b * d - e) / denom;
+    }
+
+    renderer.domElement.parentElement.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0 || event.target !== renderer.domElement) return;
+      const kind = pickColliderHandle(event);
+      if (!kind) return;
+      const mesh = colliderHandleTarget();
+      if (!mesh) return;
+      event.stopImmediatePropagation();
+      event.preventDefault();
+      const shape = colliderWorldShape(mesh, mesh.matrixWorld);
+      const frame = colliderHandleFrame(shape);
+      colliderDrag = { kind, mesh, pointerId: event.pointerId, frame, size: colliderWorldSize(mesh), before: structuredClone(mesh.userData.collider) };
+      renderer.domElement.setPointerCapture?.(event.pointerId);
+      requestRender();
+    }, true);
+
+    renderer.domElement.parentElement.addEventListener("pointermove", (event) => {
+      if (colliderDrag) {
+        if (event.pointerId !== colliderDrag.pointerId) return;
+        event.stopImmediatePropagation();
+        const { kind, mesh, frame, size } = colliderDrag;
+        const ray = colliderRay(event);
+        const direction = kind === "radius" ? frame.side : frame.axis;
+        const t = rayLineParam(ray, frame.center, direction);
+        if (t == null) return;
+        const minimum = size.radius * 0.02;
+        if (kind === "radius") setColliderWorldSize(mesh, { radius: Math.max(minimum, t) });
+        else setColliderWorldSize(mesh, { length: Math.max(0, 2 * (t - size.radius)) });
+        syncColliderTwin(mesh);
+        refreshColliderUI();
+        requestRender();
+        return;
+      }
+      if (event.buttons) return;
+      const hover = pickColliderHandle(event);
+      if (hover !== colliderHover) {
+        colliderHover = hover;
+        requestRender();
+      }
+    }, true);
+
+    function endColliderDrag(event) {
+      if (!colliderDrag || event.pointerId !== colliderDrag.pointerId) return;
+      event.stopImmediatePropagation();
+      const changed = JSON.stringify(colliderDrag.before) !== JSON.stringify(colliderDrag.mesh.userData.collider);
+      colliderDrag = null;
+      colliderClickGuard = true;
+      setTimeout(() => { colliderClickGuard = false; }, 0);
+      if (changed) commit();
+      refreshColliderUI();
+      requestRender();
+    }
+    renderer.domElement.parentElement.addEventListener("pointerup", endColliderDrag, true);
+    renderer.domElement.parentElement.addEventListener("pointercancel", endColliderDrag, true);
+    renderer.domElement.parentElement.addEventListener("click", (event) => {
+      if (!colliderClickGuard) return;
+      colliderClickGuard = false;
+      event.stopImmediatePropagation();
+    }, true);
+
+    // ===== 当たり判定のパネルと右クリックメニュー =====
+
+    function colliderSubject() {
+      const mesh = selected;
+      if (!mesh || !mesh.isMesh || mesh.userData.isMask || !recordOf(mesh)) return null;
+      return mesh;
+    }
+
+    function canAddCollider(mesh) {
+      return Boolean(mesh) && !mesh.userData.locked && !mesh.userData.isMask && Boolean(recordOf(mesh)) && !maskTarget;
+    }
+
+    function addColliderTo(mesh) {
+      if (!canAddCollider(mesh)) return false;
+      const fitted = fitCollider(mesh);
+      if (!fitted) {
+        setFileStatus("このパーツの形からは当たり判定を作れませんでした");
+        return false;
+      }
+      setCollider(mesh, { ...fitted, group: mesh.userData.collider?.group });
+      const twin = syncColliderTwin(mesh);
+      commit();
+      setFileStatus(`「${sideText(mesh)}${mesh.userData.label ?? "パーツ"}」に当たり判定（${fitted.shape === "sphere" ? "球" : "カプセル"}）を追加しました${twin ? "（左右対称の相方にも付けました）" : ""}`);
+      refreshColliderUI();
+      requestRender();
+      return true;
+    }
+
+    function removeColliderFrom(mesh) {
+      if (!mesh?.userData.collider || mesh.userData.locked) return;
+      delete mesh.userData.collider;
+      syncColliderTwin(mesh);
+      commit();
+      setFileStatus("当たり判定を外しました");
+      refreshColliderUI();
+      requestRender();
+    }
+
+    function colliderMenuItems(mesh, masking) {
+      const has = Boolean(mesh.userData.collider);
+      return [
+        { label: has ? "当たり判定を合わせ直す" : "当たり判定を追加", disabled: masking || !canAddCollider(mesh), run: () => addColliderTo(mesh) },
+        ...(has ? [{ label: "当たり判定を外す", disabled: masking || Boolean(mesh.userData.locked), run: () => removeColliderFrom(mesh) }] : []),
+      ];
+    }
+
+    function addColliderPlane(kind) {
+      if (colliderPlanes.length >= COLLIDER_PLANE_LIMIT) {
+        setFileStatus(`平面は ${COLLIDER_PLANE_LIMIT} 枚までです`);
+        return;
+      }
+      const box = new THREE.Box3();
+      for (const mesh of editableMeshes()) {
+        if (mesh.userData.hidden || !mesh.geometry) continue;
+        if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+        mesh.updateWorldMatrix(true, false);
+        box.union(colliderPlaneBox.copy(mesh.geometry.boundingBox).applyMatrix4(mesh.matrixWorld));
+      }
+      if (box.isEmpty()) box.set(new THREE.Vector3(-0.5, 0, -0.5), new THREE.Vector3(0.5, 1, 0.5));
+      const size = box.getSize(new THREE.Vector3());
+      const span = Math.max(size.x, size.y, size.z) * 1.4;
+      const center = box.getCenter(new THREE.Vector3());
+      const id = `plane-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+      const floor = kind === "floor";
+      colliderPlanes = [...colliderPlanes, {
+        id,
+        name: floor ? "床" : "壁",
+        point: (floor ? [center.x, box.min.y, center.z] : [center.x, center.y, box.min.z - size.z * 0.1]).map(roundNumber),
+        normal: floor ? [0, 1, 0] : [0, 0, 1],
+        size: roundNumber(span),
+      }];
+      commit();
+      setFileStatus(`${floor ? "床" : "壁"}の当たり判定を追加しました`);
+      refreshColliderUI();
+      requestRender();
+    }
+    const colliderPlaneBox = new THREE.Box3();
+
+    function planeFacing(plane) {
+      for (const [name, normal] of Object.entries(COLLIDER_PLANE_NORMALS)) {
+        if (normal.every((value, index) => Math.abs(value - plane.normal[index]) < 1e-4)) return name;
+      }
+      return "custom";
+    }
+
+    function renderColliderPlanes() {
+      const key = JSON.stringify(colliderPlanes);
+      if (key === colliderPlaneKey) return;
+      const editing = document.activeElement;
+      if (editing && document.getElementById("collider-plane-list").contains(editing) && (editing.type === "text" || editing.type === "number")) return;
+      colliderPlaneKey = key;
+      if (!colliderPlanes.length) {
+        document.getElementById("collider-plane-list").innerHTML = `<p class="rig-empty">平面はまだありません。</p>`;
+        return;
+      }
+      const facings = [["up", "上向き（床）"], ["down", "下向き（天井）"], ["front", "前向き"], ["back", "後ろ向き"], ["right", "右向き"], ["left", "左向き"]];
+      document.getElementById("collider-plane-list").innerHTML = colliderPlanes.map((plane) => {
+        const facing = planeFacing(plane);
+        const options = facings.map(([value, label]) => `<option value="${value}"${value === facing ? " selected" : ""}>${label}</option>`).join("")
+          + (facing === "custom" ? `<option value="custom" selected>（自由な向き）</option>` : "");
+        const coords = ["x", "y", "z"].map((axis, index) => `<label class="chain-field"><span>${axis.toUpperCase()}</span><input type="number" step="any" value="${roundNumber(plane.point[index])}" data-field="p${axis}" aria-label="平面の位置 ${axis.toUpperCase()}" /></label>`).join("");
+        return `<div class="chain-card" data-plane="${plane.id}" role="listitem">
+          <div class="chain-row"><input type="text" maxlength="40" value="${escapeHtml(plane.name)}" data-field="name" aria-label="平面の名前" /><button type="button" data-act="hide" title="当たり判定を一時的に止める">${plane.hidden ? "有効にする" : "止める"}</button><button type="button" data-act="delete">削除</button></div>
+          <label class="chain-field"><span>向き</span><select data-field="facing" aria-label="平面の向き（この向きの側が外）">${options}</select></label>
+          ${coords}
+          <label class="chain-field"><span>表示の大きさ</span><input type="number" min="0" step="any" value="${roundNumber(plane.size)}" data-field="size" aria-label="平面の表示の大きさ" /></label>
+          <label class="chain-field"><span>グループ</span><input type="text" maxlength="24" value="${escapeHtml(plane.group ?? "")}" data-field="group" aria-label="平面のグループ" /></label>
+        </div>`;
+      }).join("");
+    }
+
+    document.getElementById("collider-plane-list").addEventListener("change", (event) => {
+      const card = event.target.closest("[data-plane]");
+      const plane = card ? colliderPlanes.find((item) => item.id === card.dataset.plane) : null;
+      if (!plane) return;
+      const field = event.target.dataset.field;
+      const value = event.target.value;
+      if (field === "name") plane.name = value.trim().slice(0, 40) || plane.name;
+      else if (field === "facing" && COLLIDER_PLANE_NORMALS[value]) plane.normal = [...COLLIDER_PLANE_NORMALS[value]];
+      else if (/^p[xyz]$/.test(field) && Number.isFinite(Number(value)) && value !== "") plane.point["xyz".indexOf(field[1])] = Number(value);
+      else if (field === "size" && Number(value) > 0) plane.size = Number(value);
+      else if (field === "group") {
+        const group = readColliderGroup(value);
+        if (group) plane.group = group;
+        else delete plane.group;
+      } else {
+        colliderPlaneKey = "";
+        renderColliderPlanes();
+        return;
+      }
+      colliderPlaneKey = "";
+      commit();
+      refreshColliderUI();
+      requestRender();
+    });
+
+    document.getElementById("collider-plane-list").addEventListener("click", (event) => {
+      const card = event.target.closest("[data-plane]");
+      const act = event.target.closest("button")?.dataset.act;
+      const plane = card ? colliderPlanes.find((item) => item.id === card.dataset.plane) : null;
+      if (!plane || !act) return;
+      if (act === "delete") colliderPlanes = colliderPlanes.filter((item) => item !== plane);
+      else if (act === "hide") {
+        if (plane.hidden) delete plane.hidden;
+        else plane.hidden = true;
+      }
+      colliderPlaneKey = "";
+      commit();
+      refreshColliderUI();
+      requestRender();
+    });
+
+    function refreshColliderUI() {
+      const section = document.getElementById("collider-section");
+      const blocked = Boolean(maskTarget) || Boolean(reliefTarget) || Boolean(featureTarget) || Boolean(softTarget);
+      section.hidden = blocked;
+      if (blocked) return;
+      const mesh = colliderSubject();
+      const collider = mesh?.userData.collider ?? null;
+      const locked = Boolean(mesh?.userData.locked);
+      document.getElementById("collider-none").hidden = !mesh || Boolean(collider);
+      document.getElementById("collider-edit").hidden = !collider;
+      document.getElementById("collider-add").disabled = !canAddCollider(mesh);
+      document.getElementById("collider-hint").textContent = !mesh
+        ? "パーツを選ぶと、そのパーツに当たり判定を付けられます（右クリックの「当たり判定を追加」でも付けられます）。"
+        : collider
+          ? "水色のワイヤーが当たり判定です。パーツの移動・ボーン・モーションに付いて動き、揺れボーンや柔らかいパーツを押し出します。"
+          : "パーツの大きさに合わせて、カプセルか球の当たり判定を付けます。";
+      document.getElementById("collider-show").checked = collidersShown;
+      if (collider) {
+        const size = colliderWorldSize(mesh);
+        for (const radio of document.querySelectorAll('input[name="collider-shape"]')) {
+          radio.checked = radio.value === collider.shape;
+          radio.disabled = locked;
+        }
+        document.getElementById("collider-length-row").hidden = collider.shape !== "capsule";
+        for (const [id, value] of [["collider-radius", size.radius], ["collider-length", size.length]]) {
+          const input = document.getElementById(id);
+          if (document.activeElement !== input) input.value = String(Number(value.toPrecision(4)));
+          input.disabled = locked;
+        }
+        const group = document.getElementById("collider-group");
+        if (document.activeElement !== group) group.value = collider.group ?? "";
+        group.disabled = locked;
+        document.getElementById("collider-refit").disabled = locked;
+        document.getElementById("collider-remove").disabled = locked;
+      }
+      renderColliderPlanes();
+    }
+
+    function editSelectedCollider(change) {
+      const mesh = colliderSubject();
+      if (!mesh?.userData.collider || mesh.userData.locked) return;
+      change(mesh, mesh.userData.collider);
+      syncColliderTwin(mesh);
+      commit();
+      refreshColliderUI();
+      requestRender();
+    }
+
+    document.getElementById("collider-add").addEventListener("click", () => {
+      const mesh = colliderSubject();
+      if (mesh) addColliderTo(mesh);
+    });
+    document.getElementById("collider-refit").addEventListener("click", () => {
+      const mesh = colliderSubject();
+      if (mesh) addColliderTo(mesh);
+    });
+    document.getElementById("collider-remove").addEventListener("click", () => removeColliderFrom(colliderSubject()));
+    for (const radio of document.querySelectorAll('input[name="collider-shape"]')) {
+      radio.addEventListener("change", () => editSelectedCollider((mesh, collider) => {
+        const size = colliderWorldSize(mesh);
+        if (radio.value === "sphere") {
+          setCollider(mesh, { shape: "sphere", center: collider.center, radius: collider.radius, group: collider.group });
+          setColliderWorldSize(mesh, { radius: size.length / 2 + size.radius });
+        } else {
+          const fitted = fitCollider(mesh);
+          setCollider(mesh, { shape: "capsule", center: collider.center, axis: fitted?.axis ?? [0, 1, 0], length: 0, radius: collider.radius, group: collider.group });
+          setColliderWorldSize(mesh, { radius: size.radius, length: size.radius * 2 });
+        }
+      }));
+    }
+    document.getElementById("collider-radius").addEventListener("change", (event) => {
+      const value = Number(event.target.value);
+      if (value > 0) editSelectedCollider((mesh) => setColliderWorldSize(mesh, { radius: value }));
+      else refreshColliderUI();
+    });
+    document.getElementById("collider-length").addEventListener("change", (event) => {
+      const value = Number(event.target.value);
+      if (event.target.value !== "" && value >= 0) editSelectedCollider((mesh) => setColliderWorldSize(mesh, { length: value }));
+      else refreshColliderUI();
+    });
+    document.getElementById("collider-group").addEventListener("change", (event) => {
+      editSelectedCollider((mesh, collider) => {
+        const group = readColliderGroup(event.target.value);
+        if (group) collider.group = group;
+        else delete collider.group;
+      });
+    });
+    document.getElementById("collider-plane-floor").addEventListener("click", () => addColliderPlane("floor"));
+    document.getElementById("collider-plane-wall").addEventListener("click", () => addColliderPlane("wall"));
+    document.getElementById("collider-show").addEventListener("change", (event) => {
+      collidersShown = event.target.checked;
+      localStorage.setItem("gfv-colliders-shown", collidersShown ? "1" : "0");
+      requestRender();
+    });
+
     renderer.setAnimationLoop((time) => {
       if (busyJob?.gpu) return;
       const now = performance.now();
@@ -26397,8 +27359,10 @@ void main() {
         for (const shape of mesh.userData.masks ?? []) if (settled(shape)) boundMasks.add(shape);
       }
       for (const shape of boundMasks) updateCurveBinding(shape);
+      colliderFrameShapes = null;
       updateRigMotion(frameDt);
       applyRigPose();
+      colliderFrameShapes = null;
       applyPathSags(frameDt);
       refreshMaskPeers(maskMeshes);
       for (const mesh of maskMeshes) {
@@ -26410,6 +27374,7 @@ void main() {
       updateSoftPreview(frameDt);
       updateSags(maskMeshes, frameDt);
       updateSagGuides();
+      updateColliderGuide();
       syncFolderColors();
       updateReliefFrame();
       for (const mesh of maskMeshes) if (shownInScene(mesh)) updateDecal(mesh);
