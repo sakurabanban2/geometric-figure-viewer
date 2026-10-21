@@ -13344,7 +13344,8 @@ self.onmessage = (event) => {
       }
       if (reliefTarget && (reliefDirtyFull || reliefDirtyRect)) rebuildReliefMap();
       if (reliefTarget) presentRelief(reliefTarget);
-      for (const mesh of editableMeshes()) {
+      // リンクパーツの中身（とその左右対称のコピー）も、リンク先で付けた法線マップを表示する
+      for (const mesh of [...editableMeshes(), ...linkMeshes(), ...mirrorMeshes()]) {
         if (mesh === reliefTarget) continue;
         if (mesh.userData.reliefGpuDirty || reliefIsStored(mesh.userData.relief)) presentRelief(mesh);
       }
@@ -15864,6 +15865,9 @@ self.onmessage = (event) => {
       setDecal(mesh, readDecal(part.decal));
       setConform(mesh, readConform(part.conform));
       attachLoadedMasks(mesh, part.masks);
+      // リンク先のパーツに保存された法線マップ（浮き出し）を読み込む。画像の展開は非同期なので、終わったら描き直す
+      delete mesh.userData.relief;
+      if (part.relief && typeof part.relief === "object") restorePartRelief(mesh, part.relief).then(() => requestRender()).catch(() => {});
       return mesh;
     }
 
