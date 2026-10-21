@@ -1066,6 +1066,37 @@
     }
 
     .outliner-row.part { grid-template-columns: 18px minmax(0, 1fr) 22px 22px; }
+    .outliner-row.has-feat { grid-template-columns: 18px minmax(0, 1fr) auto 22px 22px 22px; }
+    .outliner-row.part.has-feat { grid-template-columns: 18px minmax(0, 1fr) auto 22px 22px; }
+    .feat-badges { display: inline-flex; gap: 2px; }
+    .feat-badges:empty { display: none; }
+    .feat {
+      display: inline-block;
+      min-width: 13px;
+      padding: 0 2px;
+      border-radius: 3px;
+      font-size: 9px;
+      line-height: 13px;
+      font-weight: 700;
+      text-align: center;
+      color: #14181f;
+    }
+    .feat.sym { background: #7fb3ea; }
+    .feat.sag { background: #ef9cbc; }
+    .feat.soft { background: #f0bf6a; }
+    .feat.col { background: #6fd3d8; }
+    .feat.inh { opacity: 0.32; }
+    #summary-body { display: grid; gap: 6px; font-size: 12px; }
+    .sum-title { font-weight: 600; }
+    .sum-row { display: grid; grid-template-columns: 118px 1fr; gap: 2px 8px; padding: 5px 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.04); }
+    .sum-row .sum-name { display: flex; align-items: center; gap: 4px; font-weight: 600; }
+    .sum-row .sum-state.off { opacity: 0.6; }
+    .sum-row .sum-source { grid-column: 2; font-size: 11px; opacity: 0.85; }
+    .sum-row .sum-extra { grid-column: 1 / -1; display: grid; gap: 4px; margin-top: 3px; }
+    .sum-row .sum-buttons { display: flex; flex-wrap: wrap; gap: 4px; }
+    .sum-row .sum-buttons button { flex: 1 1 auto; font-size: 11px; padding: 3px 6px; }
+    .sum-link { padding: 0; border: 0; background: none; color: var(--accent); text-decoration: underline; cursor: pointer; font: inherit; }
+    .sum-row .slider-row { margin: 0; }
     .outliner-row.selected { background: rgba(231, 181, 164, 0.14); }
     .outliner-row.active { border-color: rgba(231, 181, 164, 0.85); }
     .outliner-row.focused { background: rgba(231, 181, 164, 0.08); }
@@ -1572,6 +1603,10 @@
         <button id="feature-defaults" type="button" title="今の形の初期値に戻す">初期値に戻す</button>
         <button id="feature-remove" type="button" title="この編集で作ったパーツをすべて消す">作った部品を消す</button>
       </div>
+    </section>
+    <section id="summary-section">
+      <h2 id="summary-heading">このパーツの設定</h2>
+      <div id="summary-body"></div>
     </section>
     <section id="transform-section">
       <h2>変形</h2>
@@ -10588,6 +10623,7 @@ self.onmessage = (event) => {
       refreshSagUI();
       refreshColliderUI();
       refreshSquishUI();
+      refreshSummaryUI();
       const loftable = morphKind === "loft" && (selected.userData.isMask || !maskTarget);
       document.getElementById("loft-section").hidden = !loftable;
       if (loftable) refreshLoftUI();
@@ -11035,9 +11071,10 @@ self.onmessage = (event) => {
         const tools = `<button class="icon" type="button" data-action="lock" aria-pressed="${allLocked}" aria-label="ロック">${iconLock(allLocked)}</button>
           <button class="icon" type="button" data-action="hide" aria-pressed="${!allHidden}" aria-label="${allHidden ? "表示" : "非表示"}">${iconEye(!allHidden)}</button>
           <button class="icon" type="button" data-action="delete-folder" aria-label="フォルダを削除"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>`;
-        html.push(`<div class="outliner-row${focusedFolder === folder.id ? " focused" : ""}" draggable="true" data-type="folder" data-id="${escapeHtml(folder.id)}" style="padding-left:${pad}px">
+        html.push(`<div class="outliner-row has-feat${focusedFolder === folder.id ? " focused" : ""}" draggable="true" data-type="folder" data-id="${escapeHtml(folder.id)}" style="padding-left:${pad}px">
           <button class="icon" type="button" data-action="collapse" aria-label="${open ? "折りたたむ" : "開く"}" style="transform:rotate(${open ? 90 : 0}deg)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
           ${name}
+          ${folderFeatureBadges(folder)}
           ${tools}
         </div>`);
         if (open) renderBranch(folder.id, depth + 1, html, sourceIds);
@@ -11101,7 +11138,7 @@ self.onmessage = (event) => {
         const name = renamingPart
           ? `<input class="rename" value="${escapeHtml(mesh.userData.label ?? "")}" />`
           : `<span class="name">${mesh.userData.color ? `<span class="folder-swatch" style="background:${mesh.userData.color}"></span>` : ""}${side ? `<span class="side">${side}</span>` : ""}${escapeHtml(mesh.userData.label ?? "パーツ")}${maskMark}</span>`;
-        const classes = ["outliner-row", "part"];
+        const classes = ["outliner-row", "part", "has-feat"];
         if (selection.includes(mesh)) classes.push("selected");
         if (mesh === selected) classes.push("active");
         if (maskGroup.includes(mesh)) classes.push("mask-target");
@@ -11111,6 +11148,7 @@ self.onmessage = (event) => {
         html.push(`<div class="${classes.join(" ")}" draggable="true" data-type="part" data-id="${escapeHtml(mesh.userData.id)}" style="padding-left:${pad}px">
           <span class="link-icon">${iconKind(mesh.userData.kind, mesh.userData.isMask)}</span>
           ${name}
+          ${partFeatureBadges(mesh)}
           ${tools}
         </div>`);
         html.push(decalRowsHtml(mesh, depth + 1));
@@ -11129,6 +11167,7 @@ self.onmessage = (event) => {
       toggleAll.disabled = !folders.length;
       toggleAll.textContent = anyFolderOpen() ? "すべて閉じる" : "すべて開く";
       renderSketches();
+      refreshFolderPanels();
     }
 
     function shownRow(tree, type, id) {
@@ -20324,7 +20363,7 @@ self.onmessage = (event) => {
     function refreshSagUI() {
       const subject = softTarget ?? selected;
       const kind = sagKind(subject);
-      const shown = Boolean(kind) && !maskTarget;
+      const shown = Boolean(kind) && !maskTarget && (Boolean(softTarget) || !folderLocksPanels());
       document.getElementById("sag-section").hidden = !shown;
       document.getElementById("sag-open-edit").hidden = Boolean(softTarget);
       document.getElementById("sag-group-block").hidden = Boolean(softTarget) || sagTargets().filter((item) => sagKind(item) === "part").length < 2;
@@ -27760,7 +27799,7 @@ void main() {
       const blocked = Boolean(maskTarget) || Boolean(reliefTarget) || Boolean(featureTarget) || Boolean(softTarget);
       section.hidden = blocked;
       if (blocked) return;
-      const mesh = colliderSubject();
+      const mesh = folderLocksPanels() ? null : colliderSubject();
       const collider = mesh?.userData.collider ?? null;
       const locked = Boolean(mesh?.userData.locked);
       document.getElementById("collider-none").hidden = !mesh || Boolean(collider);
@@ -27883,7 +27922,7 @@ void main() {
       const section = document.getElementById("squish-section");
       const mesh = squishSubject();
       const squish = mesh?.userData.squish;
-      section.hidden = !squish || Boolean(maskTarget) || Boolean(softTarget);
+      section.hidden = !squish || Boolean(maskTarget) || Boolean(softTarget) || folderLocksPanels();
       if (section.hidden) return;
       const locked = Boolean(mesh.userData.locked);
       for (const field of ["softness", "depth", "speed"]) {
@@ -27916,6 +27955,311 @@ void main() {
       });
     }
     document.getElementById("squish-remove").addEventListener("click", () => setSquishOn(squishSubject(), null, "柔らかくするのをやめました"));
+
+    // ===== このパーツの設定（まとめ）と、フォルダへの設定 =====
+    // 揺れ・へこみはパーツごと（個別）か、フォルダごと（中のパーツが受け継ぐ）に付く。
+    // 左右対称・当たり判定・揺れボーンの割り当てはパーツごとだけ。ここではそれを1か所にまとめて見せる。
+    let folderEach = null; // 「中のパーツそれぞれに設定」を選んだフォルダ（その間だけ各パネルで一括編集できる）
+
+    function folderById(id) {
+      return folders.find((folder) => folder.id === id) ?? null;
+    }
+
+    function folderSelected() {
+      if (!folderPick || focusedFolder !== folderPick.id || !folderById(folderPick.id)) return null;
+      if (selection.length !== folderPick.meshes.length || folderPick.meshes.some((mesh) => !selection.includes(mesh))) return null;
+      return folderById(folderPick.id);
+    }
+
+    // フォルダを選んでいて、まだ「それぞれに設定」を選んでいない間は、パーツ用のパネルで一括変更させない
+    function folderLocksPanels() {
+      const folder = folderSelected();
+      return Boolean(folder) && folderEach !== folder.id;
+    }
+
+    function selectFolderById(id) {
+      const folder = folderById(id);
+      if (!folder) return;
+      for (const item of folderChain(folder.parentId)) collapsedFolders.delete(item.id);
+      focusedFolder = id;
+      const meshes = [
+        ...descendantMeshes(id).filter((mesh) => !mesh.userData.hidden),
+        ...descendantLinks(id).filter((link) => !link.hidden).map((link) => linkAnchors.get(link.id)).filter(Boolean),
+        ...folderCurves(id).filter((curve) => !curve.userData.hidden),
+      ];
+      setSelection(meshes, meshes[0] ?? null);
+      folderPick = { id, meshes };
+      renderOutliner();
+    }
+
+    function selectPartById(id) {
+      const mesh = meshById(id);
+      if (!mesh) return;
+      for (const item of folderChain(mesh.userData.folderId)) collapsedFolders.delete(item.id);
+      focusedFolder = null;
+      folderPick = null;
+      select(mesh);
+      renderOutliner();
+    }
+
+    function partName(mesh) {
+      return `${sideText(mesh)}${mesh.userData.label ?? "パーツ"}`;
+    }
+
+    function partFeatureBadges(mesh) {
+      if (!inheritablePart(mesh)) return `<span class="feat-badges"></span>`;
+      const out = [];
+      const badge = (cls, text, inherited, title) => out.push(`<span class="feat ${cls}${inherited ? " inh" : ""}" title="${escapeHtml(title)}">${text}</span>`);
+      if (recordOf(mesh)?.mirror) badge("sym", "対", false, "左右対称：相方あり（個別）");
+      if (mesh.userData.sag) {
+        const from = mesh.userData.sagFrom ? folderById(mesh.userData.sagFrom) : null;
+        badge("sag", "揺", Boolean(from), from ? `揺れ（垂れ・ぷるん）：フォルダ「${from.name}」から` : "揺れ（垂れ・ぷるん）：個別");
+      }
+      if (mesh.userData.squish) {
+        const from = mesh.userData.squishFrom ? folderById(mesh.userData.squishFrom) : null;
+        badge("soft", "凹", Boolean(from), from ? `へこみ（柔らかさ）：フォルダ「${from.name}」から` : "へこみ（柔らかさ）：個別");
+      }
+      if (mesh.userData.collider) badge("col", "当", false, "当たり判定：個別");
+      return `<span class="feat-badges">${out.join("")}</span>`;
+    }
+
+    function folderFeatureBadges(folder) {
+      const out = [];
+      for (const [key, cls, text, label] of [["sag", "sag", "揺", "揺れ（垂れ・ぷるん）"], ["squish", "soft", "凹", "へこみ（柔らかさ）"]]) {
+        if (folder[key]) out.push(`<span class="feat ${cls}" title="${label}：このフォルダ全体に設定">${text}</span>`);
+        else {
+          const from = folderSettingFor(folder.parentId, key);
+          if (from) out.push(`<span class="feat ${cls} inh" title="${label}：フォルダ「${escapeHtml(from.name)}」から">${text}</span>`);
+        }
+      }
+      return `<span class="feat-badges">${out.join("")}</span>`;
+    }
+
+    const percent = (value) => `${Math.round((value ?? 0) * 100)}%`;
+    const jumpFolder = (folder, suffix = "から") => `<button type="button" class="sum-link" data-jump-folder="${escapeHtml(folder.id)}">フォルダ「${escapeHtml(folder.name)}」${suffix}</button>`;
+    const jumpPart = (mesh, text) => `<button type="button" class="sum-link" data-jump-part="${escapeHtml(mesh.userData.id)}">${escapeHtml(text)}</button>`;
+
+    function squishPresetName(squish) {
+      const hit = Object.values(SQUISH_PRESETS).find((preset) => ["softness", "depth", "speed"].every((key) => Math.abs(preset[key] - squish[key]) < 0.005));
+      return hit ? hit.label : "調整済み";
+    }
+
+    function sumRow(name, cls, state, on, source, extra = "") {
+      return `<div class="sum-row" data-feature="${cls}"><span class="sum-name"><span class="feat ${cls}${on ? "" : " inh"}"></span>${name}</span><span class="sum-state${on ? "" : " off"}">${state}</span>${source ? `<span class="sum-source">${source}</span>` : ""}${extra ? `<div class="sum-extra">${extra}</div>` : ""}</div>`;
+    }
+
+    function partSummaryHtml(mesh) {
+      const rows = [];
+      const record = recordOf(mesh);
+      const locked = Boolean(mesh.userData.locked);
+      const twin = record ? otherOf(record, mesh) : null;
+      rows.push(sumRow("左右対称", "sym",
+        twin ? `オン（相方 ${jumpPart(twin, partName(twin))}）` : onCenterLine(mesh) ? "中心のパーツ（相方なし）" : "オフ",
+        Boolean(twin), "個別（パーツごと）"));
+      // 揺れ
+      const sagFolder = folderSettingFor(mesh.userData.folderId, "sag");
+      const mode = sagMode(mesh);
+      const sag = mesh.userData.sag;
+      let sagState = "オフ";
+      if (mode === "own") sagState = `オン（垂れ ${percent(sag.amount)}・揺れ ${percent(sag.wobble)}）`;
+      else if (mode === "follow") {
+        const host = meshById(sag.follow);
+        sagState = host ? `付いて動く（${jumpPart(host, partName(host))}）` : "付いて動く";
+      }
+      let sagSource = mode === "none" ? "" : "個別";
+      if (mesh.userData.sagFrom && folderById(mesh.userData.sagFrom)) sagSource = jumpFolder(folderById(mesh.userData.sagFrom));
+      else if (mesh.userData.sagOff && sagFolder) sagSource = `個別にオフ（${jumpFolder(sagFolder, "")}の設定を外しています）`;
+      const sagRevert = sagFolder && !mesh.userData.sagFrom && !locked
+        ? `<div class="sum-buttons"><button type="button" data-act="revert" data-key="sag">フォルダの設定に戻す</button></div>` : "";
+      rows.push(sumRow("揺れ（垂れ・ぷるん）", "sag", sagState, mode !== "none", sagSource, sagRevert));
+      // へこみ
+      const squishFolder = folderSettingFor(mesh.userData.folderId, "squish");
+      const squish = mesh.userData.squish;
+      let squishSource = squish ? "個別" : "";
+      if (squish && mesh.userData.squishFrom && folderById(mesh.userData.squishFrom)) squishSource = jumpFolder(folderById(mesh.userData.squishFrom));
+      else if (mesh.userData.squishOff && squishFolder) squishSource = `個別にオフ（${jumpFolder(squishFolder, "")}の設定を外しています）`;
+      const squishRevert = squishFolder && !mesh.userData.squishFrom && !locked
+        ? `<div class="sum-buttons"><button type="button" data-act="revert" data-key="squish">フォルダの設定に戻す</button></div>` : "";
+      rows.push(sumRow("へこみ（柔らかさ）", "soft", squish ? `オン（${squishPresetName(squish)}）` : "オフ", Boolean(squish), squishSource, squishRevert));
+      const collider = mesh.userData.collider;
+      rows.push(sumRow("当たり判定", "col", collider ? `オン（${collider.shape === "sphere" ? "球" : "カプセル"}）` : "オフ", Boolean(collider), collider ? "個別（パーツごと）" : ""));
+      const chain = chainOfBone(mesh.userData.bone ?? "");
+      rows.push(sumRow("揺れボーン", "bone", chain ? `「${escapeHtml(chain.name)}」に割り当て` : "割り当てなし", Boolean(chain), chain ? "個別（ボーンとモーションの「パーツの割り当て」）" : ""));
+      return rows.join("");
+    }
+
+    function folderSummaryHtml(folder) {
+      const parts = descendantMeshes(folder.id).filter(inheritablePart);
+      const count = (test) => parts.filter(test).length;
+      const rows = [`<p class="hint">フォルダ「${escapeHtml(folder.name)}」（中のパーツ ${parts.length} 個）。揺れとへこみはフォルダ全体にも設定でき、個別の設定がないパーツが受け継ぎます。</p>`];
+      const scopeButtons = (key, folderOk = true) => `<div class="sum-buttons">
+          <button type="button" data-act="folder" data-key="${key}"${folderOk ? "" : ` disabled title="当たり判定はパーツの形に合わせて付くので、フォルダ全体には付けられません"`}>フォルダ全体に設定</button>
+          <button type="button" data-act="each" data-key="${key}">中のパーツそれぞれに設定</button>
+        </div>`;
+      const inherited = (key) => folderSettingFor(folder.parentId, key);
+      // 揺れ
+      const sagOwn = count((mesh) => mesh.userData.sag && !mesh.userData.sagFrom);
+      let sagExtra = "";
+      if (folder.sag) {
+        sagExtra = `<div class="slider-row"><span>垂れ</span><input type="range" min="0" max="100" step="1" value="${Math.round(folder.sag.amount * 100)}" data-folder-slider="sag.amount" aria-label="フォルダの垂れ" /></div>
+          <div class="slider-row"><span>揺れ</span><input type="range" min="0" max="100" step="1" value="${Math.round(folder.sag.wobble * 100)}" data-folder-slider="sag.wobble" aria-label="フォルダの揺れ" /></div>
+          <div class="sum-buttons"><button type="button" data-act="each" data-key="sag">中のパーツそれぞれに設定</button><button type="button" data-act="clear" data-key="sag">フォルダの設定を外す</button></div>`;
+      } else sagExtra = scopeButtons("sag");
+      rows.push(sumRow("揺れ（垂れ・ぷるん）", "sag",
+        folder.sag ? `フォルダ全体：オン（垂れ ${percent(folder.sag.amount)}・揺れ ${percent(folder.sag.wobble)}）` : inherited("sag") ? `${jumpFolder(inherited("sag"))}受け継ぎ` : "フォルダ全体：オフ",
+        Boolean(folder.sag), `個別の設定があるパーツ：${sagOwn} 個`, sagExtra));
+      // へこみ
+      const squishOwn = count((mesh) => mesh.userData.squish && !mesh.userData.squishFrom);
+      let squishExtra = "";
+      if (folder.squish) {
+        squishExtra = `<div class="sum-buttons">${Object.entries(SQUISH_PRESETS).map(([key, preset]) => `<button type="button" data-act="preset" data-preset="${key}">${preset.label}</button>`).join("")}</div>
+          ${[["softness", "柔らかさ"], ["depth", "厚み"], ["speed", "戻りの速さ"]].map(([field, label]) => `<div class="slider-row"><span>${label}</span><input type="range" min="0" max="100" step="1" value="${Math.round(folder.squish[field] * 100)}" data-folder-slider="squish.${field}" aria-label="フォルダの${label}" /></div>`).join("")}
+          <div class="sum-buttons"><button type="button" data-act="each" data-key="squish">中のパーツそれぞれに設定</button><button type="button" data-act="clear" data-key="squish">フォルダの設定を外す</button></div>`;
+      } else squishExtra = scopeButtons("squish");
+      rows.push(sumRow("へこみ（柔らかさ）", "soft",
+        folder.squish ? `フォルダ全体：オン（${squishPresetName(folder.squish)}）` : inherited("squish") ? `${jumpFolder(inherited("squish"))}受け継ぎ` : "フォルダ全体：オフ",
+        Boolean(folder.squish), `個別の設定があるパーツ：${squishOwn} 個`, squishExtra));
+      const colliders = count((mesh) => mesh.userData.collider);
+      rows.push(sumRow("当たり判定", "col", `パーツごと：${colliders} / ${parts.length} 個`, colliders > 0, "フォルダには付けられません（パーツごとの設定です）", scopeButtons("collider", false)));
+      const paired = count((mesh) => recordOf(mesh)?.mirror);
+      rows.push(sumRow("左右対称", "sym", `相方のあるパーツ：${paired} / ${parts.length} 個`, paired > 0, "パーツごとの設定です（右クリックの「左右対称のパーツを作る」）"));
+      const bones = count((mesh) => chainOfBone(mesh.userData.bone ?? ""));
+      rows.push(sumRow("揺れボーン", "bone", `割り当て：${bones} / ${parts.length} 個`, bones > 0, "パーツごとの設定です（ボーンとモーションの「パーツの割り当て」）"));
+      if (folderEach === folder.id) rows.push(`<p class="hint">「中のパーツそれぞれに設定」中：下のパネルの変更は、選択中の ${selection.length} 個のパーツそれぞれに個別の設定として付きます。</p>`);
+      return rows.join("");
+    }
+
+    function refreshSummaryUI() {
+      const body = document.getElementById("summary-body");
+      if (!body.dataset.ready) return;
+      const section = document.getElementById("summary-section");
+      const blocked = Boolean(maskTarget) || Boolean(reliefTarget) || Boolean(featureTarget) || Boolean(softTarget) || Boolean(faceSession);
+      const folder = folderSelected();
+      const mesh = folder ? null : (inheritablePart(selected) ? selected : null);
+      section.hidden = blocked || (!folder && !mesh);
+      if (section.hidden) return;
+      document.getElementById("summary-heading").textContent = folder ? "このフォルダの設定" : "このパーツの設定";
+      if (folderEach && (!folder || folder.id !== folderEach)) folderEach = null;
+      const note = !folder && selection.length > 1 ? `<p class="hint">選択中 ${selection.length} 個のうち「${escapeHtml(partName(mesh))}」の設定です。</p>` : "";
+      body.innerHTML = folder ? folderSummaryHtml(folder) : `<div class="sum-title">${escapeHtml(partName(mesh))}</div>${note}${partSummaryHtml(mesh)}`;
+    }
+
+    function refreshFolderPanels() {
+      if (!document.getElementById("summary-body").dataset.ready) return;
+      refreshSummaryUI();
+      refreshSagUI();
+      refreshSquishUI();
+      refreshColliderUI();
+    }
+
+    function folderParts(folder) {
+      return descendantMeshes(folder.id).filter((mesh) => inheritablePart(mesh) && !mesh.userData.locked);
+    }
+
+    function applyFolderAction(act, key, button) {
+      const folder = folderSelected();
+      if (act === "revert") {
+        const mesh = selected;
+        if (!mesh || mesh.userData.locked) return;
+        const targets = [mesh];
+        if (symmetric) {
+          const twin = otherOf(recordOf(mesh), mesh);
+          if (twin && !twin.userData.locked) targets.push(twin);
+        }
+        for (const item of targets) {
+          if (key === "sag") setSag(item, null);
+          else setSquish(item, null);
+          delete item.userData[`${key}Off`];
+        }
+        commit();
+        setFileStatus(`「${partName(mesh)}」を、フォルダの${key === "sag" ? "揺れ" : "へこみ"}の設定に戻しました`);
+        return;
+      }
+      if (!folder) return;
+      const label = { sag: "揺れ（垂れ・ぷるん）", squish: "へこみ（柔らかさ）", collider: "当たり判定" }[key];
+      if (act === "folder") {
+        if (key === "sag") folder.sag = readFolderSag({ amount: 0.3, wobble: 0.3, anchor: "back", ease: 1 });
+        else if (key === "squish") folder.squish = { ...readSquish(SQUISH_PRESETS.normal) };
+        else return;
+        commit();
+        const own = folderParts(folder).filter((mesh) => mesh.userData[key] && !mesh.userData[`${key}From`]).length;
+        setFileStatus(`フォルダ「${folder.name}」全体に${label}を設定しました${own ? `（個別の設定がある ${own} 個はそのままです）` : ""}`);
+      } else if (act === "clear") {
+        delete folder[key];
+        commit();
+        setFileStatus(`フォルダ「${folder.name}」の${label}を外しました（個別の設定はそのままです）`);
+      } else if (act === "preset") {
+        const preset = SQUISH_PRESETS[button.dataset.preset];
+        if (!preset || !folder.squish) return;
+        folder.squish = { ...readSquish(preset) };
+        commit();
+        setFileStatus(`フォルダ「${folder.name}」のへこみを「${preset.label}」にしました`);
+      } else if (act === "each") {
+        const parts = folderParts(folder);
+        if (key === "sag") {
+          folderEach = folder.id;
+          setFileStatus(`下の「揺れ（垂れ・ぷるん）」で、中のパーツ ${selection.length} 個それぞれに個別の揺れを設定します`);
+        } else if (key === "squish") {
+          let made = 0;
+          for (const mesh of parts) {
+            if (mesh.userData.squish && !mesh.userData.squishFrom) continue;
+            setSquish(mesh, SQUISH_PRESETS.normal);
+            made++;
+          }
+          commit();
+          setFileStatus(made ? `中のパーツ ${made} 個それぞれを柔らかく（へこみ「普通」）しました。強さはパーツを選んで変えられます` : "中のパーツはすべて個別にへこみが付いています");
+        } else if (key === "collider") {
+          let made = 0;
+          for (const mesh of parts) {
+            if (mesh.userData.collider || !canAddCollider(mesh)) continue;
+            const fitted = fitCollider(mesh);
+            if (!fitted) continue;
+            setCollider(mesh, fitted);
+            syncColliderTwin(mesh);
+            made++;
+          }
+          commit();
+          setFileStatus(made ? `中のパーツ ${made} 個それぞれに当たり判定を付けました` : "当たり判定を付けられるパーツがありませんでした（すでに付いているか、ロック中です）");
+        }
+      }
+      renderOutliner();
+      requestRender();
+    }
+
+    {
+      const body = document.getElementById("summary-body");
+      body.addEventListener("click", (event) => {
+        const folderLink = event.target.closest("[data-jump-folder]");
+        if (folderLink) {
+          selectFolderById(folderLink.dataset.jumpFolder);
+          return;
+        }
+        const partLink = event.target.closest("[data-jump-part]");
+        if (partLink) {
+          selectPartById(partLink.dataset.jumpPart);
+          return;
+        }
+        const button = event.target.closest("button[data-act]");
+        if (button && !button.disabled) applyFolderAction(button.dataset.act, button.dataset.key, button);
+      });
+      body.addEventListener("input", (event) => {
+        const range = event.target.closest("[data-folder-slider]");
+        const folder = folderSelected();
+        if (!range || !folder) return;
+        const [key, field] = range.dataset.folderSlider.split(".");
+        if (!folder[key]) return;
+        const next = { ...folder[key], [field]: Number(range.value) / 100 };
+        folder[key] = (key === "sag" ? readFolderSag(next) : readSquish(next)) ?? folder[key];
+        syncFolderSettings();
+        requestRender();
+      });
+      body.addEventListener("change", (event) => {
+        if (!event.target.closest("[data-folder-slider]")) return;
+        commit();
+        renderOutliner();
+      });
+      body.dataset.ready = "1";
+    }
 
     renderer.setAnimationLoop((time) => {
       if (busyJob?.gpu) return;
