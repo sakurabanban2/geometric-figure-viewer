@@ -3658,8 +3658,92 @@ if (decalOn > 0.5) {
         return;
       }
       const sag = readSag(value);
+      delete mesh.userData.sagFrom;
+      if (sag) delete mesh.userData.sagOff;
       if (sag) mesh.userData.sag = sag;
       else delete mesh.userData.sag;
+    }
+
+    // ===== フォルダの設定（揺れ・へこみ）と、パーツへの受け継ぎ =====
+    // フォルダに付けた揺れ（folder.sag）とへこみ（folder.squish）は、中のパーツのうち
+    // 個別の設定を持たないものに写される。写した値には sagFrom / squishFrom（フォルダの id）
+    // の印が付き、保存ファイルにもパーツの値として残るので、古い版でも同じ見た目で読める。
+    // パーツを個別に設定し直すと印は消え、個別の設定になる。
+    function readFolderSag(value) {
+      const sag = readSag(value ? { ...value, follow: undefined } : null);
+      return sag && (sag.amount > 0 || sag.wobble > 0) ? sag : null;
+    }
+
+    function markInherited(mesh, source) {
+      if (typeof source?.sagFrom === "string" && mesh.userData.sag) mesh.userData.sagFrom = source.sagFrom;
+      if (typeof source?.squishFrom === "string" && mesh.userData.squish) mesh.userData.squishFrom = source.squishFrom;
+      if (source?.sagOff === true && !mesh.userData.sag) mesh.userData.sagOff = true;
+      else delete mesh.userData.sagOff;
+      if (source?.squishOff === true && !mesh.userData.squish) mesh.userData.squishOff = true;
+      else delete mesh.userData.squishOff;
+    }
+
+    // フォルダに設定があるのに、このパーツだけ「なし」にしたときの印（個別のオフ）
+    function setInheritOff(mesh, key, off) {
+      if (off && folderSettingFor(mesh.userData.folderId, key)) mesh.userData[`${key}Off`] = true;
+      else delete mesh.userData[`${key}Off`];
+    }
+
+    function folderChain(folderId) {
+      const out = [];
+      const seen = new Set();
+      let cursor = folderId ? folders.find((folder) => folder.id === folderId) : null;
+      while (cursor && !seen.has(cursor.id)) {
+        seen.add(cursor.id);
+        out.push(cursor);
+        cursor = cursor.parentId ? folders.find((folder) => folder.id === cursor.parentId) : null;
+      }
+      return out;
+    }
+
+    function folderSettingFor(folderId, key) {
+      return folderChain(folderId).find((folder) => folder[key]) ?? null;
+    }
+
+    function inheritablePart(mesh) {
+      return mesh?.isMesh && !mesh.userData.isMask && !isLinkAnchor(mesh) && !isCurve(mesh) && Boolean(recordOf(mesh));
+    }
+
+    function syncFolderSettings() {
+      let changed = false;
+      for (const mesh of editableMeshes()) {
+        if (!inheritablePart(mesh)) continue;
+        for (const key of ["sag", "squish"]) {
+          const fromKey = `${key}From`;
+          const inherited = Boolean(mesh.userData[fromKey]);
+          if (mesh.userData[key] && !inherited) continue;
+          if (mesh.userData[`${key}Off`]) {
+            if (inherited) {
+              if (key === "sag") setSag(mesh, null);
+              else setSquish(mesh, null);
+              mesh.userData[`${key}Off`] = true;
+              changed = true;
+            }
+            continue;
+          }
+          const source = folderSettingFor(mesh.userData.folderId, key);
+          if (source) {
+            const record = recordOf(mesh);
+            const want = key === "sag" ? (record?.mirror === mesh ? mirroredSag(source.sag) : { ...source.sag }) : { ...source.squish };
+            if (inherited && mesh.userData[fromKey] === source.id && JSON.stringify(mesh.userData[key]) === JSON.stringify(key === "sag" ? readSag(want) : readSquish(want))) continue;
+            if (key === "sag") setSag(mesh, want);
+            else setSquish(mesh, want);
+            mesh.userData[fromKey] = source.id;
+            changed = true;
+          } else if (inherited) {
+            if (key === "sag") setSag(mesh, null);
+            else setSquish(mesh, null);
+            changed = true;
+          }
+        }
+      }
+      if (changed) requestRender();
+      return changed;
     }
 
     function mirroredSag(sag) {
@@ -9892,6 +9976,8 @@ self.onmessage = (event) => {
         folder.name,
         folder.color ?? "",
         folder.feature ? JSON.stringify(folder.feature) : "",
+        folder.sag ? JSON.stringify(folder.sag) : "",
+        folder.squish ? JSON.stringify(folder.squish) : "",
       ].join(",")).join(";");
       const sideSig = (mesh) => `${mesh.uuid}:${transformSignature(mesh)}:${maskSignature(mesh)}:${reliefSigOf(mesh)}:${decalSigOf(mesh)}:${conformSigOf(mesh)}:${mesh.userData.bone ?? ""}`;
       return `${records
@@ -9930,6 +10016,10 @@ self.onmessage = (event) => {
         sag: mesh.userData.sag ?? null,
         collider: mesh.userData.collider ? structuredClone(mesh.userData.collider) : null,
         squish: mesh.userData.squish ? { ...mesh.userData.squish } : null,
+        sagFrom: mesh.userData.sagFrom ?? null,
+        squishFrom: mesh.userData.squishFrom ?? null,
+        sagOff: Boolean(mesh.userData.sagOff),
+        squishOff: Boolean(mesh.userData.squishOff),
         bone: mesh.userData.bone ?? null,
         linkId: mesh.userData.linkId ?? null,
         curveBind: mesh.userData.curveBind ? { ...mesh.userData.curveBind } : null,
@@ -10011,6 +10101,7 @@ self.onmessage = (event) => {
       setPartBone(packed.mesh, packed.bone ?? null);
       if (!packed.mesh.userData.isMask) setCollider(packed.mesh, packed.collider ?? null);
       if (!packed.mesh.userData.isMask) setSquish(packed.mesh, packed.squish ?? null);
+      markInherited(packed.mesh, packed);
       setCurveBind(packed.mesh, packed.curveBind ?? null);
       if (packed.relief) packed.mesh.userData.relief = packed.relief;
       else delete packed.mesh.userData.relief;
@@ -10146,6 +10237,7 @@ self.onmessage = (event) => {
     function commit() {
       requestRender();
       if (restoring) return;
+      syncFolderSettings();
       const next = packState();
       if (historyIndex >= 0 && history[historyIndex].signature === next.signature) {
         if (!holdChrome) refreshChrome();
@@ -10709,6 +10801,8 @@ self.onmessage = (event) => {
           order: Number.isFinite(folder.order) ? folder.order : 0,
           ...(/^#[0-9a-f]{6}$/i.test(folder.color ?? "") ? { color: folder.color.toLowerCase() } : {}),
           ...(readFeature(folder.feature) ? { feature: readFeature(folder.feature) } : {}),
+          ...(readFolderSag(folder.sag) ? { sag: readFolderSag(folder.sag) } : {}),
+          ...(readSquish(folder.squish) ? { squish: readSquish(folder.squish) } : {}),
         });
       }
       const byId = new Map(clean.map((folder) => [folder.id, folder]));
@@ -14783,6 +14877,10 @@ self.onmessage = (event) => {
         bone: mesh.userData.bone ?? undefined,
         collider: serializeCollider(mesh.userData.collider),
         squish: serializeSquish(mesh.userData.squish),
+        sagFrom: mesh.userData.sag && mesh.userData.sagFrom ? mesh.userData.sagFrom : undefined,
+        squishFrom: mesh.userData.squish && mesh.userData.squishFrom ? mesh.userData.squishFrom : undefined,
+        sagOff: mesh.userData.sagOff || undefined,
+        squishOff: mesh.userData.squishOff || undefined,
         home: mesh.userData.home?.map(roundNumber),
         size: mesh.userData.kind === "body" && Array.isArray(mesh.userData.size) ? mesh.userData.size.map(roundNumber) : undefined,
         merge: mesh.userData.merge ? { ...mesh.userData.merge } : undefined,
@@ -14840,6 +14938,8 @@ self.onmessage = (event) => {
           order: folder.order,
           color: folder.color,
           feature: folder.feature,
+          sag: folder.sag ? { ...folder.sag, amount: roundNumber(folder.sag.amount), wobble: roundNumber(folder.sag.wobble) } : undefined,
+          squish: serializeSquish(folder.squish),
         })),
         links: links.length ? serializeLinks() : undefined,
         curves: curves.length ? packCurves() : undefined,
@@ -15118,6 +15218,7 @@ self.onmessage = (event) => {
       setPartBone(mesh, part.bone);
       setCollider(mesh, part.collider);
       setSquish(mesh, part.squish);
+      markInherited(mesh, part);
       mesh.userData.linkId = typeof part.linkId === "string" ? part.linkId : null;
       mesh.userData.home = isVector(part.home, 3) ? [...part.home] : undefined;
       setDecal(mesh, readDecal(part.decal));
@@ -15718,6 +15819,7 @@ self.onmessage = (event) => {
       setPartBone(mesh, part.bone);
       setCollider(mesh, part.collider);
       setSquish(mesh, part.squish);
+      markInherited(mesh, part);
       mesh.userData.home = isVector(part.home, 3) ? [...part.home] : undefined;
       setDecal(mesh, readDecal(part.decal));
       setConform(mesh, readConform(part.conform));
@@ -18879,6 +18981,7 @@ self.onmessage = (event) => {
       setPartBone(mesh, part.bone);
       setCollider(mesh, part.collider);
       setSquish(mesh, part.squish);
+      markInherited(mesh, part);
       const parent = parentByKey(part.parent);
       parent.add(mesh);
       mesh.position.fromArray(part.position);
@@ -20184,7 +20287,16 @@ self.onmessage = (event) => {
     function mirrorSagOf(mesh) {
       if (!symmetric) return;
       const other = otherOf(recordOf(mesh), mesh);
-      if (other && !other.userData.locked) setSag(other, mirroredSag(mesh.userData.sag ?? null));
+      if (other && !other.userData.locked) {
+        setSag(other, mirroredSag(mesh.userData.sag ?? null));
+        copyInheritMarks(mesh, other, "sag");
+      }
+    }
+
+    // 左右の相方へ写すときは、受け継ぎ（フォルダから）や個別のオフの印も合わせる
+    function copyInheritMarks(from, to, key) {
+      if (from.userData[`${key}From`] && to.userData[key]) to.userData[`${key}From`] = from.userData[`${key}From`];
+      if (from.userData[`${key}Off`] && !to.userData[key]) setInheritOff(to, key, true);
     }
 
     function relinkSagFollowers() {
@@ -20304,7 +20416,10 @@ self.onmessage = (event) => {
         if (!radio.checked) return;
         for (const mesh of sagTargets()) {
           const sag = sagOf(mesh);
-          if (radio.value === "none") setSag(mesh, null);
+          if (radio.value === "none") {
+            setSag(mesh, null);
+            setInheritOff(mesh, "sag", true);
+          }
           else if (radio.value === "own") setSag(mesh, { amount: sag.amount || 0.3, wobble: sag.wobble || 0.3, anchor: sag.anchor, ease: sag.ease });
           else {
             const host = sagKind(mesh) === "part" ? sagHostChoices(mesh)[0] : null;
@@ -21907,6 +22022,8 @@ self.onmessage = (event) => {
 
     function setSquish(mesh, value) {
       const squish = readSquish(value);
+      delete mesh.userData.squishFrom;
+      if (squish) delete mesh.userData.squishOff;
       if (squish) mesh.userData.squish = squish;
       else delete mesh.userData.squish;
     }
@@ -21920,6 +22037,7 @@ self.onmessage = (event) => {
       const other = otherOf(recordOf(mesh), mesh);
       if (!other || other.userData.locked) return null;
       setSquish(other, mesh.userData.squish ?? null);
+      copyInheritMarks(mesh, other, "squish");
       return other;
     }
 
@@ -27741,6 +27859,7 @@ void main() {
     function setSquishOn(mesh, value, message) {
       if (!mesh || mesh.userData.locked) return;
       setSquish(mesh, value);
+      setInheritOff(mesh, "squish", !value);
       const twin = syncSquishTwin(mesh);
       commit();
       if (message) setFileStatus(`${message}${twin ? "（左右対称の相方にも反映しました）" : ""}`);
