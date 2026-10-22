@@ -446,6 +446,11 @@
     .chain-card .chain-field span { min-width: 64px; color: var(--muted); }
     .chain-card .chain-field select, .chain-card .chain-field input { flex: 1; min-width: 0; }
     .chain-card .slider-row .chain-value { min-width: 40px; color: var(--muted); font-size: 11px; text-align: right; font-variant-numeric: tabular-nums; }
+    #collider-section .chain-field { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 12px; }
+    #collider-section .chain-field span { min-width: 64px; color: var(--muted); }
+    #collider-section .chain-field select, #collider-section .chain-field input { flex: 1; min-width: 0; }
+    #collider-section .rig-transport button, #collider-section .wide { font-size: 12px; }
+    #collider-plane-list .chain-row button { font-size: 11px; padding: 2px 6px; }
     .chain-card .rig-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: #c77dff; }
     .chain-card .chain-note { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
     .chain-card .chain-joints { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; align-items: center; font-size: 12px; }
@@ -1061,6 +1066,37 @@
     }
 
     .outliner-row.part { grid-template-columns: 18px minmax(0, 1fr) 22px 22px; }
+    .outliner-row.has-feat { grid-template-columns: 18px minmax(0, 1fr) auto 22px 22px 22px; }
+    .outliner-row.part.has-feat { grid-template-columns: 18px minmax(0, 1fr) auto 22px 22px; }
+    .feat-badges { display: inline-flex; gap: 2px; }
+    .feat-badges:empty { display: none; }
+    .feat {
+      display: inline-block;
+      min-width: 13px;
+      padding: 0 2px;
+      border-radius: 3px;
+      font-size: 9px;
+      line-height: 13px;
+      font-weight: 700;
+      text-align: center;
+      color: #14181f;
+    }
+    .feat.sym { background: #7fb3ea; }
+    .feat.sag { background: #ef9cbc; }
+    .feat.soft { background: #f0bf6a; }
+    .feat.col { background: #6fd3d8; }
+    .feat.inh { opacity: 0.32; }
+    #summary-body { display: grid; gap: 6px; font-size: 12px; }
+    .sum-title { font-weight: 600; }
+    .sum-row { display: grid; grid-template-columns: 118px 1fr; gap: 2px 8px; padding: 5px 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.04); }
+    .sum-row .sum-name { display: flex; align-items: center; gap: 4px; font-weight: 600; }
+    .sum-row .sum-state.off { opacity: 0.6; }
+    .sum-row .sum-source { grid-column: 2; font-size: 11px; opacity: 0.85; }
+    .sum-row .sum-extra { grid-column: 1 / -1; display: grid; gap: 4px; margin-top: 3px; }
+    .sum-row .sum-buttons { display: flex; flex-wrap: wrap; gap: 4px; }
+    .sum-row .sum-buttons button { flex: 1 1 auto; font-size: 11px; padding: 3px 6px; }
+    .sum-link { padding: 0; border: 0; background: none; color: var(--accent); text-decoration: underline; cursor: pointer; font: inherit; }
+    .sum-row .slider-row { margin: 0; }
     .outliner-row.selected { background: rgba(231, 181, 164, 0.14); }
     .outliner-row.active { border-color: rgba(231, 181, 164, 0.85); }
     .outliner-row.focused { background: rgba(231, 181, 164, 0.08); }
@@ -1310,7 +1346,7 @@
           <button type="button" role="menuitem" data-action="rasterize">ラスタライズ</button>
           <button type="button" role="menuitem" data-action="relief">法線編集</button>
           <button type="button" role="menuitem" data-action="feature">顔・手・足の編集</button>
-          <button type="button" role="menuitem" data-action="soft">柔らかさの編集</button>
+          <button type="button" role="menuitem" data-action="soft">揺れの編集</button>
           <button type="button" role="menuitem" data-action="rig">ボーンとモーション</button>
           <button type="button" role="menuitem" data-command="reset-position">位置リセット</button>
           <button type="button" role="menuitem" data-command="reset-rotation">回転リセット</button>
@@ -1568,6 +1604,10 @@
         <button id="feature-remove" type="button" title="この編集で作ったパーツをすべて消す">作った部品を消す</button>
       </div>
     </section>
+    <section id="summary-section">
+      <h2 id="summary-heading">このパーツの設定</h2>
+      <div id="summary-body"></div>
+    </section>
     <section id="transform-section">
       <h2>変形</h2>
       <div class="tools">
@@ -1692,11 +1732,11 @@
       <p class="hint dome-hint">空いた所をクリックで点を追加、ドラッグで移動、ダブルクリックか右クリックで削除します。</p>
     </section>
     <section id="sag-section" hidden>
-      <h2>柔らかさ</h2>
+      <h2>揺れ（垂れ・ぷるん）</h2>
       <div class="curve-modes" id="sag-modes" role="radiogroup" aria-label="動き方">
-        <label title="柔らかさを付けない"><input type="radio" name="sag-mode" value="none" /> なし</label>
-        <label title="このパーツ自身が重力で垂れたり、動かしたときに揺れたりする"><input type="radio" name="sag-mode" value="own" /> 柔らかく</label>
-        <label id="sag-mode-follow" title="乳首など、柔らかいパーツに付いて一緒に動く"><input type="radio" name="sag-mode" value="follow" /> 付いて動く</label>
+        <label title="揺れを付けない"><input type="radio" name="sag-mode" value="none" /> なし</label>
+        <label title="このパーツ自身が重力で垂れたり、動かしたときに揺れたりする"><input type="radio" name="sag-mode" value="own" /> 揺れる</label>
+        <label id="sag-mode-follow" title="乳首など、揺れるパーツに付いて一緒に動く"><input type="radio" name="sag-mode" value="follow" /> 付いて動く</label>
       </div>
       <p class="hint" id="sag-mode-hint"></p>
       <div id="sag-own">
@@ -1717,7 +1757,7 @@
           <label><input type="radio" name="sag-anchor" value="left" /> 左</label>
         </div>
       </div>
-      <label class="sag-follow-row" id="sag-follow-row" title="一緒に動く柔らかいパーツ（近い順）"><span>付き先</span><select id="sag-follow" aria-label="一緒に動く柔らかいパーツ"></select></label>
+      <label class="sag-follow-row" id="sag-follow-row" title="一緒に動く揺れるパーツ（近い順）"><span>付き先</span><select id="sag-follow" aria-label="一緒に動く揺れるパーツ"></select></label>
       <p class="hint" id="sag-group-info"></p>
       <div id="sag-group-block">
         <h3 class="sub-heading">選択中の複数パーツ</h3>
@@ -1726,7 +1766,47 @@
       <h3 class="sub-heading">表示と確認</h3>
       <label class="relief-check" title="ビューに起点（黄）・重力（青）・弾み（ピンク）を表示する"><input id="sag-guides" type="checkbox" checked /> 起点・重力・弾みを表示</label>
       <div class="sag-legend" aria-hidden="true"><span class="root">起点</span><span class="gravity">重力</span><span class="bounce">弾み</span></div>
-      <button id="sag-open-edit" class="wide" type="button" title="柔らかさの編集モードで、傾けたり揺らしたりしながら設定を確かめる">編集モードで動きを確認</button>
+      <button id="sag-open-edit" class="wide" type="button" title="揺れの編集モードで、傾けたり揺らしたりしながら設定を確かめる">編集モードで動きを確認</button>
+    </section>
+    <section id="squish-section" hidden>
+      <h2>へこみ（柔らかさ）</h2>
+      <p class="hint">ほかのパーツの当たり判定・平面・「衝突する」揺れボーンに押されると、このパーツがへこんだりつぶれたりします。離すとばねで戻ります。</p>
+      <div class="rig-transport" id="squish-presets">
+        <button type="button" data-squish-preset="soft">柔らかめ</button>
+        <button type="button" data-squish-preset="normal">普通</button>
+        <button type="button" data-squish-preset="firm">弾力</button>
+      </div>
+      <div class="slider-row" title="上げるほど、当たった所のまわりも広くなだらかにへこむ"><span>柔らかさ</span><input id="squish-softness" type="range" min="0" max="100" value="50" step="1" aria-label="柔らかさ" /><span class="num-field"><input id="squish-softness-num" class="num" type="number" aria-label="柔らかさ（%）" /><span class="unit">%</span></span></div>
+      <div class="slider-row" title="へこめる最大の深さ（パーツの大きさに対する割合）。これより深く押されると突き抜ける"><span>厚み</span><input id="squish-depth" type="range" min="0" max="100" value="35" step="1" aria-label="へこめる最大の深さ" /><span class="num-field"><input id="squish-depth-num" class="num" type="number" aria-label="へこめる最大の深さ（%）" /><span class="unit">%</span></span></div>
+      <div class="slider-row" title="離したときに元の形へ戻る速さ"><span>戻りの速さ</span><input id="squish-speed" type="range" min="0" max="100" value="50" step="1" aria-label="戻りの速さ" /><span class="num-field"><input id="squish-speed-num" class="num" type="number" aria-label="戻りの速さ（%）" /><span class="unit">%</span></span></div>
+      <button id="squish-remove" class="wide" type="button" title="押されても形が変わらないパーツに戻す">柔らかくするのをやめる</button>
+    </section>
+    <section id="collider-section" hidden>
+      <h2>当たり判定</h2>
+      <p class="hint" id="collider-hint"></p>
+      <div id="collider-none">
+        <button id="collider-add" class="wide" type="button" title="パーツの大きさに合わせてカプセルか球の当たり判定を付ける">当たり判定を追加</button>
+      </div>
+      <div id="collider-edit">
+        <div class="curve-modes" role="radiogroup" aria-label="当たり判定の形">
+          <label><input type="radio" name="collider-shape" value="capsule" /> カプセル</label>
+          <label><input type="radio" name="collider-shape" value="sphere" /> 球</label>
+        </div>
+        <label class="chain-field" title="当たり判定の半径（ビューの水色のハンドルでも変えられます）"><span>半径</span><input id="collider-radius" type="number" min="0" step="any" aria-label="当たり判定の半径" /></label>
+        <label class="chain-field" id="collider-length-row" title="カプセルの筒の長さ（両端の半球は含まない。橙のハンドルでも変えられます）"><span>長さ</span><input id="collider-length" type="number" min="0" step="any" aria-label="カプセルの長さ" /></label>
+        <label class="chain-field" title="揺れボーンの「当たるグループ」で絞り込むときの名前（空なら名前なし）"><span>グループ</span><input id="collider-group" type="text" maxlength="24" aria-label="当たり判定のグループ" /></label>
+        <div class="rig-transport">
+          <button id="collider-refit" type="button" title="パーツの今の大きさに合わせて置き直す">形に合わせ直す</button>
+          <button id="collider-remove" type="button" title="このパーツの当たり判定を外す">外す</button>
+        </div>
+      </div>
+      <h3 class="sub-heading">平面（床・壁）</h3>
+      <div class="rig-transport">
+        <button id="collider-plane-floor" type="button" title="足元に、上向きの床を追加する">床を追加</button>
+        <button id="collider-plane-wall" type="button" title="体の後ろに、前向きの壁を追加する">壁を追加</button>
+      </div>
+      <div id="collider-plane-list" role="list" aria-label="平面の当たり判定の一覧"></div>
+      <label class="relief-check" title="ビューに当たり判定をワイヤーフレームで表示する"><input id="collider-show" type="checkbox" checked /> 当たり判定を表示</label>
     </section>
     <section id="soft-section">
       <h2>動きの確認</h2>
@@ -1752,7 +1832,7 @@
         <button type="button" data-shake="0,0,1" title="前後に一度揺らす">前後</button>
       </div>
       <label class="relief-check"><input id="soft-bounce" type="checkbox" /> 跳ね続ける</label>
-      <p class="hint">「柔らかさ」の揺れが 0% のパーツは、揺らしても動きません。</p>
+      <p class="hint">「揺れ（垂れ・ぷるん）」の揺れが 0% のパーツは、揺らしても動きません。</p>
     </section>
     <section id="rig-motion-section" class="rig-panel">
       <h2>モーション</h2>
@@ -1764,7 +1844,7 @@
       </div>
       <div class="slider-row" title="再生している位置"><span>位置</span><input id="rig-time" type="range" min="0" max="1000" value="0" step="1" aria-label="再生位置" /><span id="rig-time-label" class="rig-time">0.0 秒</span></div>
       <div class="slider-row" title="再生の速さ"><span>速さ</span><input id="rig-speed" type="range" min="10" max="200" value="100" step="5" aria-label="再生の速さ" /><span class="num-field"><input id="rig-speed-num" class="num" type="number" aria-label="再生の速さ（%）" /><span class="unit">%</span></span></div>
-      <div class="slider-row" title="再生中、すべての柔らかいパーツの揺れに掛ける倍率。パーツごとの差は「柔らかさ」の「揺れやすさ」で付ける"><span>全体の揺れ</span><input id="rig-sway" type="range" min="0" max="500" value="100" step="10" aria-label="再生中の揺れの大きさ" /><span class="num-field"><input id="rig-sway-num" class="num" type="number" aria-label="再生中の揺れの大きさ（%）" /><span class="unit">%</span></span></div>
+      <div class="slider-row" title="再生中、すべての揺れるパーツの揺れに掛ける倍率。パーツごとの差は「揺れ（垂れ・ぷるん）」の「揺れやすさ」で付ける"><span>全体の揺れ</span><input id="rig-sway" type="range" min="0" max="500" value="100" step="10" aria-label="再生中の揺れの大きさ" /><span class="num-field"><input id="rig-sway-num" class="num" type="number" aria-label="再生中の揺れの大きさ（%）" /><span class="unit">%</span></span></div>
       <div class="rig-checks">
         <label class="relief-check" title="最後まで再生したら最初に戻る"><input id="rig-loop" type="checkbox" checked /> くり返す</label>
         <label class="relief-check" title="オフにすると、前後左右には動かずその場で動く"><input id="rig-travel" type="checkbox" checked /> 移動もする</label>
@@ -1782,7 +1862,7 @@
       <div class="wide"><button id="rig-fit" type="button" title="今の配置を捨てて、体の大きさに合わせて最初から置き直す">自動で置き直す</button></div>
     </section>
     <section id="rig-chain-section" class="rig-panel">
-      <h2>揺れボーン（追加ボーン）</h2>
+      <h2>揺れボーン</h2>
       <p class="hint">体のボーンに、しなって揺れる鎖状のボーンを付け足します。先にビューか下の一覧で付けたいパーツをクリックしてから追加すると、そのパーツの形に沿って置かれ、そのまま割り当てられます。</p>
       <div class="wide"><button id="chain-add" type="button" title="選んでいるパーツに沿って（選んでいなければ選んでいるボーンか腰から前に）揺れボーンを追加する">揺れボーンを追加</button></div>
       <p class="hint">紫の点をクリックすると選ばれ、矢印（X・Y・Z の向きだけに動かす）と四角（その面の中で動かす）が出ます。点をそのままドラッグすると画面に沿って動きます。ふつうはその先の点も一緒に動き、Alt を押しながら動かすとその点だけが動きます。</p>
@@ -1933,7 +2013,7 @@
     <div id="path-draw-banner" hidden>パスを描く（<span id="path-draw-count"></span>） · クリックで点 · 最初の点でループ · 右クリック／Enterで確定 · Backspaceで戻す</div>
     <div id="feature-banner" hidden>顔・手・足の編集 · <span id="feature-banner-name"></span> · 右ドラッグで視点 · Escで終了</div>
     <div id="rig-banner" hidden>ボーンとモーション · 点をドラッグで関節を動かす · 左ドラッグで視点 · Spaceで再生/一時停止 · Escで終了</div>
-    <div id="soft-banner" hidden>柔らかさの編集 · <span id="soft-banner-name"></span> · 左ドラッグで揺らす · 右ドラッグで視点 · Escで終了</div>
+    <div id="soft-banner" hidden>揺れの編集 · <span id="soft-banner-name"></span> · 左ドラッグで揺らす · 右ドラッグで視点 · Escで終了</div>
     <div id="relief-banner" hidden>法線編集 · <span id="relief-banner-name"></span> · <span id="relief-banner-hint">左ドラッグで描く</span> · 右ドラッグで視点 · Escで終了</div>
     <div id="relief-cursor" hidden></div>
     <div id="sketch-layer"></div>
@@ -2128,11 +2208,14 @@
     <p>パーツを選ぶと左のパネルの「寸法」に、中心の位置・サイズ（パーツ自身の向きでの幅・高さ・奥行き）を cm で、回転を度で表示します。数値を入力して Enter で反映され、Esc で取り消せます。サイズを変えても中心の位置は変わりません。カーブやループを選んだときも同じように、線全体の中心の位置・サイズ・回転を編集できます（平らなパスで厚みが 0 の向きのサイズは変えられません）。「傾き」は、回転と同じ向きに片側の辺だけを倒して、四角をひし形にするようにパーツを歪ませます（X: 上が前へ、Y: 前が右へ、Z: 上が左へ。±75° まで）。「細かさ」でパーツごとのメッシュの細かさを % で変えられます（100% が標準、新しい三角は 50%）。右には頂点数が表示されます。</p>
     <p>パーツを2つ以上選ぶと「整列」が使えます。最後に選んだパーツが基準になり、ほかのパーツを「中心 X / Y / Z」で中心をそろえたり、「上に載せる」「下に付ける」で中心を合わせて上下にぴったり付けたりできます。「床に置く」は選んだパーツの一番下を床の高さに合わせます。</p>
     <p>四角と三角はモーフの「先細り」で上側を細くできます（テーパー）。下側を細くしたいときは回転で上下を逆にしてください。</p>
-    <p>パーツを選ぶと、左のパネルに「柔らかさ」が出ます。胸のように重力で柔らかく形が変わるものに使います。最初に動き方を「なし」「柔らかく」「付いて動く」から選びます。「柔らかく」にすると、垂れ・揺れ 30% から始まり、「垂れ」「揺れ」「起点」が出ます。「垂れ」を上げると、パーツが重力で垂れ下がります。「起点」で選んだ側（パーツ自身の向きで、後ろ・前・上・下・右・左）は体にくっついたまま動かず、反対側の先端ほど、また下側ほど大きく垂れるので、しずくのような形になります。重力はいつも画面の世界の真下に働くので、パーツやモデルを回したり傾けたりすると、垂れる向きもそれに合わせて変わります。「揺れ」を上げると、パーツや親を動かしたり回したりしたときに、先端が遅れてぷるんと揺れます。「揺れやすさ」は体の動きにどれだけ敏感に揺れるかで、100% が標準です。上げるほど小さな動きでも大きく揺れ、0% にすると揺れません。パーツごと（ひとまとめにしたパーツは中心のパーツで、かたまりごと）に変えられ、モーション再生中の揺れにも効きます。左右対称がオンなら反対側にも同じ設定がつきます（左右の起点は鏡写しになります）。「起点・重力・弾みを表示」がオンのときは、選んだ柔らかいパーツの起点が黄色の点と輪、起点から先端までが黄色の線、重力の向きが青の矢印（垂れが強いほど長くなります）、揺れているときの先端の弾みがピンクの矢印（実際の 2 倍の長さ）でビューに表示されます。乳首のように柔らかいパーツに付いている別のパーツは、そのパーツを選んで「付いて動く」にすると、いちばん近い柔らかいパーツに付き、付き先の表面と一緒に垂れたり揺れたりします。付き先は「付き先」で選び直せます（近い順に並びます）。左右のパーツをまとめて選んで付き先を選ぶと、それぞれ近い側のパーツに付きます。付いたパーツは付き先と合わせて1つのかたまりとして扱われ、起点から先端までの長さや垂れ方は全体の大きさで決まります。いくつかのパーツを組み合わせて胸などを作ったときは、それらを選んで「選択中の複数パーツ」の「ひとまとめにする」を押すと、いちばん大きいパーツを中心にほかのパーツがそこに付き、全体がつながったまま垂れたり揺れたりします（左右両方を選んだ場合は、それぞれ近い側のかたまりにまとまります）。まだ柔らかさがなければ、垂れ・揺れ 30% から始まります。中心のパーツを選ぶと、まとまっているパーツの数が表示され、垂れ・揺れ・起点はそのパーツで変えます。マスクで削った切り口の面も、パーツと一緒に垂れたり揺れたりします（どこを削るかは垂れる前の形で決まります）。柔らかさは見た目の変形で、クリックで選ぶ範囲・寸法・結合・ラスタライズには垂れる前の形が使われます。</p>
-    <p>パス（カーブ・ループ）やリンクパーツを選んだときも「柔らかさ」が出て、「なし」「柔らかく」から選べます（「付いて動く」と「ひとまとめにする」はパーツだけです）。パスを「柔らかく」にすると、「起点」で選んだ始点か終点の点は動かず、そこから離れた点ほど重力の向きへ曲がって垂れ、動かすと遅れて揺れます。点どうしの間隔は保たれるので、真下に垂れ下がったパスはそれ以上伸びません。パスに沿わせたパーツやリンクパーツ、マスク範囲も一緒に曲がるので、髪の房やしっぽ、ひもなどに使えます。点やハンドルを選んで形を直している間は、そのパスは元の形で表示されます。リンクパーツを「柔らかく」にすると、中のパーツ全体が1つのかたまりとして、起点の側（リンクパーツ自身の向きで、後ろ・前・上・下・右・左）を残して垂れたり揺れたりします。リンク先で付けた柔らかさよりこちらが優先され、左右対称のコピーも鏡写しで同じように動きます。どちらも「揺れやすさ」やモーション再生中の揺れ、「編集モードで動きを確認」が使えます。</p>
-    <p>「柔らかさ」の「編集モードで動きを確認」（パーツの右クリックや編集メニューの「柔らかさの編集」からも入れます）を押すと、柔らかさの編集モードになります。編集するパーツと、その反対側や付いているパーツだけがはっきり表示され、左のパネルで垂れ・揺れ・起点・付き先を変えると、その場ですぐ形と動きに反映されます。起点・重力・弾みの表示は、傾けたときの重力の向きや揺らしたときの弾みにも合わせて動きます。「動きの確認」の「重力」の「大きさ」では、重力の強さを 0%（無重力）〜300% で変えて、垂れ方の違いを確かめられます（青の矢印の長さも変わります）。「体の傾き」や「立ち・前かがみ・仰向け・うつ伏せ・右を下・左を下」で重力の向きを変えると、姿勢を変えたときの垂れ方を確かめられます。「上下・左右・前後」で一度だけ揺らし、「跳ね続ける」で跳ねている間の揺れを見られます。「強さ」で揺らす大きさを 10%〜300% で変えます。100% を超えると、ドラッグで揺らしたときの動きも大きくなり、より大きく揺れるようになります。ビューで左ドラッグすると、体をつかんで揺らしたように揺れ、離すと反動で揺れ戻ります。右ドラッグで視点を回し、パーツをクリックすると編集するパーツを切り替えます。傾きや揺らしは確認用で保存されません。設定は「保存」（Ctrl+S）で確定し、「破棄」で編集モードに入る前に戻します。Esc か「メインエディターに戻る」で終わります。</p>
-    <p>編集メニューの「ボーンとモーション」で、体にボーン（骨組み）を入れて、ダンスなどのモーションを再生できます。左のパネルは「モーション」「ボーンの配置」「揺れボーン（追加ボーン）」「パーツの割り当て」に分かれていて、見出しをクリックすると折りたためます。初めて開くと、モデルの大きさに合わせて腰・背骨・胸・首・頭・肩・上腕・前腕・手・太もも・すね・足のボーンが置かれます（中央は黄色、左は水色、右はピンク）。関節の点をドラッグすると位置を変えられます。「左右対称に動かす」がオンのときは、反対側の関節も鏡写しで一緒に動き、中央のボーンは左右の真ん中から外れません。オンのまま置き直すと、左右がそろった配置になります。「左 → 右に写す」「右 → 左に写す」で、片側のボーンの位置を反対側にそのまま写して左右対称にできます。「自動で置き直す」で体の大きさに合わせた最初の配置に戻せます。それぞれのパーツは、いちばん近いボーンに自動で付いて動きます。「パーツの割り当て」には、ボーンごとにそのボーンで動くパーツが並びます。各パーツの右の欄でボーンを選ぶと付け替えられ、「自動（〜）」に戻すと再びいちばん近いボーン（かっこの中）に付きます。「動かさない」にすると、その場に残ります。ビューの点やパーツをクリックしても、そのボーンで動くパーツだけがはっきり表示され、一覧の行も強調されます。ボーン名やパーツ名をクリックすると、ビューでそのボーンやパーツが強調されます。「モーションを読み込む」で、無料で配布されている MMD のモーション（.vmd）や、モーションキャプチャーの .bvh を読み込むと再生が始まります。足の動きが IK で付けられた VMD にも対応しています。「再生／一時停止」（Space キーでも切り替え）、「位置」で好きな場面へ移動、「速さ」で再生の速さ、「くり返す」で最後まで行ったら最初に戻ります。「移動もする」をオフにすると、前後左右には動かずその場で踊ります。膝立ち・四つんばい・寝そべりのように最初から低い姿勢のモーションでは、体がそのぶん床まで下がります（「移動もする」がオフでも上下には動きます）。「停止」で元の姿勢に戻り、関節を動かせるようになります。柔らかさを付けたパーツは、踊りに合わせて揺れます。再生中の揺れは体の動きの勢いで決まり、柔らかさの編集モードの「強さ」は効きません。パーツごとの揺れ方は「柔らかさ」の「揺れやすさ」で変え、すべてのパーツをまとめて大きく揺らしたいときは、モーションの「全体の揺れ」を 100% より上げてください（最大 500%）。「全体の揺れ」を 0% にすると再生中は揺れません。ボーンの配置とパーツごとのボーンの選び方はモデルと一緒に保存されますが、モーションそのものは保存されません。モデルの腕の向きや体型がモーションの元のモデルと違っても、ボーンの向きに合わせて動きを置き換えます。</p>
-    <p>「揺れボーン（追加ボーン）」で、体のボーンに鎖状のボーンを付け足せます。しっぽ・髪の房・男性器など、動きに合わせてしなって揺れてほしいパーツに使います。ビューか「パーツの割り当て」の一覧で付けたいパーツ（リンクも可）をクリックしてから「揺れボーンを追加」を押すと、そのパーツの形に沿って紫の鎖が置かれ、パーツがその鎖に割り当てられます（何も選んでいないときは、選んでいるボーンか腰から前向きに置かれます）。紫の点はパーツの手前に透けて描かれ、ポインターを乗せると明るくなります。点をクリックすると黄色になって選ばれ、移動ハンドルが出ます。矢印をドラッグするとその向き（X・Y・Z）だけに、四角をドラッグするとその面の中だけで動きます。点そのものをドラッグすると画面に沿って動きます。ふつうはその点から先がまとめて動き（根元をつかむと鎖ごと移動）、Alt を押しながら動かすとその点だけが動きます。カードの「先の点も一緒に動かす」をオフにすると、その逆になります。カードの「点」の欄でも点を選べ、選んだ点の X・Y・Z を数字で直せます。「根元をパーツの付け根に」「先端をパーツの先端に」で、割り当てたパーツ（なければ選んでいるパーツ）の端に根元や先端を合わせられ（反対の端は動かず、あいだの点はなだらかについてきます）、「まっすぐに並べる」で根元と先端のあいだに点を等間隔に一直線に並べます。節の長さは、点を置いた位置からそのつど決まります。揺れボーンを選んでいる間は、点が見やすいようにパーツが半透明になります（「揺れボーンを選んでいる間はパーツを透かす」で切り替え）。Esc で点の選択を外せます。どの操作も 1 回ごとに元に戻せます。カードでは、名前、付け根になる「親ボーン」、「節の数」（1〜8、多いほどなめらかにしなる）、揺れ方を変えられます。「硬さ」を上げると速く小さく揺れ、下げるとゆっくり大きく揺れます。「落ち着き」を上げると揺れがすぐ収まり、下げるといつまでも揺れます。「重力」で垂れ下がる強さ、「曲がる角度」で 1 節あたりに曲がれる最大の角度を決めます。「割り当て」の欄で、選んでいるパーツ、フォルダの中身すべて、リンクをまとめてこの揺れボーンに付けたり、すべて外したりできます。一覧の各パーツの欄で「揺れ：〜」を選んでも付けられます。揺れボーンに付けたパーツは、再生中に鎖に沿って曲がります。節は曲がるだけで長さは変わらないので、伸びたり縮んだりしません。揺れはモーションの「全体の揺れ」の倍率も受けます。「停止」で揺れはリセットされます。揺れボーンはモデルと一緒に保存され、元に戻す／やり直しもできます。パーツを動かしたあとは「選んだパーツに合わせる」で鎖を置き直してください。</p>
+    <p>パーツを選ぶと、左のパネルに「揺れ（垂れ・ぷるん）」が出ます。胸のように重力で柔らかく形が変わるものに使います。最初に動き方を「なし」「揺れる」「付いて動く」から選びます。「揺れる」にすると、垂れ・揺れ 30% から始まり、「垂れ」「揺れ」「起点」が出ます。「垂れ」を上げると、パーツが重力で垂れ下がります。「起点」で選んだ側（パーツ自身の向きで、後ろ・前・上・下・右・左）は体にくっついたまま動かず、反対側の先端ほど、また下側ほど大きく垂れるので、しずくのような形になります。重力はいつも画面の世界の真下に働くので、パーツやモデルを回したり傾けたりすると、垂れる向きもそれに合わせて変わります。「揺れ」を上げると、パーツや親を動かしたり回したりしたときに、先端が遅れてぷるんと揺れます。「揺れやすさ」は体の動きにどれだけ敏感に揺れるかで、100% が標準です。上げるほど小さな動きでも大きく揺れ、0% にすると揺れません。パーツごと（ひとまとめにしたパーツは中心のパーツで、かたまりごと）に変えられ、モーション再生中の揺れにも効きます。左右対称がオンなら反対側にも同じ設定がつきます（左右の起点は鏡写しになります）。「起点・重力・弾みを表示」がオンのときは、選んだ揺れるパーツの起点が黄色の点と輪、起点から先端までが黄色の線、重力の向きが青の矢印（垂れが強いほど長くなります）、揺れているときの先端の弾みがピンクの矢印（実際の 2 倍の長さ）でビューに表示されます。乳首のように揺れるパーツに付いている別のパーツは、そのパーツを選んで「付いて動く」にすると、いちばん近い揺れるパーツに付き、付き先の表面と一緒に垂れたり揺れたりします。付き先は「付き先」で選び直せます（近い順に並びます）。左右のパーツをまとめて選んで付き先を選ぶと、それぞれ近い側のパーツに付きます。付いたパーツは付き先と合わせて1つのかたまりとして扱われ、起点から先端までの長さや垂れ方は全体の大きさで決まります。いくつかのパーツを組み合わせて胸などを作ったときは、それらを選んで「選択中の複数パーツ」の「ひとまとめにする」を押すと、いちばん大きいパーツを中心にほかのパーツがそこに付き、全体がつながったまま垂れたり揺れたりします（左右両方を選んだ場合は、それぞれ近い側のかたまりにまとまります）。まだ揺れの設定がなければ、垂れ・揺れ 30% から始まります。中心のパーツを選ぶと、まとまっているパーツの数が表示され、垂れ・揺れ・起点はそのパーツで変えます。マスクで削った切り口の面も、パーツと一緒に垂れたり揺れたりします（どこを削るかは垂れる前の形で決まります）。揺れの設定は見た目の変形で、クリックで選ぶ範囲・寸法・結合・ラスタライズには垂れる前の形が使われます。</p>
+    <p>パス（カーブ・ループ）やリンクパーツを選んだときも「揺れ（垂れ・ぷるん）」が出て、「なし」「揺れる」から選べます（「付いて動く」と「ひとまとめにする」はパーツだけです）。パスを「揺れる」にすると、「起点」で選んだ始点か終点の点は動かず、そこから離れた点ほど重力の向きへ曲がって垂れ、動かすと遅れて揺れます。点どうしの間隔は保たれるので、真下に垂れ下がったパスはそれ以上伸びません。パスに沿わせたパーツやリンクパーツ、マスク範囲も一緒に曲がるので、髪の房やしっぽ、ひもなどに使えます。点やハンドルを選んで形を直している間は、そのパスは元の形で表示されます。リンクパーツを「揺れる」にすると、中のパーツ全体が1つのかたまりとして、起点の側（リンクパーツ自身の向きで、後ろ・前・上・下・右・左）を残して垂れたり揺れたりします。リンク先で付けた揺れの設定よりこちらが優先され、左右対称のコピーも鏡写しで同じように動きます。どちらも「揺れやすさ」やモーション再生中の揺れ、「編集モードで動きを確認」が使えます。</p>
+    <p>「揺れ（垂れ・ぷるん）」の「編集モードで動きを確認」（パーツの右クリックや編集メニューの「揺れの編集」からも入れます）を押すと、揺れの編集モードになります。編集するパーツと、その反対側や付いているパーツだけがはっきり表示され、左のパネルで垂れ・揺れ・起点・付き先を変えると、その場ですぐ形と動きに反映されます。起点・重力・弾みの表示は、傾けたときの重力の向きや揺らしたときの弾みにも合わせて動きます。「動きの確認」の「重力」の「大きさ」では、重力の強さを 0%（無重力）〜300% で変えて、垂れ方の違いを確かめられます（青の矢印の長さも変わります）。「体の傾き」や「立ち・前かがみ・仰向け・うつ伏せ・右を下・左を下」で重力の向きを変えると、姿勢を変えたときの垂れ方を確かめられます。「上下・左右・前後」で一度だけ揺らし、「跳ね続ける」で跳ねている間の揺れを見られます。「強さ」で揺らす大きさを 10%〜300% で変えます。100% を超えると、ドラッグで揺らしたときの動きも大きくなり、より大きく揺れるようになります。ビューで左ドラッグすると、体をつかんで揺らしたように揺れ、離すと反動で揺れ戻ります。右ドラッグで視点を回し、パーツをクリックすると編集するパーツを切り替えます。傾きや揺らしは確認用で保存されません。設定は「保存」（Ctrl+S）で確定し、「破棄」で編集モードに入る前に戻します。Esc か「メインエディターに戻る」で終わります。</p>
+    <p>編集メニューの「ボーンとモーション」で、体にボーン（骨組み）を入れて、ダンスなどのモーションを再生できます。左のパネルは「モーション」「ボーンの配置」「揺れボーン」「パーツの割り当て」に分かれていて、見出しをクリックすると折りたためます。初めて開くと、モデルの大きさに合わせて腰・背骨・胸・首・頭・肩・上腕・前腕・手・太もも・すね・足のボーンが置かれます（中央は黄色、左は水色、右はピンク）。関節の点をドラッグすると位置を変えられます。「左右対称に動かす」がオンのときは、反対側の関節も鏡写しで一緒に動き、中央のボーンは左右の真ん中から外れません。オンのまま置き直すと、左右がそろった配置になります。「左 → 右に写す」「右 → 左に写す」で、片側のボーンの位置を反対側にそのまま写して左右対称にできます。「自動で置き直す」で体の大きさに合わせた最初の配置に戻せます。それぞれのパーツは、いちばん近いボーンに自動で付いて動きます。「パーツの割り当て」には、ボーンごとにそのボーンで動くパーツが並びます。各パーツの右の欄でボーンを選ぶと付け替えられ、「自動（〜）」に戻すと再びいちばん近いボーン（かっこの中）に付きます。「動かさない」にすると、その場に残ります。ビューの点やパーツをクリックしても、そのボーンで動くパーツだけがはっきり表示され、一覧の行も強調されます。ボーン名やパーツ名をクリックすると、ビューでそのボーンやパーツが強調されます。「モーションを読み込む」で、無料で配布されている MMD のモーション（.vmd）や、モーションキャプチャーの .bvh を読み込むと再生が始まります。足の動きが IK で付けられた VMD にも対応しています。「再生／一時停止」（Space キーでも切り替え）、「位置」で好きな場面へ移動、「速さ」で再生の速さ、「くり返す」で最後まで行ったら最初に戻ります。「移動もする」をオフにすると、前後左右には動かずその場で踊ります。膝立ち・四つんばい・寝そべりのように最初から低い姿勢のモーションでは、体がそのぶん床まで下がります（「移動もする」がオフでも上下には動きます）。「停止」で元の姿勢に戻り、関節を動かせるようになります。揺れの設定を付けたパーツは、踊りに合わせて揺れます。再生中の揺れは体の動きの勢いで決まり、揺れの編集モードの「強さ」は効きません。パーツごとの揺れ方は「揺れ（垂れ・ぷるん）」の「揺れやすさ」で変え、すべてのパーツをまとめて大きく揺らしたいときは、モーションの「全体の揺れ」を 100% より上げてください（最大 500%）。「全体の揺れ」を 0% にすると再生中は揺れません。ボーンの配置とパーツごとのボーンの選び方はモデルと一緒に保存されますが、モーションそのものは保存されません。モデルの腕の向きや体型がモーションの元のモデルと違っても、ボーンの向きに合わせて動きを置き換えます。</p>
+    <p>「揺れボーン」で、体のボーンに鎖状のボーンを付け足せます。しっぽ・髪の房・男性器など、動きに合わせてしなって揺れてほしいパーツに使います。ビューか「パーツの割り当て」の一覧で付けたいパーツ（リンクも可）をクリックしてから「揺れボーンを追加」を押すと、そのパーツの形に沿って紫の鎖が置かれ、パーツがその鎖に割り当てられます（何も選んでいないときは、選んでいるボーンか腰から前向きに置かれます）。紫の点はパーツの手前に透けて描かれ、ポインターを乗せると明るくなります。点をクリックすると黄色になって選ばれ、移動ハンドルが出ます。矢印をドラッグするとその向き（X・Y・Z）だけに、四角をドラッグするとその面の中だけで動きます。点そのものをドラッグすると画面に沿って動きます。ふつうはその点から先がまとめて動き（根元をつかむと鎖ごと移動）、Alt を押しながら動かすとその点だけが動きます。カードの「先の点も一緒に動かす」をオフにすると、その逆になります。カードの「点」の欄でも点を選べ、選んだ点の X・Y・Z を数字で直せます。「根元をパーツの付け根に」「先端をパーツの先端に」で、割り当てたパーツ（なければ選んでいるパーツ）の端に根元や先端を合わせられ（反対の端は動かず、あいだの点はなだらかについてきます）、「まっすぐに並べる」で根元と先端のあいだに点を等間隔に一直線に並べます。節の長さは、点を置いた位置からそのつど決まります。揺れボーンを選んでいる間は、点が見やすいようにパーツが半透明になります（「揺れボーンを選んでいる間はパーツを透かす」で切り替え）。Esc で点の選択を外せます。どの操作も 1 回ごとに元に戻せます。カードでは、名前、付け根になる「親ボーン」、「節の数」（1〜8、多いほどなめらかにしなる）、揺れ方を変えられます。「硬さ」を上げると速く小さく揺れ、下げるとゆっくり大きく揺れます。「落ち着き」を上げると揺れがすぐ収まり、下げるといつまでも揺れます。「重力」で垂れ下がる強さ、「曲がる角度」で 1 節あたりに曲がれる最大の角度を決めます。「割り当て」の欄で、選んでいるパーツ、フォルダの中身すべて、リンクをまとめてこの揺れボーンに付けたり、すべて外したりできます。一覧の各パーツの欄で「揺れ：〜」を選んでも付けられます。揺れボーンに付けたパーツは、再生中に鎖に沿って曲がります。節は曲がるだけで長さは変わらないので、伸びたり縮んだりしません。揺れはモーションの「全体の揺れ」の倍率も受けます。「停止」で揺れはリセットされます。揺れボーンはモデルと一緒に保存され、元に戻す／やり直しもできます。パーツを動かしたあとは「選んだパーツに合わせる」で鎖を置き直してください。</p>
+    <p>「当たり判定」で、パーツにカプセルか球の当たり判定を付けられます。パーツを右クリックして「当たり判定を追加」を押すか、パーツを選んで左のパネルの「当たり判定を追加」を押すと、パーツの大きさに合わせて、細長いパーツにはカプセル、丸いパーツには球が付きます。当たり判定はビューに水色のワイヤーフレームで表示され（選んでいるパーツのものは黄色）、パーツの移動・回転・拡大や、ボーンとモーションに合わせて一緒に動きます。選んでいるパーツの当たり判定には水色（半径）と橙（長さ）のハンドルが出て、ドラッグで大きさを変えられます。パネルでは形（カプセル・球）、半径、長さ、グループを数字で直せ、「形に合わせ直す」で置き直し、「外す」で取り除けます。左右対称がオンで左右の相方がいるパーツは、相方にも鏡写しの当たり判定が付きます（パーツが増えたり消えたりすることはありません）。「床を追加」「壁を追加」で、どのパーツにも付かない平面の当たり判定を置けます（橙の格子）。向きの側が外で、裏側にはめり込みません。位置・向き・表示の大きさ・グループを変えたり、「止める」で一時的に無効にしたりできます。「当たり判定を表示」でワイヤーフレームの表示を切り替えます。揺れボーンのカードで「衝突する」をオンにすると、再生中に揺れボーンが当たり判定にめり込まないよう押し出されます（節の長さとしなり方は保たれ、正中線に固定した揺れボーンは左右にずれません）。「太さ」はボーンの半径（1 節の長さに対する割合）、「当たるグループ」に名前を入れると、そのグループの当たり判定とだけ衝突します（空ならすべてと衝突します）。揺れボーンに割り当てたパーツ自身の当たり判定とは衝突しません。「柔らかくする」を付けたパーツは、「揺れ（垂れ・ぷるん）」の揺れもほかのパーツの当たり判定や平面に押し出されます。当たり判定はモデルと一緒に保存されます。</p>
+    <p>パーツを右クリックして「柔らかくする」を選ぶと、そのパーツはほかのパーツの当たり判定・平面・「衝突する」をオンにした揺れボーンに押されたときに、へこんだりつぶれたりします（「柔らかくする」を付けていないパーツは、当たっても形が変わりません。揺れボーンの衝突も、ボーンが曲がるだけです）。左のパネルの「へこみ（柔らかさ）」で、「柔らかさ」（当たった所のまわりがどれだけ広くなだらかにへこむか）、「厚み」（へこめる最大の深さ）、「戻りの速さ」（離したときに戻る速さ）を変えられ、「柔らかめ」「普通」「弾力」でまとめて設定できます。めり込んだ所は当たり判定の表面まで押し出され、壁に押し付けると横がふくらみます。離すとばねで少し行き過ぎてから元に戻ります。編集中にパーツや当たり判定を動かしたり大きさを変えたりすると、その場ですぐ形が変わり、モーション再生中も同じように動きます。自分自身の当たり判定ではへこみません。左右対称がオンで相方がいるときは、相方にも同じ設定が付きます。編集中も、「衝突する」揺れボーンは当たり判定を避けるように曲がり、割り当てたパーツも一緒に曲がります。</p>
+    <p>パーツを選ぶと、左のパネルのいちばん上の「このパーツの設定」に、「左右対称」「揺れ（垂れ・ぷるん）」「へこみ（柔らかさ）」「当たり判定」「揺れボーン」のオン・オフと、その設定がどこから来ているか（「個別」か「フォルダ「〜」から」）がまとめて出ます。「フォルダ「〜」から」をクリックすると、そのフォルダが選ばれます。相方や付き先のパーツ名をクリックすると、そのパーツに移ります。「揺れ（垂れ・ぷるん）」と「へこみ（柔らかさ）」はパーツごと（個別）にも、フォルダ全体にも付けられます。フォルダを選ぶと「このフォルダの設定」になり、それぞれ「フォルダ全体に設定」と「中のパーツそれぞれに設定」から選びます。フォルダ全体に設定すると、中のパーツ（中のフォルダのパーツも）のうち個別の設定がないものが、その設定を受け継ぎます。フォルダの値はここのスライダーで変え、「フォルダの設定を外す」で受け継ぎも外れます。受け継いでいるパーツで揺れやへこみを変えると、そのパーツだけ個別の設定になります。「フォルダの設定に戻す」で受け継ぎに戻せ、「なし」や「やめる」を選ぶとそのパーツだけ個別にオフになります。「中のパーツそれぞれに設定」は、揺れなら下の「揺れ（垂れ・ぷるん）」のパネルで選んだパーツすべてに個別の設定を付け、へこみなら「普通」を、当たり判定なら形に合わせた当たり判定を、まだ持っていないパーツそれぞれに付けます。フォルダを選んだだけでは、どちらかを選ぶまでパーツの設定は変わりません。「左右対称」「当たり判定」「揺れボーン」はパーツごとの設定で、フォルダでは中のパーツの数が出ます。パーツの一覧（レイヤー）の行には、対（左右対称）・揺（揺れ）・凹（へこみ）・当（当たり判定）の小さな印が付き、その行に直接付いている設定ははっきりした色、フォルダから受け継いでいるだけの設定は薄い色で表示されます。</p>
     <p>平面（円・三角・四角）を選ぶと、左のパネルに「盛り上がり」が出ます。「高さ」を上げると、面の中央点を頂点にして前面が盛り上がります（100% で幅の半分の高さ）。ふだん裏面は平らなままですが、「裏面にも盛り上げる」を入れると、後ろの面も同じ高さとカーブで盛り上がり、前後対称の形になります。「円形」は中央点からの距離で高さが決まり、角に向かって低くなります。「輪郭に沿う」は面の輪郭と同じ形の等高線で、辺に向かって低くなります。トーンカーブは横が中央点（左）から縁（右）、縦が高さです。空いた所をクリックすると点が増え、点をドラッグすると盛り上げ方が変わります。ダブルクリックか右クリックで点を消せます。「ドーム」「山形」「台地」で代表的な形を選べ、「リセット」でなだらかな初期のカーブに戻ります。盛り上げた平面は立体として扱われ、ほかのパーツと結合したり、ラスタライズしたりできます。</p>
     <p>「追加」の「断面」は、輪切りにした断面の形を上下につないで作る立体です（円柱から始まります）。選ぶと左のパネルに「断面」が出て、3D 表示にも断面の輪が重なります（選んでいる断面はオレンジ）。縦棒は2本あり、どちらも横から見た形で、下が根元、上が先端です。いちばん左の細い縦棒は全体図で、上下にドラッグして範囲を囲むと、その範囲が中央の縦棒に拡大表示されます。青い枠はドラッグで移動、上下の端をドラッグで伸縮でき、枠の外をクリックするとその位置へ枠が移ります。ダブルクリックか「全体を表示」で範囲指定をやめます。中央の縦棒の上でホイールを回しても、カーソルの位置を中心に拡大・縮小できます。全身のような長い形でも、範囲を絞れば胸やくびれなどの断面を細かく並べられます。中央の縦棒の空いた所をクリックすると断面が増え（最大 60 個）、目盛りをドラッグすると上下に動き、ダブルクリックか右クリックで消せます。右の図は選んだ断面を真上から見た形で、下が正面側です。前後の断面が点線で重なります。線の近くをクリックで点を追加、ドラッグで移動、ダブルクリックで削除、右クリックで角／なめらかを切り替えます。その下の「輪郭で編集」には、正面から見た輪郭（幅）と横から見た輪郭（厚み、右が正面側）が並びます。輪郭の点をドラッグすると、その高さの断面の幅や厚みと高さが変わり（反対側の輪郭は動きません。Shift を押しながらなら高さは固定）、断面の形を1枚ずつ描き直さなくても全体のシルエットを作れます。輪郭の外の空いた所をクリックすると、その高さに前後の断面から補間した断面が増え、そのままドラッグで形を決められます。点をダブルクリックか右クリックするとその断面を消せます。「左右対称に編集」が入っていると右半分だけを編集し、左半分は自動で鏡写しになります。「大きさ」「傾き」（＋で後ろ側が上がる）「左右」「前後」は選んだ断面ごとの値です。形は中心から放射状に読み取るので、中心から見て裏側に回り込む形は外側の線だけが使われます（そのときは警告が出ます）。「端の形」で先端と根元を平ら・丸く・とがるから選べ、「長さ」で丸みやとがりの長さを変えられます。「ペニス」のテンプレートは、竿・くびれ・傾いたカリ首・切れ込みのある亀頭・先端の断面を並べた形です（正面側が裏筋側。上に向いて立った向きなので、回転させて使ってください）。軸はまっすぐですが、曲げたいときは「パスに沿わせる」が使えます。モーフと盛り上がりは効きません。ほかのパーツと結合したり、ラスタライズしたりできます。</p>
     <p>パーツを右クリックして「法線編集」を選ぶと、そのパーツだけに光で浮き出て見える模様を描けます。編集中はほかのパーツが薄くなり、そのパーツの前を向いた面に左ドラッグで盛ります。右ドラッグで視点を回せます。左右のもう片方には付きません。「削る」で盛りを減らせます。「浮き出し」は凹凸の強さ、「厚み」は模様を載せた面から前後に広げる距離です。「法線マップ」の「読み込む」で、そのパーツの正面に画像を貼れます。緑チャンネルが下向きの画像は「法線の緑を上」を外してください。「裏面にも貼る」を入れると、描いた模様と法線マップがそのパーツの後ろを向いた面にも付き、後ろから見ても正面と同じ向きに読めるよう左右反転して貼られます。読み込んだ法線マップは「法線マップ」の横位置・縦位置・回転・大きさで動かせます。「法線マップを動かす」を押すと、パーツの上で左ドラッグで移動、Shift＋左ドラッグで回転、ホイールで拡大縮小できます（もう一度押すか「描く」で筆に戻ります）。「繰り返す」で画像を敷き詰め、「位置を戻す」で元に戻ります。回しても光の当たり方は正しく保たれます。「投影」を「巻き付け」にすると、缶のラベルのようにパーツの縦軸のまわりへ画像を巻いて貼ります。画像の横は正面を中心に軸のまわりの角度（弧の長さ）に、縦は高さに対応し、横へ行っても引き伸ばされず、後ろ側にも回り込みます。「巻く角度」で何度ぶん巻くかを決め、画像の横幅はいつもその角度ぶんに合わせ、高さは画像の縦横比で決まります（範囲より高い部分は上下が切れるので、大きさで縮めてください）。360°では継ぎ目なく一周し、横にずらすと反対側へ回り込みます。四角柱など円柱でない形にも、軸から放射状に投影して貼れます。模様はそのパーツに付いたまま動き、保存ファイルに含まれます。Escで編集を終えます。</p>
@@ -2645,6 +2728,45 @@ ${withNormal ? "    #ifndef FLAT_SHADED\n    vNormal = normalize((viewMatrix * v
     // 接線の長さが常に 1 なので、鎖に沿った長さは変わらず、曲がるだけになる。
     // 区間ごとの始点・回転・回る速さは CPU で求め、小さな浮動小数点テクスチャ（bendMap）で渡す。
     const BEND_MAX = 8;
+    const SQUISH_MAX = 8;
+    // 柔らかいパーツのへこみ。当たっている形（カプセル・球・平面）の外へ頂点を出し、まわりはなめらかに一緒にへこませ、
+    // 押しつぶされた分は横向きの面をふくらませる（体積をおおよそ保つ）。squishC = (当たりの深さ, 戻りのばね, ふくらみ, -)
+    const SQUISH_LIB = `
+      uniform float squishOn;
+      uniform int squishCount;
+      uniform vec4 squishA[${SQUISH_MAX}];
+      uniform vec4 squishB[${SQUISH_MAX}];
+      uniform vec4 squishC[${SQUISH_MAX}];
+      uniform vec4 squishParams;
+      vec3 squishOffset(vec3 wp, vec3 wn) {
+        vec3 disp = vec3(0.0);
+        float k = max(squishParams.y, 0.000001);
+        for (int i = 0; i < ${SQUISH_MAX}; i++) {
+          if (i >= squishCount) break;
+          vec4 A = squishA[i];
+          vec4 B = squishB[i];
+          vec4 C = squishC[i];
+          float d;
+          vec3 n;
+          if (B.w > 0.5) {
+            n = A.xyz;
+            d = dot(wp, n) - A.w;
+          } else {
+            vec3 ab = B.xyz - A.xyz;
+            float t = clamp(dot(wp - A.xyz, ab) / max(dot(ab, ab), 1e-12), 0.0, 1.0);
+            vec3 v = wp - (A.xyz + ab * t);
+            float l = length(v);
+            n = l > 1e-7 ? v / l : -wn;
+            d = l - A.w;
+          }
+          float amount = d < -k ? -d : (d > k ? 0.0 : (k - d) * (k - d) / (4.0 * k));
+          float gate = clamp(C.x / (0.25 * k), 0.0, 1.0);
+          disp += n * min(amount * gate, squishParams.x) * C.y;
+          disp += wn * C.z * C.y * (1.0 - abs(dot(wn, n))) * exp(-max(d, 0.0) / max(squishParams.z, 0.000001));
+        }
+        return disp;
+      }
+    `;
     const BEND_ROWS = 3 * BEND_MAX + BEND_MAX + 2;
     const BEND_LIB = `
       uniform float bendOn;
@@ -2719,7 +2841,7 @@ ${withNormal ? "    #ifndef FLAT_SHADED\n    vNormal = normalize((viewMatrix * v
 
     function patchSagVertex(source, withNormal) {
       return source
-        .replace("#include <common>", `#include <common>\n${SAG_LIB}\n${BEND_LIB}`)
+        .replace("#include <common>", `#include <common>\n${SAG_LIB}\n${BEND_LIB}\n${SQUISH_LIB}`)
         .replace("#include <skinning_vertex>", `#include <skinning_vertex>
 if (sagOn > 0.5) {
   vec3 sagWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;
@@ -2747,6 +2869,24 @@ ${withNormal ? `  #ifndef FLAT_SHADED
   vNormal = normalize(mat3(viewMatrix) * bendN);
   #endif
 ` : ""}  transformed = (inverse(modelMatrix) * vec4(bendWorld, 1.0)).xyz;
+}
+if (squishOn > 0.5 && squishCount > 0) {
+  vec3 squishWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;
+  vec3 squishN = normalize(transpose(inverse(mat3(modelMatrix))) * normal);
+  vec3 squishD = squishOffset(squishWorld, squishN);
+${withNormal ? `  if (dot(squishD, squishD) > 0.0) {
+    float squishStep = max(squishParams.y * 0.25, 0.00001);
+    vec3 squishT1 = normalize(cross(squishN, abs(squishN.y) < 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0)));
+    vec3 squishT2 = cross(squishN, squishT1);
+    vec3 squishW1 = squishT1 * squishStep + squishOffset(squishWorld + squishT1 * squishStep, squishN) - squishD;
+    vec3 squishW2 = squishT2 * squishStep + squishOffset(squishWorld + squishT2 * squishStep, squishN) - squishD;
+    vec3 squishM = normalize(cross(squishW1, squishW2));
+    if (dot(squishM, squishN) < 0.0) squishM = -squishM;
+    #ifndef FLAT_SHADED
+    vNormal = normalize((viewMatrix * vec4(squishM, 0.0)).xyz);
+    #endif
+  }
+` : ""}  transformed = (inverse(modelMatrix) * vec4(squishWorld + squishD, 1.0)).xyz;
 }`);
     }
 
@@ -3054,6 +3194,9 @@ if (decalOn > 0.5) {
     let sagGuidesOn = true;
     const softPreview = { pitch: 0, roll: 0, power: 0.5, bounce: false, time: 0, kicks: [], drag: null, held: new THREE.Vector3(), release: null };
     let rig = null;
+    let colliderPlanes = [];
+    let colliderPlaneKey = "";
+    let collidersShown = localStorage.getItem("gfv-colliders-shown") !== "0";
     let rigEditing = false;
     let rigBone = null;
     let rigPart = null;
@@ -3408,6 +3551,12 @@ if (decalOn > 0.5) {
         bendOn: { value: 0 },
         bendCount: { value: 0 },
         bendMap: { value: emptyBendMap },
+        squishOn: { value: 0 },
+        squishCount: { value: 0 },
+        squishA: { value: Array.from({ length: SQUISH_MAX }, () => new THREE.Vector4()) },
+        squishB: { value: Array.from({ length: SQUISH_MAX }, () => new THREE.Vector4()) },
+        squishC: { value: Array.from({ length: SQUISH_MAX }, () => new THREE.Vector4()) },
+        squishParams: { value: new THREE.Vector4(0, 1, 1, 0) },
       };
     }
 
@@ -3446,7 +3595,7 @@ if (decalOn > 0.5) {
         shader.vertexShader = patchPushVertex(patchMaskVertex(patchSagVertex(shader.vertexShader, withNormal)), withNormal);
         shader.fragmentShader = patchMaskFragment(shader.fragmentShader, BODY_LIB, BODY_EXEC);
       };
-      material.customProgramCacheKey = () => "mask-discard-v16";
+      material.customProgramCacheKey = () => "mask-discard-v18";
       material.onBeforeCompile = (shader) => {
         patch(shader, true);
         Object.assign(shader.uniforms, material.userData.reliefGpu.uniforms, decalGpu.uniforms);
@@ -3454,7 +3603,7 @@ if (decalOn > 0.5) {
         shader.fragmentShader = patchDecalFragment(patchReliefFragment(shader.fragmentShader));
       };
       const depth = new THREE.MeshDepthMaterial();
-      depth.customProgramCacheKey = () => "mask-discard-depth-v12";
+      depth.customProgramCacheKey = () => "mask-discard-depth-v13";
       depth.onBeforeCompile = (shader) => patch(shader);
       material.userData.depthMaterial = depth;
     }
@@ -3545,8 +3694,92 @@ if (decalOn > 0.5) {
         return;
       }
       const sag = readSag(value);
+      delete mesh.userData.sagFrom;
+      if (sag) delete mesh.userData.sagOff;
       if (sag) mesh.userData.sag = sag;
       else delete mesh.userData.sag;
+    }
+
+    // ===== フォルダの設定（揺れ・へこみ）と、パーツへの受け継ぎ =====
+    // フォルダに付けた揺れ（folder.sag）とへこみ（folder.squish）は、中のパーツのうち
+    // 個別の設定を持たないものに写される。写した値には sagFrom / squishFrom（フォルダの id）
+    // の印が付き、保存ファイルにもパーツの値として残るので、古い版でも同じ見た目で読める。
+    // パーツを個別に設定し直すと印は消え、個別の設定になる。
+    function readFolderSag(value) {
+      const sag = readSag(value ? { ...value, follow: undefined } : null);
+      return sag && (sag.amount > 0 || sag.wobble > 0) ? sag : null;
+    }
+
+    function markInherited(mesh, source) {
+      if (typeof source?.sagFrom === "string" && mesh.userData.sag) mesh.userData.sagFrom = source.sagFrom;
+      if (typeof source?.squishFrom === "string" && mesh.userData.squish) mesh.userData.squishFrom = source.squishFrom;
+      if (source?.sagOff === true && !mesh.userData.sag) mesh.userData.sagOff = true;
+      else delete mesh.userData.sagOff;
+      if (source?.squishOff === true && !mesh.userData.squish) mesh.userData.squishOff = true;
+      else delete mesh.userData.squishOff;
+    }
+
+    // フォルダに設定があるのに、このパーツだけ「なし」にしたときの印（個別のオフ）
+    function setInheritOff(mesh, key, off) {
+      if (off && folderSettingFor(mesh.userData.folderId, key)) mesh.userData[`${key}Off`] = true;
+      else delete mesh.userData[`${key}Off`];
+    }
+
+    function folderChain(folderId) {
+      const out = [];
+      const seen = new Set();
+      let cursor = folderId ? folders.find((folder) => folder.id === folderId) : null;
+      while (cursor && !seen.has(cursor.id)) {
+        seen.add(cursor.id);
+        out.push(cursor);
+        cursor = cursor.parentId ? folders.find((folder) => folder.id === cursor.parentId) : null;
+      }
+      return out;
+    }
+
+    function folderSettingFor(folderId, key) {
+      return folderChain(folderId).find((folder) => folder[key]) ?? null;
+    }
+
+    function inheritablePart(mesh) {
+      return mesh?.isMesh && !mesh.userData.isMask && !isLinkAnchor(mesh) && !isCurve(mesh) && Boolean(recordOf(mesh));
+    }
+
+    function syncFolderSettings() {
+      let changed = false;
+      for (const mesh of editableMeshes()) {
+        if (!inheritablePart(mesh)) continue;
+        for (const key of ["sag", "squish"]) {
+          const fromKey = `${key}From`;
+          const inherited = Boolean(mesh.userData[fromKey]);
+          if (mesh.userData[key] && !inherited) continue;
+          if (mesh.userData[`${key}Off`]) {
+            if (inherited) {
+              if (key === "sag") setSag(mesh, null);
+              else setSquish(mesh, null);
+              mesh.userData[`${key}Off`] = true;
+              changed = true;
+            }
+            continue;
+          }
+          const source = folderSettingFor(mesh.userData.folderId, key);
+          if (source) {
+            const record = recordOf(mesh);
+            const want = key === "sag" ? (record?.mirror === mesh ? mirroredSag(source.sag) : { ...source.sag }) : { ...source.squish };
+            if (inherited && mesh.userData[fromKey] === source.id && JSON.stringify(mesh.userData[key]) === JSON.stringify(key === "sag" ? readSag(want) : readSquish(want))) continue;
+            if (key === "sag") setSag(mesh, want);
+            else setSquish(mesh, want);
+            mesh.userData[fromKey] = source.id;
+            changed = true;
+          } else if (inherited) {
+            if (key === "sag") setSag(mesh, null);
+            else setSquish(mesh, null);
+            changed = true;
+          }
+        }
+      }
+      if (changed) requestRender();
+      return changed;
     }
 
     function mirroredSag(sag) {
@@ -3730,6 +3963,7 @@ if (decalOn > 0.5) {
         motion.offset.addScaledVector(motion.speed, step);
       }
       if (motion.offset.length() > length * 0.6 * boost) motion.offset.setLength(length * 0.6 * boost);
+      collideSagTip(owner, tip, motion, sag, length);
       wobble.copy(motion.offset).multiplyScalar(sag.wobble);
       if (motion.offset.length() > length * 1e-4 || motion.speed.length() > length * 1e-3) sagSettling = true;
     }
@@ -4182,11 +4416,11 @@ if (decalOn > 0.5) {
       };
       const material = skin.clone();
       material.side = THREE.BackSide;
-      material.customProgramCacheKey = () => "mask-cap-v12";
+      material.customProgramCacheKey = () => "mask-cap-v14";
       material.onBeforeCompile = (shader) => patch(shader, true);
       material.userData.capUniforms = uniforms;
       const depth = new THREE.MeshDepthMaterial();
-      depth.customProgramCacheKey = () => "mask-cap-depth-v12";
+      depth.customProgramCacheKey = () => "mask-cap-depth-v13";
       depth.onBeforeCompile = (shader) => patch(shader);
       const cap = new THREE.Mesh(mesh.geometry, material);
       cap.customDepthMaterial = depth;
@@ -9758,6 +9992,8 @@ self.onmessage = (event) => {
         + `|${mesh.userData.folderId ?? "-"}|${mesh.userData.label ?? ""}`
         + (mesh.userData.color ? `|color:${mesh.userData.color}` : "")
         + (mesh.userData.sag ? `|sag:${JSON.stringify(mesh.userData.sag)}` : "")
+        + (mesh.userData.collider ? `|collider:${JSON.stringify(mesh.userData.collider)}` : "")
+        + (mesh.userData.squish ? `|squish:${JSON.stringify(mesh.userData.squish)}` : "")
         + (mesh.userData.curveBind ? `|${JSON.stringify(mesh.userData.curveBind)}` : "")
         + (mesh.userData.shear ? `|shear:${mesh.userData.shear.join(",")}` : "")
         + (mesh.userData.dome ? `|${JSON.stringify(mesh.userData.dome)}` : "")
@@ -9776,6 +10012,8 @@ self.onmessage = (event) => {
         folder.name,
         folder.color ?? "",
         folder.feature ? JSON.stringify(folder.feature) : "",
+        folder.sag ? JSON.stringify(folder.sag) : "",
+        folder.squish ? JSON.stringify(folder.squish) : "",
       ].join(",")).join(";");
       const sideSig = (mesh) => `${mesh.uuid}:${transformSignature(mesh)}:${maskSignature(mesh)}:${reliefSigOf(mesh)}:${decalSigOf(mesh)}:${conformSigOf(mesh)}:${mesh.userData.bone ?? ""}`;
       return `${records
@@ -9784,7 +10022,7 @@ self.onmessage = (event) => {
           record.solo ? 1 : 0,
           sideSig(record.mesh),
           record.mirror ? sideSig(record.mirror) : "-",
-        ].join("|")).join(";")}|folders:${folderSig}|links:${linkSignature()}|curves:${curveSignature()}|sketches:${sketchSignature()}|rig:${rigSignature()}`;
+        ].join("|")).join(";")}|folders:${folderSig}|links:${linkSignature()}|curves:${curveSignature()}|sketches:${sketchSignature()}|rig:${rigSignature()}|planes:${colliderPlaneSignature()}`;
     }
 
     function packMesh(mesh) {
@@ -9812,6 +10050,12 @@ self.onmessage = (event) => {
         label: mesh.userData.label ?? "",
         color: mesh.userData.color ?? null,
         sag: mesh.userData.sag ?? null,
+        collider: mesh.userData.collider ? structuredClone(mesh.userData.collider) : null,
+        squish: mesh.userData.squish ? { ...mesh.userData.squish } : null,
+        sagFrom: mesh.userData.sagFrom ?? null,
+        squishFrom: mesh.userData.squishFrom ?? null,
+        sagOff: Boolean(mesh.userData.sagOff),
+        squishOff: Boolean(mesh.userData.squishOff),
         bone: mesh.userData.bone ?? null,
         linkId: mesh.userData.linkId ?? null,
         curveBind: mesh.userData.curveBind ? { ...mesh.userData.curveBind } : null,
@@ -9862,6 +10106,7 @@ self.onmessage = (event) => {
         curves: packCurves(),
         sketches: packSketches(),
         rig: rig ? structuredClone(rig) : null,
+        colliderPlanes: structuredClone(colliderPlanes),
         anchorMasks: activeAnchors().map((anchor) => ({ anchor, masks: packMaskList(anchor) })),
         records: records.map((record) => ({
           kind: record.kind,
@@ -9890,6 +10135,9 @@ self.onmessage = (event) => {
       setPartColor(packed.mesh, packed.color ?? null);
       setSag(packed.mesh, packed.sag ?? null);
       setPartBone(packed.mesh, packed.bone ?? null);
+      if (!packed.mesh.userData.isMask) setCollider(packed.mesh, packed.collider ?? null);
+      if (!packed.mesh.userData.isMask) setSquish(packed.mesh, packed.squish ?? null);
+      markInherited(packed.mesh, packed);
       setCurveBind(packed.mesh, packed.curveBind ?? null);
       if (packed.relief) packed.mesh.userData.relief = packed.relief;
       else delete packed.mesh.userData.relief;
@@ -9987,6 +10235,7 @@ self.onmessage = (event) => {
       sketches = packSketches(state.sketches ?? []);
       if (sketchDrawing && !sketchById(sketchDrawing)) endSketchDraw();
       rig = readRig(state.rig);
+      colliderPlanes = readColliderPlanes(state.colliderPlanes);
       if (rigEditing) {
         if (!rig) dropRigMode();
         else if (rigPart && !keep.has(rigPart)) rigPart = null;
@@ -10024,6 +10273,7 @@ self.onmessage = (event) => {
     function commit() {
       requestRender();
       if (restoring) return;
+      syncFolderSettings();
       const next = packState();
       if (historyIndex >= 0 && history[historyIndex].signature === next.signature) {
         if (!holdChrome) refreshChrome();
@@ -10372,6 +10622,9 @@ self.onmessage = (event) => {
       document.getElementById("dome-section").hidden = !domeable;
       if (domeable) refreshDomeUI();
       refreshSagUI();
+      refreshColliderUI();
+      refreshSquishUI();
+      refreshSummaryUI();
       const loftable = morphKind === "loft" && (selected.userData.isMask || !maskTarget);
       document.getElementById("loft-section").hidden = !loftable;
       if (loftable) refreshLoftUI();
@@ -10430,7 +10683,7 @@ self.onmessage = (event) => {
       }
       const masking = Boolean(maskTarget);
       document.getElementById("mask-banner").hidden = !masking;
-      document.getElementById("file-heading").textContent = masking ? "マスク" : reliefTarget ? "法線" : featureTarget ? "顔・手・足" : softTarget ? "柔らかさ" : rigEditing ? "ボーン" : "ファイル";
+      document.getElementById("file-heading").textContent = masking ? "マスク" : reliefTarget ? "法線" : featureTarget ? "顔・手・足" : softTarget ? "揺れ" : rigEditing ? "ボーン" : "ファイル";
       updateReliefChrome();
       updateFeatureChrome();
       updateSoftChrome();
@@ -10585,6 +10838,8 @@ self.onmessage = (event) => {
           order: Number.isFinite(folder.order) ? folder.order : 0,
           ...(/^#[0-9a-f]{6}$/i.test(folder.color ?? "") ? { color: folder.color.toLowerCase() } : {}),
           ...(readFeature(folder.feature) ? { feature: readFeature(folder.feature) } : {}),
+          ...(readFolderSag(folder.sag) ? { sag: readFolderSag(folder.sag) } : {}),
+          ...(readSquish(folder.squish) ? { squish: readSquish(folder.squish) } : {}),
         });
       }
       const byId = new Map(clean.map((folder) => [folder.id, folder]));
@@ -10817,9 +11072,10 @@ self.onmessage = (event) => {
         const tools = `<button class="icon" type="button" data-action="lock" aria-pressed="${allLocked}" aria-label="ロック">${iconLock(allLocked)}</button>
           <button class="icon" type="button" data-action="hide" aria-pressed="${!allHidden}" aria-label="${allHidden ? "表示" : "非表示"}">${iconEye(!allHidden)}</button>
           <button class="icon" type="button" data-action="delete-folder" aria-label="フォルダを削除"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>`;
-        html.push(`<div class="outliner-row${focusedFolder === folder.id ? " focused" : ""}" draggable="true" data-type="folder" data-id="${escapeHtml(folder.id)}" style="padding-left:${pad}px">
+        html.push(`<div class="outliner-row has-feat${focusedFolder === folder.id ? " focused" : ""}" draggable="true" data-type="folder" data-id="${escapeHtml(folder.id)}" style="padding-left:${pad}px">
           <button class="icon" type="button" data-action="collapse" aria-label="${open ? "折りたたむ" : "開く"}" style="transform:rotate(${open ? 90 : 0}deg)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
           ${name}
+          ${folderFeatureBadges(folder)}
           ${tools}
         </div>`);
         if (open) renderBranch(folder.id, depth + 1, html, sourceIds);
@@ -10883,7 +11139,7 @@ self.onmessage = (event) => {
         const name = renamingPart
           ? `<input class="rename" value="${escapeHtml(mesh.userData.label ?? "")}" />`
           : `<span class="name">${mesh.userData.color ? `<span class="folder-swatch" style="background:${mesh.userData.color}"></span>` : ""}${side ? `<span class="side">${side}</span>` : ""}${escapeHtml(mesh.userData.label ?? "パーツ")}${maskMark}</span>`;
-        const classes = ["outliner-row", "part"];
+        const classes = ["outliner-row", "part", "has-feat"];
         if (selection.includes(mesh)) classes.push("selected");
         if (mesh === selected) classes.push("active");
         if (maskGroup.includes(mesh)) classes.push("mask-target");
@@ -10893,6 +11149,7 @@ self.onmessage = (event) => {
         html.push(`<div class="${classes.join(" ")}" draggable="true" data-type="part" data-id="${escapeHtml(mesh.userData.id)}" style="padding-left:${pad}px">
           <span class="link-icon">${iconKind(mesh.userData.kind, mesh.userData.isMask)}</span>
           ${name}
+          ${partFeatureBadges(mesh)}
           ${tools}
         </div>`);
         html.push(decalRowsHtml(mesh, depth + 1));
@@ -10911,6 +11168,7 @@ self.onmessage = (event) => {
       toggleAll.disabled = !folders.length;
       toggleAll.textContent = anyFolderOpen() ? "すべて閉じる" : "すべて開く";
       renderSketches();
+      refreshFolderPanels();
     }
 
     function shownRow(tree, type, id) {
@@ -11374,7 +11632,7 @@ self.onmessage = (event) => {
             { label: "マスク編集", disabled: Boolean(reliefTarget) || Boolean(featureTarget) || Boolean(softTarget) || rigEditing, run: () => beginMaskEdit(mesh) },
             { label: "法線編集", disabled: masking || hidden || Boolean(reliefTarget) || Boolean(featureTarget) || Boolean(softTarget) || rigEditing, run: () => beginReliefEdit(mesh) },
             { label: "顔・手・足の編集", disabled: !canFeatureEdit(mesh), run: () => beginFeatureEdit(mesh) },
-            { label: "柔らかさの編集", disabled: !canSoftEdit(mesh), run: () => beginSoftEdit(mesh) },
+            { label: "揺れの編集", disabled: !canSoftEdit(mesh), run: () => beginSoftEdit(mesh) },
             { label: "別モデル化して別タブで編集", disabled: !canLink, run: () => makeLinkedModel({ type: "part", mesh }) },
             {
               label: "選択中のパーツを結合",
@@ -11382,6 +11640,9 @@ self.onmessage = (event) => {
               run: () => mergeSelected(),
             },
             { label: "ラスタライズ", disabled: !canRasterize(mesh), run: () => rasterizePart(mesh) },
+            null,
+            ...colliderMenuItems(mesh, masking),
+            ...squishMenuItems(mesh, masking),
             null,
             ...symmetryMenuItems(mesh, masking),
             null,
@@ -13083,7 +13344,8 @@ self.onmessage = (event) => {
       }
       if (reliefTarget && (reliefDirtyFull || reliefDirtyRect)) rebuildReliefMap();
       if (reliefTarget) presentRelief(reliefTarget);
-      for (const mesh of editableMeshes()) {
+      // リンクパーツの中身（とその左右対称のコピー）も、リンク先で付けた法線マップを表示する
+      for (const mesh of [...editableMeshes(), ...linkMeshes(), ...mirrorMeshes()]) {
         if (mesh === reliefTarget) continue;
         if (mesh.userData.reliefGpuDirty || reliefIsStored(mesh.userData.relief)) presentRelief(mesh);
       }
@@ -14654,6 +14916,12 @@ self.onmessage = (event) => {
         color: mesh.userData.color ?? undefined,
         sag: mesh.userData.sag ? { ...mesh.userData.sag, amount: roundNumber(mesh.userData.sag.amount), wobble: roundNumber(mesh.userData.sag.wobble) } : undefined,
         bone: mesh.userData.bone ?? undefined,
+        collider: serializeCollider(mesh.userData.collider),
+        squish: serializeSquish(mesh.userData.squish),
+        sagFrom: mesh.userData.sag && mesh.userData.sagFrom ? mesh.userData.sagFrom : undefined,
+        squishFrom: mesh.userData.squish && mesh.userData.squishFrom ? mesh.userData.squishFrom : undefined,
+        sagOff: mesh.userData.sagOff || undefined,
+        squishOff: mesh.userData.squishOff || undefined,
         home: mesh.userData.home?.map(roundNumber),
         size: mesh.userData.kind === "body" && Array.isArray(mesh.userData.size) ? mesh.userData.size.map(roundNumber) : undefined,
         merge: mesh.userData.merge ? { ...mesh.userData.merge } : undefined,
@@ -14711,11 +14979,14 @@ self.onmessage = (event) => {
           order: folder.order,
           color: folder.color,
           feature: folder.feature,
+          sag: folder.sag ? { ...folder.sag, amount: roundNumber(folder.sag.amount), wobble: roundNumber(folder.sag.wobble) } : undefined,
+          squish: serializeSquish(folder.squish),
         })),
         links: links.length ? serializeLinks() : undefined,
         curves: curves.length ? packCurves() : undefined,
         sketches: sketches.length ? sketches.map(serializeSketch) : undefined,
         rig: rig ? { joints: Object.fromEntries(Object.entries(rig.joints).map(([name, point]) => [name, point.map(roundNumber)])), chains: serializeChains() } : undefined,
+        colliderPlanes: serializeColliderPlanes(),
         name: MODEL_ID ? modelName : undefined,
         records: records.map((record) => ({
           kind: record.kind,
@@ -14986,6 +15257,9 @@ self.onmessage = (event) => {
       setPartColor(mesh, readColor(part.color));
       setSag(mesh, readSag(part.sag));
       setPartBone(mesh, part.bone);
+      setCollider(mesh, part.collider);
+      setSquish(mesh, part.squish);
+      markInherited(mesh, part);
       mesh.userData.linkId = typeof part.linkId === "string" ? part.linkId : null;
       mesh.userData.home = isVector(part.home, 3) ? [...part.home] : undefined;
       setDecal(mesh, readDecal(part.decal));
@@ -15408,6 +15682,7 @@ self.onmessage = (event) => {
       applyCurves(sanitizeCurves(data.curves, folderIds));
       sketches = sanitizeSketches(data.sketches, folderIds);
       rig = readRig(data.rig);
+      colliderPlanes = readColliderPlanes(data.colliderPlanes);
       updateMaskView();
       for (const [mesh, packed] of reliefJobs) await restorePartRelief(mesh, packed);
       history.length = 0;
@@ -15583,10 +15858,16 @@ self.onmessage = (event) => {
       setPartColor(mesh, readColor(part.color));
       setSag(mesh, readSag(part.sag));
       setPartBone(mesh, part.bone);
+      setCollider(mesh, part.collider);
+      setSquish(mesh, part.squish);
+      markInherited(mesh, part);
       mesh.userData.home = isVector(part.home, 3) ? [...part.home] : undefined;
       setDecal(mesh, readDecal(part.decal));
       setConform(mesh, readConform(part.conform));
       attachLoadedMasks(mesh, part.masks);
+      // リンク先のパーツに保存された法線マップ（浮き出し）を読み込む。画像の展開は非同期なので、終わったら描き直す
+      delete mesh.userData.relief;
+      if (part.relief && typeof part.relief === "object") restorePartRelief(mesh, part.relief).then(() => requestRender()).catch(() => {});
       return mesh;
     }
 
@@ -16787,7 +17068,7 @@ self.onmessage = (event) => {
         return;
       }
       if (maskTarget || reliefTarget || featureTarget || softTarget || rigEditing) {
-        setFileStatus("マスク・法線・顔手足・柔らかさ・ボーンの編集中はパスを描けません。編集を終えてから使ってください");
+        setFileStatus("マスク・法線・顔手足・揺れ・ボーンの編集中はパスを描けません。編集を終えてから使ってください");
         return;
       }
       endSketchDraw(false);
@@ -18742,6 +19023,9 @@ self.onmessage = (event) => {
       setPartColor(mesh, readColor(part.color));
       setSag(mesh, readSag(part.sag));
       setPartBone(mesh, part.bone);
+      setCollider(mesh, part.collider);
+      setSquish(mesh, part.squish);
+      markInherited(mesh, part);
       const parent = parentByKey(part.parent);
       parent.add(mesh);
       mesh.position.fromArray(part.position);
@@ -20047,7 +20331,16 @@ self.onmessage = (event) => {
     function mirrorSagOf(mesh) {
       if (!symmetric) return;
       const other = otherOf(recordOf(mesh), mesh);
-      if (other && !other.userData.locked) setSag(other, mirroredSag(mesh.userData.sag ?? null));
+      if (other && !other.userData.locked) {
+        setSag(other, mirroredSag(mesh.userData.sag ?? null));
+        copyInheritMarks(mesh, other, "sag");
+      }
+    }
+
+    // 左右の相方へ写すときは、受け継ぎ（フォルダから）や個別のオフの印も合わせる
+    function copyInheritMarks(from, to, key) {
+      if (from.userData[`${key}From`] && to.userData[key]) to.userData[`${key}From`] = from.userData[`${key}From`];
+      if (from.userData[`${key}Off`] && !to.userData[key]) setInheritOff(to, key, true);
     }
 
     function relinkSagFollowers() {
@@ -20059,7 +20352,7 @@ self.onmessage = (event) => {
     }
 
     const SAG_MODE_HINTS = {
-      none: "胸など、重力で垂れたり揺れたりするパーツに使います。「柔らかく」で自分が柔らかくなり、「付いて動く」でほかの柔らかいパーツと一緒に動きます。",
+      none: "胸など、重力で垂れたり揺れたりするパーツに使います。「揺れる」で自分が垂れたり揺れたりし、「付いて動く」でほかの揺れるパーツと一緒に動きます。",
       own: "起点（黄）の側は体にくっついたまま動かず、反対側の先端ほど重力（青）の向きへ垂れます。動かすと先端が弾み（ピンク）で遅れて揺れます。",
       follow: "付き先のパーツとひとまとめになり、一緒に垂れたり揺れたりします。垂れ・揺れ・起点は付き先のパーツで変えます。",
     };
@@ -20068,14 +20361,14 @@ self.onmessage = (event) => {
       own: "起点（黄）の点は動かず、離れた点ほど重力（青）の向きへ曲がって垂れ、動かすと弾み（ピンク）で遅れて揺れます。パスに沿わせたパーツも一緒に曲がります。点やハンドルを選んでいる間は元の形で表示されます。",
     };
     const SAG_LINK_HINTS = {
-      none: "リンクパーツ全体を、1つの柔らかいかたまりとして垂らしたり揺らしたりできます。",
-      own: "リンクパーツの中のパーツがひとまとめになり、起点（黄）の側は動かず、先端ほど重力（青）の向きへ垂れて弾み（ピンク）で揺れます。リンク先で付けた柔らかさより、こちらが優先されます。",
+      none: "リンクパーツ全体を、1つの揺れるかたまりとして垂らしたり揺らしたりできます。",
+      own: "リンクパーツの中のパーツがひとまとめになり、起点（黄）の側は動かず、先端ほど重力（青）の向きへ垂れて弾み（ピンク）で揺れます。リンク先で付けた揺れの設定より、こちらが優先されます。",
     };
 
     function refreshSagUI() {
       const subject = softTarget ?? selected;
       const kind = sagKind(subject);
-      const shown = Boolean(kind) && !maskTarget;
+      const shown = Boolean(kind) && !maskTarget && (Boolean(softTarget) || !folderLocksPanels());
       document.getElementById("sag-section").hidden = !shown;
       document.getElementById("sag-open-edit").hidden = Boolean(softTarget);
       document.getElementById("sag-group-block").hidden = Boolean(softTarget) || sagTargets().filter((item) => sagKind(item) === "part").length < 2;
@@ -20091,8 +20384,8 @@ self.onmessage = (event) => {
       }
       document.getElementById("sag-mode-follow").hidden = kind !== "part";
       document.getElementById("sag-mode-follow").title = hosts.length || mode === "follow"
-        ? "乳首など、柔らかいパーツに付いて一緒に動く"
-        : "付いていける柔らかいパーツがありません。先に別のパーツを「柔らかく」にしてください";
+        ? "乳首など、揺れるパーツに付いて一緒に動く"
+        : "付いていける揺れるパーツがありません。先に別のパーツを「揺れる」にしてください";
       document.getElementById("sag-mode-hint").textContent = ({ part: SAG_MODE_HINTS, path: SAG_PATH_HINTS, link: SAG_LINK_HINTS })[kind][mode];
       document.getElementById("sag-own").hidden = mode !== "own";
       document.getElementById("sag-follow-row").hidden = mode !== "follow";
@@ -20109,7 +20402,7 @@ self.onmessage = (event) => {
       const follow = document.getElementById("sag-follow");
       const options = [];
       if (sag.follow && !hosts.some((mesh) => mesh.userData.id === sag.follow)) {
-        options.push(`<option value="${escapeHtml(sag.follow)}">（柔らかさのないパーツ）</option>`);
+        options.push(`<option value="${escapeHtml(sag.follow)}">（揺れのないパーツ）</option>`);
       }
       for (const mesh of hosts) {
         options.push(`<option value="${escapeHtml(mesh.userData.id)}">${escapeHtml(`${sideText(mesh)}${mesh.userData.label ?? "パーツ"}`)}</option>`);
@@ -20167,7 +20460,10 @@ self.onmessage = (event) => {
         if (!radio.checked) return;
         for (const mesh of sagTargets()) {
           const sag = sagOf(mesh);
-          if (radio.value === "none") setSag(mesh, null);
+          if (radio.value === "none") {
+            setSag(mesh, null);
+            setInheritOff(mesh, "sag", true);
+          }
           else if (radio.value === "own") setSag(mesh, { amount: sag.amount || 0.3, wobble: sag.wobble || 0.3, anchor: sag.anchor, ease: sag.ease });
           else {
             const host = sagKind(mesh) === "part" ? sagHostChoices(mesh)[0] : null;
@@ -20427,7 +20723,7 @@ self.onmessage = (event) => {
       if (!softTarget) return;
       commit();
       softSession = packState();
-      setFileStatus("柔らかさの設定を保存しました");
+      setFileStatus("揺れの設定を保存しました");
       refreshChrome();
     }
 
@@ -20437,14 +20733,14 @@ self.onmessage = (event) => {
       commit();
       if (!softTarget) return;
       softSession = packState();
-      setFileStatus("柔らかさの変更を破棄しました");
+      setFileStatus("揺れの変更を破棄しました");
       refreshChrome();
     }
 
     function leaveSoftEdit() {
       if (!softTarget) return;
       if (softDirty()) {
-        if (!window.confirm("保存していない柔らかさの変更を破棄して戻りますか？")) return;
+        if (!window.confirm("保存していない揺れの変更を破棄して戻りますか？")) return;
         applyState(softSession);
         commit();
       }
@@ -20669,7 +20965,7 @@ self.onmessage = (event) => {
 
     const CHAIN_PREFIX = "chain:";
     const CHAIN_LIMIT = 16;
-    const CHAIN_DEFAULTS = { segments: 4, stiffness: 0.6, damping: 0.4, gravity: 0.2, maxAngle: 20 };
+    const CHAIN_DEFAULTS = { segments: 4, stiffness: 0.6, damping: 0.4, gravity: 0.2, maxAngle: 20, radius: 0.15 };
     const CHAIN_COLOR = 0xc77dff;
     const CHAIN_PICK_COLOR = 0xffe066; // 選んでいる点
     const CHAIN_HOVER_COLOR = 0xf0d9ff; // ポインターが乗っている点
@@ -20711,6 +21007,9 @@ self.onmessage = (event) => {
           gravity: within(item.gravity, 0, 1, CHAIN_DEFAULTS.gravity),
           maxAngle: within(item.maxAngle, 0, 90, CHAIN_DEFAULTS.maxAngle),
           ...(item.midline === true ? { midline: true } : {}),
+          ...(item.collide === true ? { collide: true } : {}),
+          ...(typeof item.radius === "number" && Number.isFinite(item.radius) ? { radius: within(item.radius, 0, 1, CHAIN_DEFAULTS.radius) } : {}),
+          ...(readColliderGroup(item.collideGroup) ? { collideGroup: readColliderGroup(item.collideGroup) } : {}),
         });
         snapChainMid(out.at(-1));
       }
@@ -20751,6 +21050,9 @@ self.onmessage = (event) => {
         gravity: roundNumber(chain.gravity),
         maxAngle: roundNumber(chain.maxAngle),
         midline: chain.midline ? true : undefined,
+        collide: chain.collide ? true : undefined,
+        radius: chain.radius != null ? roundNumber(chain.radius) : undefined,
+        collideGroup: chain.collideGroup || undefined,
       }));
     }
 
@@ -21151,10 +21453,13 @@ self.onmessage = (event) => {
     // 「重力」100% で、中くらいの硬さなら鎖全体がおよそ 70° 垂れる。硬いほど垂れにくい
     const CHAIN_REFERENCE_OMEGA = 2 * Math.PI * 0.6 * Math.sqrt(20);
 
-    function chainParams(chain, rest) {
+    function chainParams(chain, rest, shapes = null) {
       const hz = 0.6 * Math.pow(20, chain.stiffness);
       const n = Math.max(rest.dirs.length, 1);
       return {
+        colliders: chainColliderList(chain, shapes),
+        radius: (chain.radius ?? CHAIN_DEFAULTS.radius) * (rest.total / n),
+        midline: Boolean(chain.midline),
         omega: 2 * Math.PI * hz,
         zeta: 0.03 + chain.damping * 1.2,
         gravity: new THREE.Vector3(0, -chain.gravity * 1.2 * CHAIN_REFERENCE_OMEGA ** 2 * (rest.total / n) / n, 0),
@@ -21200,6 +21505,7 @@ self.onmessage = (event) => {
         else chainDir.normalize();
         limitChainDir(chainDir, targetDir, params.maxAngle);
         chainNext.copy(root).addScaledVector(chainDir, length);
+        if (params.colliders && collideChainBone(root, chainNext, length, params)) chainDir.subVectors(chainNext, root).divideScalar(length);
         velocity.copy(chainNext).sub(tail).divideScalar(h);
         tail.copy(chainNext);
         state.devs[index].setFromUnitVectors(targetDir, chainDir);
@@ -21219,7 +21525,7 @@ self.onmessage = (event) => {
       return tails;
     }
 
-    function initChainState(chain, rest, frame) {
+    function initChainState(chain, rest, frame, shapes = null) {
       const tails = chainRigidTails(rest, frame.head, frame.rot);
       const state = {
         key: rest.key,
@@ -21236,7 +21542,7 @@ self.onmessage = (event) => {
         moving: false,
       };
       // 最初から重力で垂れた形で始める（再生開始の瞬間に落ちて揺れないように）
-      const params = chainParams(chain, rest);
+      const params = chainParams(chain, rest, shapes);
       const h = 1 / 240;
       for (let step = 0; step < 240; step += 1) stepChainOnce(state, rest, frame.head, frame.rot, h, params, step === 0);
       for (const velocity of state.velocities) velocity.set(0, 0, 0);
@@ -21246,8 +21552,8 @@ self.onmessage = (event) => {
     const chainStepHead = new THREE.Vector3();
     const chainStepRot = new THREE.Quaternion();
 
-    function simulateChain(chain, state, rest, frame, dt) {
-      const params = chainParams(chain, rest);
+    function simulateChain(chain, state, rest, frame, dt, shapes = null) {
+      const params = chainParams(chain, rest, shapes);
       const elapsed = Math.min(dt, 0.5); // モーションと同じく重いフレームでも実時間で進める（細かく刻むので安定）
       const steps = Math.max(1, Math.ceil(elapsed * 240));
       const h = elapsed / steps;
@@ -21297,6 +21603,18 @@ self.onmessage = (event) => {
         blockMatrices ??= Array.from({ length: blocks }, (_, block) => (block === blocks - 1 || !sampleMatrices ? rigPoseFrame : sampleMatrices((block + 1) / blocks)));
         return blockMatrices[index];
       };
+      const owners = rigChains().some((chain) => chain.collide) && hasColliders() ? colliderOwners() : null;
+      const ownerBones = owners?.map((mesh) => rigBoneOf(mesh));
+      const shapeCache = new Map();
+      const shapesAt = (matrices) => {
+        if (!owners) return null;
+        let shapes = shapeCache.get(matrices);
+        if (!shapes) {
+          shapes = colliderShapes(owners, matrices, ownerBones);
+          shapeCache.set(matrices, shapes);
+        }
+        return shapes;
+      };
       for (const chain of rigChains()) {
         live.add(chain.id);
         const rest = chainRest(chain);
@@ -21306,17 +21624,17 @@ self.onmessage = (event) => {
         const firstHead = blocks > 1 && sampleMatrices ? chainParentFrame(chain, rest, matricesAt(0)).head : frame.head;
         const jumped = state && state.head.distanceTo(firstHead) > Math.max(rest.total * 4, rigSize() * 0.25);
         if (!state || state.key !== rest.key || jumped) {
-          state = initChainState(chain, rest, frame);
+          state = initChainState(chain, rest, frame, chain.collide ? shapesAt(rigPoseFrame) : null);
           chainStates.set(chain.id, state);
         } else if (dt > 0) {
           for (let block = 0; block < blocks; block += 1) {
             const target = block === blocks - 1 ? frame : chainParentFrame(chain, rest, matricesAt(block));
-            simulateChain(chain, state, rest, target, Math.min(dt, 0.5) / blocks);
+            simulateChain(chain, state, rest, target, Math.min(dt, 0.5) / blocks, chain.collide ? shapesAt(matricesAt(block)) : null);
             state.head.copy(target.head);
             state.rot.copy(target.rot);
           }
           if (state.tails.some((tail) => !Number.isFinite(tail.x + tail.y + tail.z))) {
-            state = initChainState(chain, rest, frame);
+            state = initChainState(chain, rest, frame, chain.collide ? shapesAt(rigPoseFrame) : null);
             chainStates.set(chain.id, state);
           }
         }
@@ -21331,6 +21649,710 @@ self.onmessage = (event) => {
     function resetChainMotion() {
       chainStates.clear();
       chainPoses.clear();
+    }
+
+    // ===== 当たり判定（カプセル・球・平面） =====
+    // パーツの当たり判定はパーツのローカル座標で持つ（パーツの移動・回転・拡大、ボーン、モーションに付いていく）。
+    // 平面は文書に直接置く独立した当たり判定（床・壁）。法線の向きが外側で、裏側が中になる。
+    // ここの関数（colliderShapes・pushPointOut・pushSegmentOut）は、揺れボーン以外の押し出しにも使えるようにしてある。
+    const COLLIDER_GROUP_MAX = 24;
+    const COLLIDER_PLANE_LIMIT = 16;
+    const COLLIDER_COLOR = 0x4dd8e6;
+    const COLLIDER_PICK_COLOR = 0xffe066;
+    const COLLIDER_PLANE_COLOR = 0xffa94d;
+    const COLLIDER_SPHERE_RATIO = 1.35;
+    const COLLIDER_PLANE_NORMALS = {
+      up: [0, 1, 0], down: [0, -1, 0], front: [0, 0, 1], back: [0, 0, -1], right: [-1, 0, 0], left: [1, 0, 0],
+    };
+    const colliderTmpA = new THREE.Vector3();
+    const colliderTmpB = new THREE.Vector3();
+    const colliderTmpC = new THREE.Vector3();
+    const colliderTmpD = new THREE.Vector3();
+    const colliderTmpM = new THREE.Matrix4();
+    const colliderTmpM3 = new THREE.Matrix3();
+
+    function readColliderGroup(value) {
+      return typeof value === "string" ? value.trim().slice(0, COLLIDER_GROUP_MAX) : "";
+    }
+
+    function readCollider(value) {
+      if (!value || typeof value !== "object") return null;
+      const shape = value.shape === "sphere" || value.shape === "capsule" ? value.shape : null;
+      const radius = Number(value.radius);
+      if (!shape || !isVector(value.center, 3) || !Number.isFinite(radius) || radius <= 0) return null;
+      const out = { shape, center: [...value.center], radius };
+      if (shape === "capsule") {
+        const axis = new THREE.Vector3().fromArray(isVector(value.axis, 3) ? value.axis : [0, 1, 0]);
+        if (axis.lengthSq() < 1e-12) axis.set(0, 1, 0);
+        out.axis = axis.normalize().toArray();
+        const length = Number(value.length);
+        out.length = Number.isFinite(length) && length > 0 ? length : 0;
+      }
+      const group = readColliderGroup(value.group);
+      if (group) out.group = group;
+      return out;
+    }
+
+    function setCollider(mesh, value) {
+      const collider = readCollider(value);
+      if (collider) mesh.userData.collider = collider;
+      else delete mesh.userData.collider;
+    }
+
+    function serializeCollider(collider) {
+      if (!collider) return undefined;
+      return {
+        shape: collider.shape,
+        center: collider.center.map(roundNumber),
+        ...(collider.shape === "capsule" ? { axis: collider.axis.map(roundNumber), length: roundNumber(collider.length) } : {}),
+        radius: roundNumber(collider.radius),
+        ...(collider.group ? { group: collider.group } : {}),
+      };
+    }
+
+    function readColliderPlanes(value) {
+      if (!Array.isArray(value)) return [];
+      const out = [];
+      const ids = new Set();
+      for (const item of value.slice(0, COLLIDER_PLANE_LIMIT)) {
+        if (!item || typeof item !== "object" || !isVector(item.point, 3) || !isVector(item.normal, 3)) continue;
+        const normal = new THREE.Vector3().fromArray(item.normal);
+        if (normal.lengthSq() < 1e-12) continue;
+        let id = typeof item.id === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(item.id) ? item.id : null;
+        if (!id || ids.has(id)) id = `plane-${out.length + 1}-${Math.random().toString(36).slice(2, 7)}`;
+        ids.add(id);
+        const size = Number(item.size);
+        const group = readColliderGroup(item.group);
+        out.push({
+          id,
+          name: typeof item.name === "string" && item.name.trim() ? item.name.trim().slice(0, 40) : "平面",
+          point: [...item.point],
+          normal: normal.normalize().toArray(),
+          size: Number.isFinite(size) && size > 0 ? size : 1,
+          ...(group ? { group } : {}),
+          ...(item.hidden === true ? { hidden: true } : {}),
+        });
+      }
+      return out;
+    }
+
+    function serializeColliderPlanes() {
+      if (!colliderPlanes.length) return undefined;
+      return colliderPlanes.map((plane) => ({
+        ...plane,
+        point: plane.point.map(roundNumber),
+        normal: plane.normal.map(roundNumber),
+        size: roundNumber(plane.size),
+      }));
+    }
+
+    function colliderPlaneSignature() {
+      return colliderPlanes.length ? JSON.stringify(colliderPlanes) : "-";
+    }
+
+    // 拡大率は行列の体積比の 3 乗根（半径はこの倍率で大きさが変わる。長さは軸方向の倍率に従う）
+    function colliderScaleOf(matrix) {
+      return Math.cbrt(Math.abs(matrix.determinant())) || 1;
+    }
+
+    // パーツの当たり判定を world 座標の形にする。a〜b の線分から半径 r 以内が中（球は a = b）
+    function colliderWorldShape(mesh, matrix, out = {}) {
+      const collider = mesh.userData.collider;
+      out.type = collider.shape;
+      out.owner = mesh;
+      out.group = collider.group ?? "";
+      out.a ??= new THREE.Vector3();
+      out.b ??= new THREE.Vector3();
+      out.r = collider.radius * colliderScaleOf(matrix);
+      if (collider.shape === "sphere") {
+        out.a.fromArray(collider.center).applyMatrix4(matrix);
+        out.b.copy(out.a);
+      } else {
+        const half = collider.length / 2;
+        colliderTmpA.fromArray(collider.axis);
+        out.a.fromArray(collider.center).addScaledVector(colliderTmpA, -half).applyMatrix4(matrix);
+        out.b.fromArray(collider.center).addScaledVector(colliderTmpA, half).applyMatrix4(matrix);
+      }
+      return out;
+    }
+
+    function planeWorldShape(plane, out = {}) {
+      out.type = "plane";
+      out.owner = plane;
+      out.group = plane.group ?? "";
+      out.point = (out.point ?? new THREE.Vector3()).fromArray(plane.point);
+      out.normal = (out.normal ?? new THREE.Vector3()).fromArray(plane.normal);
+      out.r = 0;
+      return out;
+    }
+
+    function colliderOwners() {
+      const owners = [];
+      for (const mesh of editableMeshes()) {
+        if (mesh.userData.collider && !mesh.userData.hidden && !mesh.userData.isMask) owners.push(mesh);
+      }
+      return owners;
+    }
+
+    function hasColliders() {
+      return colliderPlanes.some((plane) => !plane.hidden) || editableMeshes().some((mesh) => mesh.userData.collider && !mesh.userData.hidden);
+    }
+
+    // モーションの姿勢（matrices）を掛けた当たり判定の一覧。matrices が無ければ今の matrixWorld のまま
+    // bones は colliderOwners と同じ並びのボーン名（毎ブロック探し直さないよう、呼ぶ側で 1 回だけ求める）
+    function colliderShapes(owners = colliderOwners(), matrices = null, bones = null) {
+      const shapes = [];
+      owners.forEach((mesh, index) => {
+        mesh.updateWorldMatrix(true, false);
+        let matrix = mesh.matrixWorld;
+        if (matrices) {
+          const bone = bones?.[index] ?? rigBoneOf(mesh);
+          const pose = matrices.get(bone) ?? (isChainBone(bone) ? matrices.get(chainOfBone(bone)?.parent ?? "hips") : null);
+          if (pose) matrix = new THREE.Matrix4().multiplyMatrices(pose, mesh.matrixWorld);
+        }
+        const shape = colliderWorldShape(mesh, matrix);
+        shape.bone = bones?.[index] ?? null;
+        shapes.push(shape);
+      });
+      for (const plane of colliderPlanes) if (!plane.hidden) shapes.push(planeWorldShape(plane));
+      return shapes;
+    }
+
+    let colliderFrameShapes = null;
+
+    // 今のフレームの（ポーズを当てた後の）当たり判定。フレームごとに 1 回だけ作る
+    function frameColliderShapes() {
+      colliderFrameShapes ??= hasColliders() ? colliderShapes() : [];
+      return colliderFrameShapes;
+    }
+
+    function closestOnSegment(a, b, p, target) {
+      colliderTmpD.subVectors(b, a);
+      const lengthSq = colliderTmpD.lengthSq();
+      const t = lengthSq > 1e-18 ? Math.min(1, Math.max(0, colliderTmpD.dot(colliderTmp(p, a)) / lengthSq)) : 0;
+      return target.copy(a).addScaledVector(colliderTmpD, t);
+    }
+
+    function colliderTmp(p, a) {
+      return colliderTmpC.subVectors(p, a);
+    }
+
+    // 点 p（半径 r の球）を形の外へ出すずれを out に入れ、めり込みの深さを返す（当たっていなければ 0）
+    function pushPointOut(p, r, shape, out) {
+      if (shape.type === "plane") {
+        const depth = r - colliderTmpA.subVectors(p, shape.point).dot(shape.normal);
+        if (depth <= 0) return 0;
+        out.copy(shape.normal).multiplyScalar(depth);
+        return depth;
+      }
+      const q = closestOnSegment(shape.a, shape.b, p, colliderTmpB);
+      out.subVectors(p, q);
+      const distance = out.length();
+      const reach = r + shape.r;
+      if (distance >= reach) return 0;
+      if (distance > 1e-9) out.divideScalar(distance);
+      else out.set(0, 1, 0);
+      out.multiplyScalar(reach - distance);
+      return reach - distance;
+    }
+
+    // 2 本の線分の最も近い点の位置（0〜1）。s は p0→p1、u は q0→q1
+    function segmentClosestParams(p0, p1, q0, q1) {
+      const d1 = colliderTmpA.subVectors(p1, p0);
+      const d2 = colliderTmpB.subVectors(q1, q0);
+      const r = colliderTmpC.subVectors(p0, q0);
+      const a = d1.dot(d1);
+      const e = d2.dot(d2);
+      const f = d2.dot(r);
+      let s = 0;
+      let u = 0;
+      if (a <= 1e-18 && e <= 1e-18) return [0, 0];
+      if (a <= 1e-18) return [0, Math.min(1, Math.max(0, f / e))];
+      const c = d1.dot(r);
+      if (e <= 1e-18) return [Math.min(1, Math.max(0, -c / a)), 0];
+      const b = d1.dot(d2);
+      const denom = a * e - b * b;
+      s = denom > 1e-18 ? Math.min(1, Math.max(0, (b * f - c * e) / denom)) : 0;
+      u = (b * s + f) / e;
+      if (u < 0) {
+        u = 0;
+        s = Math.min(1, Math.max(0, -c / a));
+      } else if (u > 1) {
+        u = 1;
+        s = Math.min(1, Math.max(0, (b - c) / a));
+      }
+      return [s, u];
+    }
+
+    const segmentPoint = new THREE.Vector3();
+    const segmentOther = new THREE.Vector3();
+
+    // 太さ r の線分 root→tip が形にめり込んでいたら、いちばん深い点を外へ出すずれを out に入れ、その点の位置（0〜1）を返す（当たっていなければ 0）
+    function pushSegmentOut(root, tip, r, shape, out) {
+      if (shape.type === "plane") {
+        const depth = r - colliderTmpA.subVectors(tip, shape.point).dot(shape.normal);
+        if (depth <= 0) return 0;
+        out.copy(shape.normal).multiplyScalar(depth);
+        return 1;
+      }
+      const [s, u] = segmentClosestParams(root, tip, shape.a, shape.b);
+      segmentPoint.lerpVectors(root, tip, s);
+      segmentOther.lerpVectors(shape.a, shape.b, u);
+      out.subVectors(segmentPoint, segmentOther);
+      const distance = out.length();
+      const reach = r + shape.r;
+      if (distance >= reach) return 0;
+      if (distance > 1e-9) out.divideScalar(distance);
+      else {
+        // 軸の上に乗っている：線分の向きと直交する向きへ出す
+        out.subVectors(tip, root).cross(colliderTmpD.set(0, 0, 1));
+        if (out.lengthSq() < 1e-18) out.set(1, 0, 0);
+        out.normalize();
+      }
+      out.multiplyScalar(reach - distance);
+      return Math.max(s, 1e-3);
+    }
+
+    // 揺れボーンが当たる形（「衝突する」がオンの鎖だけ。グループの指定があればそのグループだけ。自分に割り当てたパーツの形とは当たらない）
+    function chainColliderList(chain, shapes) {
+      if (!chain.collide || !shapes?.length) return null;
+      const own = `${CHAIN_PREFIX}${chain.id}`;
+      const list = shapes.filter((shape) => (!chain.collideGroup || shape.group === chain.collideGroup) && shape.bone !== own);
+      return list.length ? list : null;
+    }
+
+    const chainPush = new THREE.Vector3();
+    const chainPushDir = new THREE.Vector3();
+
+    // 節の先（tip）を当たり判定の外へ出し、付け根（root）からの長さを元に戻す。向きが変わるだけなので、曲がり（一定の曲率）はそのまま保たれる
+    function collideChainBone(root, tip, length, params) {
+      let moved = false;
+      for (let pass = 0; pass < 3; pass += 1) {
+        let any = false;
+        for (const shape of params.colliders) {
+          const at = pushSegmentOut(root, tip, params.radius, shape, chainPush);
+          if (!at) continue;
+          if (params.midline) chainPush.x = 0;
+          tip.addScaledVector(chainPush, 1 / Math.max(at, 0.25));
+          chainPushDir.subVectors(tip, root);
+          if (params.midline) chainPushDir.x = 0;
+          if (chainPushDir.lengthSq() < 1e-18) continue;
+          tip.copy(root).addScaledVector(chainPushDir.normalize(), length);
+          any = true;
+          moved = true;
+        }
+        if (!any) break;
+      }
+      return moved;
+    }
+
+    // 柔らかいパーツ（揺れ）の先端を当たり判定の外へ出す。自分の当たり判定とは当たらない
+    const sagPushOut = new THREE.Vector3();
+    const sagPushPoint = new THREE.Vector3();
+
+    function collideSagTip(owner, tip, motion, sag, length) {
+      if (!(sag.wobble > 0) || !owner.userData?.squish) return;
+      const shapes = frameColliderShapes();
+      if (!shapes.length) return;
+      const radius = Math.max((sagSpans.get(owner)?.cross ?? length * 0.3) * 0.5, length * 0.05);
+      for (const shape of shapes) {
+        if (shape.owner === owner || (shape.owner?.isObject3D && sagHost(shape.owner) === owner)) continue;
+        sagPushPoint.copy(tip).addScaledVector(motion.offset, sag.wobble);
+        if (!pushPointOut(sagPushPoint, radius, shape, sagPushOut)) continue;
+        motion.offset.addScaledVector(sagPushOut, 1 / sag.wobble);
+        const into = motion.speed.dot(sagPushOut.normalize());
+        if (into < 0) motion.speed.addScaledVector(sagPushOut, -into);
+      }
+    }
+
+    // パーツの形（ローカルの外接箱）から、カプセルか球を当てはめる
+    function fitCollider(mesh) {
+      if (!mesh.geometry) return null;
+      if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+      const box = mesh.geometry.boundingBox;
+      if (!box || box.isEmpty()) return null;
+      mesh.updateWorldMatrix(true, false);
+      const matrix = mesh.matrixWorld;
+      const center = box.getCenter(new THREE.Vector3());
+      const half = box.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+      const columns = [0, 1, 2].map((axis) => colliderTmpA.setFromMatrixColumn(matrix, axis).length() || 1);
+      const extents = [0, 1, 2].map((axis) => ({ axis, local: half.getComponent(axis), world: half.getComponent(axis) * columns[axis] }));
+      extents.sort((a, b) => b.world - a.world);
+      const scale = colliderScaleOf(matrix);
+      if (!(extents[0].world > 1e-9)) return null;
+      if (extents[0].world < extents[1].world * COLLIDER_SPHERE_RATIO) {
+        const radius = (extents[0].world + extents[1].world + extents[2].world) / 3;
+        return { shape: "sphere", center: center.toArray(), radius: radius / scale };
+      }
+      const radius = Math.max((extents[1].world + extents[2].world) / 2, extents[0].world * 0.02);
+      const lengthWorld = Math.max(0, 2 * (extents[0].world - radius));
+      const axis = [0, 0, 0];
+      axis[extents[0].axis] = 1;
+      return { shape: "capsule", center: center.toArray(), axis, length: lengthWorld / columns[extents[0].axis], radius: radius / scale };
+    }
+
+    // 左右対称の相方に、鏡写しにした当たり判定を付ける（パーツは作らない。相方がいなければ何もしない）
+    function syncColliderTwin(mesh) {
+      if (!symmetric) return null;
+      const other = otherOf(recordOf(mesh), mesh);
+      if (!other || other.userData.locked) return null;
+      const collider = mesh.userData.collider;
+      if (!collider) {
+        delete other.userData.collider;
+        return other;
+      }
+      mesh.updateWorldMatrix(true, false);
+      other.updateWorldMatrix(true, false);
+      const shape = colliderWorldShape(mesh, mesh.matrixWorld);
+      const mid = torsoCenter.x;
+      const inverse = new THREE.Matrix4().copy(other.matrixWorld).invert();
+      const a = shape.a.clone().setX(2 * mid - shape.a.x).applyMatrix4(inverse);
+      const b = shape.b.clone().setX(2 * mid - shape.b.x).applyMatrix4(inverse);
+      const out = { shape: collider.shape, center: a.clone().add(b).multiplyScalar(0.5).toArray(), radius: shape.r / colliderScaleOf(other.matrixWorld) };
+      if (collider.shape === "capsule") {
+        const axis = b.clone().sub(a);
+        const length = axis.length();
+        out.axis = length > 1e-12 ? axis.divideScalar(length).toArray() : [...collider.axis];
+        out.length = length;
+      }
+      if (collider.group) out.group = collider.group;
+      setCollider(other, out);
+      return other;
+    }
+
+    function colliderWorldSize(mesh) {
+      const collider = mesh.userData.collider;
+      mesh.updateWorldMatrix(true, false);
+      const matrix = mesh.matrixWorld;
+      const radius = collider.radius * colliderScaleOf(matrix);
+      const length = collider.shape === "capsule" ? collider.length * colliderTmpA.fromArray(collider.axis).applyMatrix3(colliderTmpM3.setFromMatrix4(matrix)).length() : 0;
+      return { radius, length };
+    }
+
+    function setColliderWorldSize(mesh, { radius, length }) {
+      const collider = mesh.userData.collider;
+      if (!collider) return;
+      mesh.updateWorldMatrix(true, false);
+      const matrix = mesh.matrixWorld;
+      if (Number.isFinite(radius) && radius > 0) collider.radius = radius / colliderScaleOf(matrix);
+      if (collider.shape === "capsule" && Number.isFinite(length) && length >= 0) {
+        const along = colliderTmpA.fromArray(collider.axis).applyMatrix3(colliderTmpM3.setFromMatrix4(matrix)).length() || 1;
+        collider.length = length / along;
+      }
+    }
+
+    // ===== 柔らかさ（へこみ・つぶれ） =====
+    // 「柔らかくする」を付けたパーツだけが、ほかのパーツの当たり判定・平面・「衝突する」揺れボーンに押されてへこむ。
+    // 変形は頂点シェーダー（squishOffset）で行い、CPU はパーツごとに当たっている形（最大 SQUISH_MAX 個）と、
+    // 当たりの深さ・接している割合・戻りのばねの値だけを求める。何も変わらないフレームでは何もしない。
+    const SQUISH_PRESETS = {
+      soft: { label: "柔らかめ", softness: 0.8, depth: 0.5, speed: 0.3 },
+      normal: { label: "普通", softness: 0.5, depth: 0.35, speed: 0.5 },
+      firm: { label: "弾力", softness: 0.25, depth: 0.25, speed: 0.85 },
+    };
+    const SQUISH_SAMPLES = 2048;
+    const squishSamples = new WeakMap();
+    const squishStates = new WeakMap();
+    const squishSphere = new THREE.Sphere();
+    const squishPoint = new THREE.Vector3();
+    const squishOut = new THREE.Vector3();
+
+    function readSquish(value) {
+      if (!value || typeof value !== "object") return null;
+      const within = (number, fallback) => (typeof number === "number" && Number.isFinite(number) ? Math.min(1, Math.max(0, number)) : fallback);
+      const base = SQUISH_PRESETS.normal;
+      return { softness: within(value.softness, base.softness), depth: within(value.depth, base.depth), speed: within(value.speed, base.speed) };
+    }
+
+    function setSquish(mesh, value) {
+      const squish = readSquish(value);
+      delete mesh.userData.squishFrom;
+      if (squish) delete mesh.userData.squishOff;
+      if (squish) mesh.userData.squish = squish;
+      else delete mesh.userData.squish;
+    }
+
+    function serializeSquish(squish) {
+      return squish ? { softness: roundNumber(squish.softness), depth: roundNumber(squish.depth), speed: roundNumber(squish.speed) } : undefined;
+    }
+
+    function syncSquishTwin(mesh) {
+      if (!symmetric) return null;
+      const other = otherOf(recordOf(mesh), mesh);
+      if (!other || other.userData.locked) return null;
+      setSquish(other, mesh.userData.squish ?? null);
+      copyInheritMarks(mesh, other, "squish");
+      return other;
+    }
+
+    // パーツの頂点から最大 SQUISH_SAMPLES 個を間引いて取っておく（当たりの深さと接している割合を見積もる）
+    function squishSampleOf(geometry) {
+      const position = geometry.attributes.position;
+      let cached = squishSamples.get(geometry);
+      if (cached && cached.version === position.version && cached.count === position.count) return cached.points;
+      const stride = Math.max(1, Math.floor(position.count / SQUISH_SAMPLES));
+      const points = new Float32Array(Math.ceil(position.count / stride) * 3);
+      let used = 0;
+      for (let index = 0; index < position.count; index += stride) {
+        points[used * 3] = position.getX(index);
+        points[used * 3 + 1] = position.getY(index);
+        points[used * 3 + 2] = position.getZ(index);
+        used += 1;
+      }
+      cached = { version: position.version, count: position.count, points: points.subarray(0, used * 3) };
+      squishSamples.set(geometry, cached);
+      return cached.points;
+    }
+
+    // 「衝突する」揺れボーンの節を、太さのカプセルとして返す（そのパーツが割り当てられた揺れボーンは除く）
+    function chainSegmentShapes(skipBone) {
+      const shapes = [];
+      for (const chain of rigChains()) {
+        if (!chain.collide || `${CHAIN_PREFIX}${chain.id}` === skipBone) continue;
+        const rest = chainRest(chain);
+        const n = Math.max(rest.dirs.length, 1);
+        const radius = (chain.radius ?? CHAIN_DEFAULTS.radius) * (rest.total / n);
+        const pose = (rigPoseFrame ? chainPoses.get(chain.id) : staticChainPoses.get(chain.id)) ?? null;
+        const heads = pose?.heads ?? rest.joints;
+        for (let index = 1; index < heads.length; index += 1) {
+          shapes.push({ type: "capsule", a: heads[index - 1], b: heads[index], r: radius, owner: null, key: `chain:${chain.id}:${index}`, group: "" });
+        }
+      }
+      return shapes;
+    }
+
+    function shapeKey(shape) {
+      if (shape.key) return shape.key;
+      if (shape.type === "plane") return `plane:${shape.owner.id}`;
+      return `part:${shape.owner.uuid}`;
+    }
+
+    function snapshotShape(shape) {
+      if (shape.type === "plane") return { type: "plane", point: shape.point.clone(), normal: shape.normal.clone() };
+      return { type: shape.type, a: shape.a.clone(), b: shape.b.clone(), r: shape.r };
+    }
+
+    function squishTargets() {
+      const list = [];
+      for (const mesh of editableMeshes()) if (mesh.userData.squish && mesh.material?.userData?.maskUniforms?.squishOn && shownInScene(mesh)) list.push(mesh);
+      return list;
+    }
+
+    function clearSquish(mesh) {
+      const uniforms = mesh.material?.userData?.maskUniforms;
+      if (uniforms?.squishOn) {
+        uniforms.squishOn.value = 0;
+        uniforms.squishCount.value = 0;
+      }
+      for (const cap of maskCaps.get(mesh) ?? []) {
+        const capUniforms = cap.material.userData.capUniforms;
+        if (capUniforms?.squishOn) capUniforms.squishOn.value = 0;
+      }
+      squishStates.delete(mesh);
+    }
+
+    let squishLive = new Set();
+
+    function updateSquish(dt) {
+      const targets = squishTargets();
+      const live = new Set(targets);
+      for (const mesh of squishLive) if (!live.has(mesh)) clearSquish(mesh);
+      squishLive = live;
+      if (!targets.length) return;
+      const parts = frameColliderShapes();
+      for (const mesh of targets) updateSquishMesh(mesh, parts, dt);
+    }
+
+    function updateSquishMesh(mesh, parts, dt) {
+      const squish = mesh.userData.squish;
+      const geometry = mesh.geometry;
+      if (!geometry?.attributes?.position) return;
+      if (!geometry.boundingSphere) geometry.computeBoundingSphere();
+      mesh.updateWorldMatrix(true, false);
+      squishSphere.copy(geometry.boundingSphere).applyMatrix4(mesh.matrixWorld);
+      const size = Math.max(squishSphere.radius, 1e-6);
+      const reach = size * (0.05 + 0.3 * squish.softness);
+      const shapes = [];
+      const bone = rig ? rigBoneOf(mesh) : null;
+      for (const shape of [...parts, ...(rig ? chainSegmentShapes(bone) : [])]) {
+        if (shape.owner === mesh) continue;
+        if (shape.type === "plane") {
+          if (squishPoint.subVectors(squishSphere.center, shape.point).dot(shape.normal) > size + reach) continue;
+        } else {
+          const near = closestOnSegment(shape.a, shape.b, squishSphere.center, squishPoint);
+          if (near.distanceTo(squishSphere.center) > size + shape.r + reach) continue;
+        }
+        shapes.push(shape);
+      }
+      let state = squishStates.get(mesh);
+      if (!state) {
+        state = { key: "", contacts: new Map() };
+        squishStates.set(mesh, state);
+      }
+      const key = `${mesh.matrixWorld.elements.map((value) => value.toFixed(5)).join(",")}|${JSON.stringify(squish)}|${geometry.attributes.position.version}|${shapes.map((shape) => shape.type === "plane"
+        ? `${shapeKey(shape)}:${shape.point.toArray().join(",")}:${shape.normal.toArray().join(",")}`
+        : `${shapeKey(shape)}:${shape.a.toArray().map((v) => v.toFixed(5)).join(",")}:${shape.b.toArray().map((v) => v.toFixed(5)).join(",")}:${shape.r.toFixed(5)}`).join(";")}`;
+      const springing = [...state.contacts.values()].some((contact) => !contact.touching);
+      if (key === state.key && !springing) return;
+      const changed = key !== state.key;
+      state.key = key;
+      if (changed) {
+        const samples = squishSampleOf(geometry);
+        const count = samples.length / 3;
+        const world = new Float32Array(samples.length);
+        const e = mesh.matrixWorld.elements;
+        for (let index = 0; index < count; index += 1) {
+          const x = samples[index * 3];
+          const y = samples[index * 3 + 1];
+          const z = samples[index * 3 + 2];
+          world[index * 3] = e[0] * x + e[4] * y + e[8] * z + e[12];
+          world[index * 3 + 1] = e[1] * x + e[5] * y + e[9] * z + e[13];
+          world[index * 3 + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
+        }
+        const seen = new Set();
+        for (const shape of shapes) {
+          let deepest = 0;
+          let inside = 0;
+          for (let index = 0; index < count; index += 1) {
+            squishPoint.set(world[index * 3], world[index * 3 + 1], world[index * 3 + 2]);
+            const depth = pushPointOut(squishPoint, 0, shape, squishOut);
+            if (depth > 0) {
+              inside += 1;
+              if (depth > deepest) deepest = depth;
+            }
+          }
+          if (!(deepest > 0)) continue;
+          const id = shapeKey(shape);
+          seen.add(id);
+          const contact = state.contacts.get(id) ?? { s: 1, v: 0 };
+          Object.assign(contact, { shape: snapshotShape(shape), depth: deepest, fraction: inside / Math.max(count, 1), touching: true, s: 1, v: 0 });
+          state.contacts.set(id, contact);
+        }
+        for (const [id, contact] of state.contacts) if (!seen.has(id)) contact.touching = false;
+      }
+      // 離れた当たりは、戻りの速さのばね（少し行き過ぎて戻る）で 0 に戻す
+      const omega = 2 * Math.PI * (0.6 + 6 * squish.speed);
+      const zeta = 0.5;
+      const step = Math.min(Math.max(dt, 0), 0.05);
+      for (const [id, contact] of state.contacts) {
+        if (contact.touching) continue;
+        if (step > 0) {
+          const pieces = Math.max(1, Math.ceil(step * 240));
+          const h = step / pieces;
+          for (let piece = 0; piece < pieces; piece += 1) {
+            contact.v += (-omega * omega * contact.s - 2 * zeta * omega * contact.v) * h;
+            contact.s += contact.v * h;
+          }
+        }
+        if (Math.abs(contact.s) < 0.002 && Math.abs(contact.v) < 0.02) state.contacts.delete(id);
+        else sagSettling = true;
+      }
+      writeSquishUniforms(mesh, state, size, reach, squish);
+    }
+
+    function writeSquishUniforms(mesh, state, size, reach, squish) {
+      const uniforms = mesh.material.userData.maskUniforms;
+      const contacts = [...state.contacts.values()].sort((a, b) => b.depth * Math.abs(b.s) - a.depth * Math.abs(a.s)).slice(0, SQUISH_MAX);
+      contacts.forEach((contact, index) => {
+        const shape = contact.shape;
+        const a = uniforms.squishA.value[index];
+        const b = uniforms.squishB.value[index];
+        if (shape.type === "plane") {
+          a.set(shape.normal.x, shape.normal.y, shape.normal.z, shape.normal.dot(shape.point));
+          b.set(0, 0, 0, 1);
+        } else {
+          a.set(shape.a.x, shape.a.y, shape.a.z, shape.r);
+          b.set(shape.b.x, shape.b.y, shape.b.z, 0);
+        }
+        const bulge = Math.min(contact.depth, (contact.depth * contact.fraction) / Math.max(1 - contact.fraction, 0.2)) * 0.7;
+        uniforms.squishC.value[index].set(contact.depth, contact.s, bulge, 0);
+      });
+      uniforms.squishCount.value = contacts.length;
+      uniforms.squishOn.value = contacts.length ? 1 : 0;
+      uniforms.squishParams.value.set(Math.max(squish.depth, 0.01) * size, reach, size * 0.5, 0);
+      for (const cap of maskCaps.get(mesh) ?? []) {
+        const capUniforms = cap.material.userData.capUniforms;
+        if (!capUniforms?.squishOn) continue;
+        for (const name of ["squishA", "squishB", "squishC"]) capUniforms[name].value = uniforms[name].value;
+        capUniforms.squishParams.value = uniforms.squishParams.value;
+        capUniforms.squishCount.value = uniforms.squishCount.value;
+        capUniforms.squishOn.value = uniforms.squishOn.value;
+      }
+    }
+
+    // ===== 編集中（再生していないとき）の揺れボーンの衝突 =====
+    // 「衝突する」揺れボーンを、休み姿勢から当たり判定の外へ曲げる（重力や揺れは付けない）。形や当たり判定が変わったときだけ解き直す
+    const staticChainPoses = new Map();
+    const staticChainUniforms = [];
+    let staticChainKey = "";
+
+    function clearStaticChains() {
+      for (const uniforms of staticChainUniforms) {
+        uniforms.bendOn.value = 0;
+        uniforms.bendMap.value = emptyBendMap;
+      }
+      staticChainUniforms.length = 0;
+      staticChainPoses.clear();
+      staticChainKey = "";
+    }
+
+    function solveStaticChain(rest, frame, params) {
+      const heads = [frame.head.clone()];
+      const quats = [frame.rot.clone()];
+      const q = frame.rot.clone();
+      const root = frame.head.clone();
+      let moved = false;
+      for (let index = 0; index < rest.dirs.length; index += 1) {
+        const length = rest.lengths[index];
+        const dir = rest.dirs[index].clone().applyQuaternion(q);
+        const tip = root.clone().addScaledVector(dir, length);
+        if (params.colliders && collideChainBone(root, tip, length, params)) {
+          moved = true;
+          q.premultiply(new THREE.Quaternion().setFromUnitVectors(dir, tip.clone().sub(root).normalize()));
+        }
+        quats.push(q.clone());
+        heads.push(tip.clone());
+        root.copy(tip);
+      }
+      return { heads, quats, moved };
+    }
+
+    function updateStaticChains() {
+      const chains = rig && !rigPoseFrame ? rigChains().filter((chain) => chain.collide) : [];
+      if (!chains.length || !hasColliders()) {
+        if (staticChainKey || staticChainUniforms.length) clearStaticChains();
+        return;
+      }
+      const owners = colliderOwners();
+      const bones = owners.map((mesh) => rigBoneOf(mesh));
+      const shapes = colliderShapes(owners, null, bones);
+      const key = `${JSON.stringify(chains)}|${shapes.map((shape) => (shape.type === "plane" ? JSON.stringify(shape.owner) : `${shape.bone}:${shape.a.toArray().map((v) => v.toFixed(5))}:${shape.b.toArray().map((v) => v.toFixed(5))}:${shape.r.toFixed(5)}`)).join(";")}|${editableMeshes().map((mesh) => `${mesh.uuid}:${mesh.userData.bone ?? ""}`).join(",")}`;
+      if (key === staticChainKey) return;
+      clearStaticChains();
+      staticChainKey = key;
+      const bentChains = new Map();
+      for (const chain of chains) {
+        const rest = chainRest(chain);
+        if (rest.total < 1e-6) continue;
+        const frame = chainParentFrame(chain, rest, null);
+        const pose = solveStaticChain(rest, frame, chainParams(chain, rest, shapes));
+        staticChainPoses.set(chain.id, pose);
+        if (pose.moved) bentChains.set(`${CHAIN_PREFIX}${chain.id}`, { chain, pose });
+      }
+      if (!bentChains.size) return;
+      for (const [object, bone] of rigPoseTargets()) {
+        const bent = bentChains.get(bone);
+        if (!bent || isCurve(object)) continue;
+        const map = chainBendMap(bent.chain, bent.pose);
+        for (const mesh of bendRenderMeshes(object)) {
+          const uniforms = bendUniformsOf(mesh);
+          if (!uniforms) continue;
+          uniforms.bendOn.value = 1;
+          uniforms.bendCount.value = bent.pose.quats.length - 1;
+          uniforms.bendMap.value = map;
+          staticChainUniforms.push(uniforms);
+        }
+      }
     }
 
     function computeRigPose(sample) {
@@ -22506,6 +23528,7 @@ self.onmessage = (event) => {
       ["damping", "落ち着き", 100, "%", "上げると揺れがすぐ収まり、下げると長く揺れ続ける"],
       ["gravity", "重力", 100, "%", "垂れ下がる強さ"],
       ["maxAngle", "曲がる角度", 1, "°", "1 節あたりに曲がれる最大の角度"],
+      ["radius", "太さ", 100, "%", "当たり判定に使うボーンの太さ（半径）。1 節の長さに対する割合"],
     ];
 
     function chainItems(chain) {
@@ -22713,7 +23736,7 @@ self.onmessage = (event) => {
       chainList.innerHTML = chains.map((chain) => {
         const count = chainItems(chain).length;
         const sliders = CHAIN_SLIDERS.map(([field, label, scale, unit, tip]) => {
-          const value = Math.round(chain[field] * scale);
+          const value = Math.round((chain[field] ?? CHAIN_DEFAULTS[field]) * scale);
           const max = field === "maxAngle" ? 90 : 100;
           return `<div class="slider-row" title="${tip}"><span>${label}</span><input type="range" min="0" max="${max}" step="1" value="${value}" data-field="${field}" aria-label="${escapeHtml(chain.name)}の${label}" /><span class="chain-value">${value}${unit}</span></div>`;
         }).join("");
@@ -22723,6 +23746,8 @@ self.onmessage = (event) => {
           <label class="chain-field"><span>節の数</span><input type="number" min="1" max="${BEND_MAX}" step="1" value="${chain.points.length - 1}" data-field="segments" aria-label="節の数" /></label>
           ${chainJointFields(chain)}
           ${sliders}
+          <label class="relief-check" title="パーツの当たり判定（カプセル・球）や平面にめり込まないよう押し出す"><input type="checkbox" data-field="collide"${chain.collide ? " checked" : ""} /> 衝突する</label>
+          <label class="chain-field" title="空なら、すべての当たり判定と衝突する。名前を入れると、そのグループの当たり判定とだけ衝突する"><span>当たるグループ</span><input type="text" maxlength="24" value="${escapeHtml(chain.collideGroup ?? "")}" placeholder="すべて" data-field="collideGroup" aria-label="衝突する当たり判定のグループ" /></label>
           <div class="chain-row"><select data-act="assign" aria-label="この揺れボーンに割り当てる">${chainAssignOptions(chain)}</select></div>
           <div class="rig-transport"><button type="button" data-act="fit" title="選んでいるパーツの形に沿って点を置き直す">選んだパーツに合わせる</button><button type="button" data-act="focus" title="この揺れボーンで動くパーツを強調する">強調</button></div>
           <p class="chain-note">割り当て ${count} 個${count ? "" : "（「割り当て…」か下の一覧で付けます）"}</p>
@@ -22766,6 +23791,15 @@ self.onmessage = (event) => {
       } else if (field === "midline") {
         if (event.target.checked) snapChainMid(Object.assign(chain, { midline: true }));
         else delete chain.midline;
+      } else if (field === "collide") {
+        if (event.target.checked) chain.collide = true;
+        else delete chain.collide;
+        resetChainMotion();
+      } else if (field === "collideGroup") {
+        const group = readColliderGroup(event.target.value);
+        if (group) chain.collideGroup = group;
+        else delete chain.collideGroup;
+        event.target.value = group;
       } else if (field === "carry") {
         chainCarry = event.target.checked;
         updateRigChrome();
@@ -26367,6 +27401,871 @@ void main() {
     }, true);
     refreshFaceEditUI();
 
+
+    // 当たり判定のワイヤーフレーム表示と、半径・長さをドラッグで変えるハンドル
+    const colliderGuide = new THREE.Group();
+    colliderGuide.visible = false;
+    scene.add(colliderGuide);
+    const COLLIDER_LINE_CAPACITY = 320;
+    const colliderLines = [];
+    const colliderHandleGeometry = new THREE.SphereGeometry(1, 12, 8);
+    const colliderHandles = {
+      radius: sagGuideLook(new THREE.Mesh(colliderHandleGeometry, new THREE.MeshBasicMaterial({ color: 0x4dd8e6 }))),
+      length: sagGuideLook(new THREE.Mesh(colliderHandleGeometry, new THREE.MeshBasicMaterial({ color: 0xff9f43 }))),
+    };
+    for (const [kind, handle] of Object.entries(colliderHandles)) {
+      handle.userData.colliderHandle = kind;
+      handle.renderOrder = 13;
+      handle.visible = false;
+      colliderGuide.add(handle);
+    }
+    let colliderDrag = null;
+    let colliderHover = null;
+    let colliderClickGuard = false;
+
+    function colliderLine(index) {
+      while (colliderLines.length <= index) {
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(COLLIDER_LINE_CAPACITY * 3), 3));
+        const line = sagGuideLook(new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ color: COLLIDER_COLOR, opacity: 0.85 })));
+        line.frustumCulled = false;
+        colliderGuide.add(line);
+        colliderLines.push(line);
+      }
+      return colliderLines[index];
+    }
+
+    const guideU = new THREE.Vector3();
+    const guideV = new THREE.Vector3();
+    const guideW = new THREE.Vector3();
+    const guideP = new THREE.Vector3();
+
+    function guideBasis(axis) {
+      guideU.copy(axis);
+      if (guideU.lengthSq() < 1e-18) guideU.set(0, 1, 0);
+      guideU.normalize();
+      guideV.set(Math.abs(guideU.y) < 0.9 ? 0 : 1, Math.abs(guideU.y) < 0.9 ? 1 : 0, 0).cross(guideU).normalize();
+      guideW.crossVectors(guideU, guideV);
+    }
+
+    function writeShapeLines(shape, line) {
+      const array = line.geometry.attributes.position.array;
+      let count = 0;
+      const push = (point) => {
+        if (count >= COLLIDER_LINE_CAPACITY) return;
+        array[count * 3] = point.x;
+        array[count * 3 + 1] = point.y;
+        array[count * 3 + 2] = point.z;
+        count += 1;
+      };
+      const arc = (center, x, y, radius, from, to, steps) => {
+        for (let step = 0; step < steps; step += 1) {
+          const t0 = from + ((to - from) * step) / steps;
+          const t1 = from + ((to - from) * (step + 1)) / steps;
+          push(guideP.copy(center).addScaledVector(x, Math.cos(t0) * radius).addScaledVector(y, Math.sin(t0) * radius));
+          push(guideP.copy(center).addScaledVector(x, Math.cos(t1) * radius).addScaledVector(y, Math.sin(t1) * radius));
+        }
+      };
+      if (shape.type === "plane") {
+        const plane = shape.owner;
+        guideBasis(shape.normal);
+        const half = plane.size / 2;
+        for (let index = 0; index <= 4; index += 1) {
+          const t = -half + (index * plane.size) / 4;
+          push(guideP.copy(shape.point).addScaledVector(guideV, t).addScaledVector(guideW, -half));
+          push(guideP.copy(shape.point).addScaledVector(guideV, t).addScaledVector(guideW, half));
+          push(guideP.copy(shape.point).addScaledVector(guideW, t).addScaledVector(guideV, -half));
+          push(guideP.copy(shape.point).addScaledVector(guideW, t).addScaledVector(guideV, half));
+        }
+        push(shape.point);
+        push(guideP.copy(shape.point).addScaledVector(guideU, half * 0.4));
+      } else {
+        const r = shape.r;
+        guideBasis(guideP.subVectors(shape.b, shape.a));
+        if (shape.type === "sphere") {
+          arc(shape.a, guideV, guideW, r, 0, Math.PI * 2, 32);
+          arc(shape.a, guideU, guideV, r, 0, Math.PI * 2, 32);
+          arc(shape.a, guideU, guideW, r, 0, Math.PI * 2, 32);
+        } else {
+          arc(shape.a, guideV, guideW, r, 0, Math.PI * 2, 32);
+          arc(shape.b, guideV, guideW, r, 0, Math.PI * 2, 32);
+          for (const [x, sign] of [[guideV, 1], [guideV, -1], [guideW, 1], [guideW, -1]]) {
+            push(guideP.copy(shape.a).addScaledVector(x, r * sign));
+            push(guideP.copy(shape.b).addScaledVector(x, r * sign));
+          }
+          arc(shape.b, guideV, guideU, r, 0, Math.PI, 16);
+          arc(shape.b, guideW, guideU, r, 0, Math.PI, 16);
+          arc(shape.a, guideV, guideU, r, Math.PI, Math.PI * 2, 16);
+          arc(shape.a, guideW, guideU, r, Math.PI, Math.PI * 2, 16);
+        }
+      }
+      line.geometry.attributes.position.needsUpdate = true;
+      line.geometry.setDrawRange(0, count);
+    }
+
+    function colliderEditable(mesh) {
+      return Boolean(mesh?.userData.collider) && !mesh.userData.locked && !mesh.userData.hidden && !rigPoseFrame && !maskTarget;
+    }
+
+    function colliderHandleTarget() {
+      if (!collidersShown || !selected || !selection.includes(selected)) return null;
+      return colliderEditable(selected) ? selected : null;
+    }
+
+    function updateColliderGuide() {
+      const shapes = collidersShown ? frameColliderShapes() : [];
+      colliderGuide.visible = shapes.length > 0;
+      let used = 0;
+      for (const shape of shapes) {
+        const line = colliderLine(used);
+        used += 1;
+        line.visible = true;
+        const picked = shape.owner?.isObject3D && selection.includes(shape.owner);
+        line.material.color.setHex(shape.type === "plane" ? COLLIDER_PLANE_COLOR : picked ? COLLIDER_PICK_COLOR : COLLIDER_COLOR);
+        writeShapeLines(shape, line);
+      }
+      for (let index = used; index < colliderLines.length; index += 1) colliderLines[index].visible = false;
+      const target = colliderHandleTarget();
+      const shape = target ? shapes.find((item) => item.owner === target) : null;
+      colliderHandles.radius.visible = Boolean(shape);
+      colliderHandles.length.visible = Boolean(shape) && shape.type === "capsule";
+      if (!shape) return;
+      const handle = colliderHandleFrame(shape);
+      const size = camera.position.distanceTo(handle.center) * 0.012;
+      colliderHandles.radius.position.copy(handle.radiusAt);
+      colliderHandles.length.position.copy(handle.lengthAt);
+      for (const [kind, mark] of Object.entries(colliderHandles)) {
+        mark.scale.setScalar(size * (colliderHover === kind || colliderDrag?.kind === kind ? 1.5 : 1));
+      }
+    }
+
+    // ハンドルの位置：半径は真ん中から画面の横向き、長さは先端の球の頂点
+    function colliderHandleFrame(shape) {
+      const center = new THREE.Vector3().addVectors(shape.a, shape.b).multiplyScalar(0.5);
+      const axis = new THREE.Vector3().subVectors(shape.b, shape.a);
+      if (axis.lengthSq() < 1e-18) axis.set(0, 1, 0);
+      axis.normalize();
+      const view = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 2);
+      const side = new THREE.Vector3().crossVectors(axis, view);
+      if (side.lengthSq() < 1e-10) side.setFromMatrixColumn(camera.matrixWorld, 0);
+      side.normalize();
+      return {
+        center,
+        axis,
+        side,
+        radiusAt: center.clone().addScaledVector(side, shape.r),
+        lengthAt: shape.b.clone().addScaledVector(axis, shape.r),
+      };
+    }
+
+    const colliderRaycaster = new THREE.Raycaster();
+    const colliderPointer = new THREE.Vector2();
+
+    function colliderRay(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      colliderPointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
+      colliderRaycaster.setFromCamera(colliderPointer, camera);
+      return colliderRaycaster.ray;
+    }
+
+    function pickColliderHandle(event) {
+      if (!colliderGuide.visible) return null;
+      const marks = Object.values(colliderHandles).filter((mark) => mark.visible);
+      if (!marks.length) return null;
+      colliderRay(event);
+      const hit = colliderRaycaster.intersectObjects(marks, false)[0];
+      return hit ? hit.object.userData.colliderHandle : null;
+    }
+
+    // ポインターの光線と、ハンドルが動く直線の最も近い点の、直線上の位置
+    function rayLineParam(ray, origin, direction) {
+      const w = new THREE.Vector3().subVectors(origin, ray.origin);
+      const b = ray.direction.dot(direction);
+      const d = ray.direction.dot(w);
+      const e = direction.dot(w);
+      const denom = 1 - b * b;
+      if (denom < 1e-8) return null;
+      return (b * d - e) / denom;
+    }
+
+    renderer.domElement.parentElement.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0 || event.target !== renderer.domElement) return;
+      const kind = pickColliderHandle(event);
+      if (!kind) return;
+      const mesh = colliderHandleTarget();
+      if (!mesh) return;
+      event.stopImmediatePropagation();
+      event.preventDefault();
+      const shape = colliderWorldShape(mesh, mesh.matrixWorld);
+      const frame = colliderHandleFrame(shape);
+      colliderDrag = { kind, mesh, pointerId: event.pointerId, frame, size: colliderWorldSize(mesh), before: structuredClone(mesh.userData.collider) };
+      renderer.domElement.setPointerCapture?.(event.pointerId);
+      requestRender();
+    }, true);
+
+    renderer.domElement.parentElement.addEventListener("pointermove", (event) => {
+      if (colliderDrag) {
+        if (event.pointerId !== colliderDrag.pointerId) return;
+        event.stopImmediatePropagation();
+        const { kind, mesh, frame, size } = colliderDrag;
+        const ray = colliderRay(event);
+        const direction = kind === "radius" ? frame.side : frame.axis;
+        const t = rayLineParam(ray, frame.center, direction);
+        if (t == null) return;
+        const minimum = size.radius * 0.02;
+        if (kind === "radius") setColliderWorldSize(mesh, { radius: Math.max(minimum, t) });
+        else setColliderWorldSize(mesh, { length: Math.max(0, 2 * (t - size.radius)) });
+        syncColliderTwin(mesh);
+        refreshColliderUI();
+        requestRender();
+        return;
+      }
+      if (event.buttons) return;
+      const hover = pickColliderHandle(event);
+      if (hover !== colliderHover) {
+        colliderHover = hover;
+        requestRender();
+      }
+    }, true);
+
+    function endColliderDrag(event) {
+      if (!colliderDrag || event.pointerId !== colliderDrag.pointerId) return;
+      event.stopImmediatePropagation();
+      const changed = JSON.stringify(colliderDrag.before) !== JSON.stringify(colliderDrag.mesh.userData.collider);
+      colliderDrag = null;
+      colliderClickGuard = true;
+      setTimeout(() => { colliderClickGuard = false; }, 0);
+      if (changed) commit();
+      refreshColliderUI();
+      requestRender();
+    }
+    renderer.domElement.parentElement.addEventListener("pointerup", endColliderDrag, true);
+    renderer.domElement.parentElement.addEventListener("pointercancel", endColliderDrag, true);
+    renderer.domElement.parentElement.addEventListener("click", (event) => {
+      if (!colliderClickGuard) return;
+      colliderClickGuard = false;
+      event.stopImmediatePropagation();
+    }, true);
+
+    // ===== 当たり判定のパネルと右クリックメニュー =====
+
+    function colliderSubject() {
+      const mesh = selected;
+      if (!mesh || !mesh.isMesh || mesh.userData.isMask || !recordOf(mesh)) return null;
+      return mesh;
+    }
+
+    function canAddCollider(mesh) {
+      return Boolean(mesh) && !mesh.userData.locked && !mesh.userData.isMask && Boolean(recordOf(mesh)) && !maskTarget;
+    }
+
+    function addColliderTo(mesh) {
+      if (!canAddCollider(mesh)) return false;
+      const fitted = fitCollider(mesh);
+      if (!fitted) {
+        setFileStatus("このパーツの形からは当たり判定を作れませんでした");
+        return false;
+      }
+      setCollider(mesh, { ...fitted, group: mesh.userData.collider?.group });
+      const twin = syncColliderTwin(mesh);
+      commit();
+      setFileStatus(`「${sideText(mesh)}${mesh.userData.label ?? "パーツ"}」に当たり判定（${fitted.shape === "sphere" ? "球" : "カプセル"}）を追加しました${twin ? "（左右対称の相方にも付けました）" : ""}`);
+      refreshColliderUI();
+      requestRender();
+      return true;
+    }
+
+    function removeColliderFrom(mesh) {
+      if (!mesh?.userData.collider || mesh.userData.locked) return;
+      delete mesh.userData.collider;
+      syncColliderTwin(mesh);
+      commit();
+      setFileStatus("当たり判定を外しました");
+      refreshColliderUI();
+      requestRender();
+    }
+
+    function colliderMenuItems(mesh, masking) {
+      const has = Boolean(mesh.userData.collider);
+      return [
+        { label: has ? "当たり判定を合わせ直す" : "当たり判定を追加", disabled: masking || !canAddCollider(mesh), run: () => addColliderTo(mesh) },
+        ...(has ? [{ label: "当たり判定を外す", disabled: masking || Boolean(mesh.userData.locked), run: () => removeColliderFrom(mesh) }] : []),
+      ];
+    }
+
+    function addColliderPlane(kind) {
+      if (colliderPlanes.length >= COLLIDER_PLANE_LIMIT) {
+        setFileStatus(`平面は ${COLLIDER_PLANE_LIMIT} 枚までです`);
+        return;
+      }
+      const box = new THREE.Box3();
+      for (const mesh of editableMeshes()) {
+        if (mesh.userData.hidden || !mesh.geometry) continue;
+        if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+        mesh.updateWorldMatrix(true, false);
+        box.union(colliderPlaneBox.copy(mesh.geometry.boundingBox).applyMatrix4(mesh.matrixWorld));
+      }
+      if (box.isEmpty()) box.set(new THREE.Vector3(-0.5, 0, -0.5), new THREE.Vector3(0.5, 1, 0.5));
+      const size = box.getSize(new THREE.Vector3());
+      const span = Math.max(size.x, size.y, size.z) * 1.4;
+      const center = box.getCenter(new THREE.Vector3());
+      const id = `plane-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+      const floor = kind === "floor";
+      colliderPlanes = [...colliderPlanes, {
+        id,
+        name: floor ? "床" : "壁",
+        point: (floor ? [center.x, box.min.y, center.z] : [center.x, center.y, box.min.z - size.z * 0.1]).map(roundNumber),
+        normal: floor ? [0, 1, 0] : [0, 0, 1],
+        size: roundNumber(span),
+      }];
+      commit();
+      setFileStatus(`${floor ? "床" : "壁"}の当たり判定を追加しました`);
+      refreshColliderUI();
+      requestRender();
+    }
+    const colliderPlaneBox = new THREE.Box3();
+
+    function planeFacing(plane) {
+      for (const [name, normal] of Object.entries(COLLIDER_PLANE_NORMALS)) {
+        if (normal.every((value, index) => Math.abs(value - plane.normal[index]) < 1e-4)) return name;
+      }
+      return "custom";
+    }
+
+    function renderColliderPlanes() {
+      const key = JSON.stringify(colliderPlanes);
+      if (key === colliderPlaneKey) return;
+      const editing = document.activeElement;
+      if (editing && document.getElementById("collider-plane-list").contains(editing) && (editing.type === "text" || editing.type === "number")) return;
+      colliderPlaneKey = key;
+      if (!colliderPlanes.length) {
+        document.getElementById("collider-plane-list").innerHTML = `<p class="rig-empty">平面はまだありません。</p>`;
+        return;
+      }
+      const facings = [["up", "上向き（床）"], ["down", "下向き（天井）"], ["front", "前向き"], ["back", "後ろ向き"], ["right", "右向き"], ["left", "左向き"]];
+      document.getElementById("collider-plane-list").innerHTML = colliderPlanes.map((plane) => {
+        const facing = planeFacing(plane);
+        const options = facings.map(([value, label]) => `<option value="${value}"${value === facing ? " selected" : ""}>${label}</option>`).join("")
+          + (facing === "custom" ? `<option value="custom" selected>（自由な向き）</option>` : "");
+        const coords = ["x", "y", "z"].map((axis, index) => `<label class="chain-field"><span>${axis.toUpperCase()}</span><input type="number" step="any" value="${roundNumber(plane.point[index])}" data-field="p${axis}" aria-label="平面の位置 ${axis.toUpperCase()}" /></label>`).join("");
+        return `<div class="chain-card" data-plane="${plane.id}" role="listitem">
+          <div class="chain-row"><input type="text" maxlength="40" value="${escapeHtml(plane.name)}" data-field="name" aria-label="平面の名前" /><button type="button" data-act="hide" title="当たり判定を一時的に止める">${plane.hidden ? "有効にする" : "止める"}</button><button type="button" data-act="delete">削除</button></div>
+          <label class="chain-field"><span>向き</span><select data-field="facing" aria-label="平面の向き（この向きの側が外）">${options}</select></label>
+          ${coords}
+          <label class="chain-field"><span>表示の大きさ</span><input type="number" min="0" step="any" value="${roundNumber(plane.size)}" data-field="size" aria-label="平面の表示の大きさ" /></label>
+          <label class="chain-field"><span>グループ</span><input type="text" maxlength="24" value="${escapeHtml(plane.group ?? "")}" data-field="group" aria-label="平面のグループ" /></label>
+        </div>`;
+      }).join("");
+    }
+
+    document.getElementById("collider-plane-list").addEventListener("change", (event) => {
+      const card = event.target.closest("[data-plane]");
+      const plane = card ? colliderPlanes.find((item) => item.id === card.dataset.plane) : null;
+      if (!plane) return;
+      const field = event.target.dataset.field;
+      const value = event.target.value;
+      if (field === "name") plane.name = value.trim().slice(0, 40) || plane.name;
+      else if (field === "facing" && COLLIDER_PLANE_NORMALS[value]) plane.normal = [...COLLIDER_PLANE_NORMALS[value]];
+      else if (/^p[xyz]$/.test(field) && Number.isFinite(Number(value)) && value !== "") plane.point["xyz".indexOf(field[1])] = Number(value);
+      else if (field === "size" && Number(value) > 0) plane.size = Number(value);
+      else if (field === "group") {
+        const group = readColliderGroup(value);
+        if (group) plane.group = group;
+        else delete plane.group;
+      } else {
+        colliderPlaneKey = "";
+        renderColliderPlanes();
+        return;
+      }
+      colliderPlaneKey = "";
+      commit();
+      refreshColliderUI();
+      requestRender();
+    });
+
+    document.getElementById("collider-plane-list").addEventListener("click", (event) => {
+      const card = event.target.closest("[data-plane]");
+      const act = event.target.closest("button")?.dataset.act;
+      const plane = card ? colliderPlanes.find((item) => item.id === card.dataset.plane) : null;
+      if (!plane || !act) return;
+      if (act === "delete") colliderPlanes = colliderPlanes.filter((item) => item !== plane);
+      else if (act === "hide") {
+        if (plane.hidden) delete plane.hidden;
+        else plane.hidden = true;
+      }
+      colliderPlaneKey = "";
+      commit();
+      refreshColliderUI();
+      requestRender();
+    });
+
+    function refreshColliderUI() {
+      const section = document.getElementById("collider-section");
+      const blocked = Boolean(maskTarget) || Boolean(reliefTarget) || Boolean(featureTarget) || Boolean(softTarget);
+      section.hidden = blocked;
+      if (blocked) return;
+      const mesh = folderLocksPanels() ? null : colliderSubject();
+      const collider = mesh?.userData.collider ?? null;
+      const locked = Boolean(mesh?.userData.locked);
+      document.getElementById("collider-none").hidden = !mesh || Boolean(collider);
+      document.getElementById("collider-edit").hidden = !collider;
+      document.getElementById("collider-add").disabled = !canAddCollider(mesh);
+      document.getElementById("collider-hint").textContent = !mesh
+        ? "パーツを選ぶと、そのパーツに当たり判定を付けられます（右クリックの「当たり判定を追加」でも付けられます）。"
+        : collider
+          ? "水色のワイヤーが当たり判定です。パーツの移動・ボーン・モーションに付いて動き、揺れボーンや柔らかいパーツを押し出します。"
+          : "パーツの大きさに合わせて、カプセルか球の当たり判定を付けます。";
+      document.getElementById("collider-show").checked = collidersShown;
+      if (collider) {
+        const size = colliderWorldSize(mesh);
+        for (const radio of document.querySelectorAll('input[name="collider-shape"]')) {
+          radio.checked = radio.value === collider.shape;
+          radio.disabled = locked;
+        }
+        document.getElementById("collider-length-row").hidden = collider.shape !== "capsule";
+        for (const [id, value] of [["collider-radius", size.radius], ["collider-length", size.length]]) {
+          const input = document.getElementById(id);
+          if (document.activeElement !== input) input.value = String(Number(value.toPrecision(4)));
+          input.disabled = locked;
+        }
+        const group = document.getElementById("collider-group");
+        if (document.activeElement !== group) group.value = collider.group ?? "";
+        group.disabled = locked;
+        document.getElementById("collider-refit").disabled = locked;
+        document.getElementById("collider-remove").disabled = locked;
+      }
+      renderColliderPlanes();
+    }
+
+    function editSelectedCollider(change) {
+      const mesh = colliderSubject();
+      if (!mesh?.userData.collider || mesh.userData.locked) return;
+      change(mesh, mesh.userData.collider);
+      syncColliderTwin(mesh);
+      commit();
+      refreshColliderUI();
+      requestRender();
+    }
+
+    document.getElementById("collider-add").addEventListener("click", () => {
+      const mesh = colliderSubject();
+      if (mesh) addColliderTo(mesh);
+    });
+    document.getElementById("collider-refit").addEventListener("click", () => {
+      const mesh = colliderSubject();
+      if (mesh) addColliderTo(mesh);
+    });
+    document.getElementById("collider-remove").addEventListener("click", () => removeColliderFrom(colliderSubject()));
+    for (const radio of document.querySelectorAll('input[name="collider-shape"]')) {
+      radio.addEventListener("change", () => editSelectedCollider((mesh, collider) => {
+        const size = colliderWorldSize(mesh);
+        if (radio.value === "sphere") {
+          setCollider(mesh, { shape: "sphere", center: collider.center, radius: collider.radius, group: collider.group });
+          setColliderWorldSize(mesh, { radius: size.length / 2 + size.radius });
+        } else {
+          const fitted = fitCollider(mesh);
+          setCollider(mesh, { shape: "capsule", center: collider.center, axis: fitted?.axis ?? [0, 1, 0], length: 0, radius: collider.radius, group: collider.group });
+          setColliderWorldSize(mesh, { radius: size.radius, length: size.radius * 2 });
+        }
+      }));
+    }
+    document.getElementById("collider-radius").addEventListener("change", (event) => {
+      const value = Number(event.target.value);
+      if (value > 0) editSelectedCollider((mesh) => setColliderWorldSize(mesh, { radius: value }));
+      else refreshColliderUI();
+    });
+    document.getElementById("collider-length").addEventListener("change", (event) => {
+      const value = Number(event.target.value);
+      if (event.target.value !== "" && value >= 0) editSelectedCollider((mesh) => setColliderWorldSize(mesh, { length: value }));
+      else refreshColliderUI();
+    });
+    document.getElementById("collider-group").addEventListener("change", (event) => {
+      editSelectedCollider((mesh, collider) => {
+        const group = readColliderGroup(event.target.value);
+        if (group) collider.group = group;
+        else delete collider.group;
+      });
+    });
+    document.getElementById("collider-plane-floor").addEventListener("click", () => addColliderPlane("floor"));
+    document.getElementById("collider-plane-wall").addEventListener("click", () => addColliderPlane("wall"));
+    document.getElementById("collider-show").addEventListener("change", (event) => {
+      collidersShown = event.target.checked;
+      localStorage.setItem("gfv-colliders-shown", collidersShown ? "1" : "0");
+      requestRender();
+    });
+
+    // ===== 柔らかさ（へこみ）のパネルと右クリックメニュー =====
+    function squishSubject() {
+      const mesh = selected;
+      return mesh && mesh.isMesh && !mesh.userData.isMask && recordOf(mesh) ? mesh : null;
+    }
+
+    function setSquishOn(mesh, value, message) {
+      if (!mesh || mesh.userData.locked) return;
+      setSquish(mesh, value);
+      setInheritOff(mesh, "squish", !value);
+      const twin = syncSquishTwin(mesh);
+      commit();
+      if (message) setFileStatus(`${message}${twin ? "（左右対称の相方にも反映しました）" : ""}`);
+      refreshSquishUI();
+      requestRender();
+    }
+
+    function squishMenuItems(mesh, masking) {
+      const on = Boolean(mesh.userData.squish);
+      return [{
+        label: on ? "柔らかくするのをやめる" : "柔らかくする",
+        disabled: masking || Boolean(mesh.userData.locked) || !recordOf(mesh),
+        run: () => {
+          if (selected !== mesh) select(mesh);
+          setSquishOn(mesh, on ? null : SQUISH_PRESETS.normal, on ? "柔らかくするのをやめました" : `「${sideText(mesh)}${mesh.userData.label ?? "パーツ"}」を柔らかくしました`);
+        },
+      }];
+    }
+
+    function refreshSquishUI() {
+      const section = document.getElementById("squish-section");
+      const mesh = squishSubject();
+      const squish = mesh?.userData.squish;
+      section.hidden = !squish || Boolean(maskTarget) || Boolean(softTarget) || folderLocksPanels();
+      if (section.hidden) return;
+      const locked = Boolean(mesh.userData.locked);
+      for (const field of ["softness", "depth", "speed"]) {
+        setSlider(`squish-${field}`, Math.round(squish[field] * 100));
+        document.getElementById(`squish-${field}`).disabled = locked;
+      }
+      for (const button of document.querySelectorAll("[data-squish-preset]")) button.disabled = locked;
+      document.getElementById("squish-remove").disabled = locked;
+    }
+
+    for (const field of ["softness", "depth", "speed"]) {
+      const range = document.getElementById(`squish-${field}`);
+      range.addEventListener("input", () => {
+        const mesh = squishSubject();
+        if (!mesh?.userData.squish || mesh.userData.locked) return;
+        mesh.userData.squish[field] = Number(range.value) / 100;
+        syncSquishTwin(mesh);
+        requestRender();
+      });
+      range.addEventListener("change", () => {
+        const mesh = squishSubject();
+        if (mesh?.userData.squish) commit();
+      });
+    }
+    for (const button of document.querySelectorAll("[data-squish-preset]")) {
+      button.addEventListener("click", () => {
+        const preset = SQUISH_PRESETS[button.dataset.squishPreset];
+        const mesh = squishSubject();
+        if (preset && mesh) setSquishOn(mesh, preset, `へこみ（柔らかさ）を「${preset.label}」にしました`);
+      });
+    }
+    document.getElementById("squish-remove").addEventListener("click", () => setSquishOn(squishSubject(), null, "柔らかくするのをやめました"));
+
+    // ===== このパーツの設定（まとめ）と、フォルダへの設定 =====
+    // 揺れ・へこみはパーツごと（個別）か、フォルダごと（中のパーツが受け継ぐ）に付く。
+    // 左右対称・当たり判定・揺れボーンの割り当てはパーツごとだけ。ここではそれを1か所にまとめて見せる。
+    let folderEach = null; // 「中のパーツそれぞれに設定」を選んだフォルダ（その間だけ各パネルで一括編集できる）
+
+    function folderById(id) {
+      return folders.find((folder) => folder.id === id) ?? null;
+    }
+
+    function folderSelected() {
+      if (!folderPick || focusedFolder !== folderPick.id || !folderById(folderPick.id)) return null;
+      if (selection.length !== folderPick.meshes.length || folderPick.meshes.some((mesh) => !selection.includes(mesh))) return null;
+      return folderById(folderPick.id);
+    }
+
+    // フォルダを選んでいて、まだ「それぞれに設定」を選んでいない間は、パーツ用のパネルで一括変更させない
+    function folderLocksPanels() {
+      const folder = folderSelected();
+      return Boolean(folder) && folderEach !== folder.id;
+    }
+
+    function selectFolderById(id) {
+      const folder = folderById(id);
+      if (!folder) return;
+      for (const item of folderChain(folder.parentId)) collapsedFolders.delete(item.id);
+      focusedFolder = id;
+      const meshes = [
+        ...descendantMeshes(id).filter((mesh) => !mesh.userData.hidden),
+        ...descendantLinks(id).filter((link) => !link.hidden).map((link) => linkAnchors.get(link.id)).filter(Boolean),
+        ...folderCurves(id).filter((curve) => !curve.userData.hidden),
+      ];
+      setSelection(meshes, meshes[0] ?? null);
+      folderPick = { id, meshes };
+      renderOutliner();
+    }
+
+    function selectPartById(id) {
+      const mesh = meshById(id);
+      if (!mesh) return;
+      for (const item of folderChain(mesh.userData.folderId)) collapsedFolders.delete(item.id);
+      focusedFolder = null;
+      folderPick = null;
+      select(mesh);
+      renderOutliner();
+    }
+
+    function partName(mesh) {
+      return `${sideText(mesh)}${mesh.userData.label ?? "パーツ"}`;
+    }
+
+    function partFeatureBadges(mesh) {
+      if (!inheritablePart(mesh)) return `<span class="feat-badges"></span>`;
+      const out = [];
+      const badge = (cls, text, inherited, title) => out.push(`<span class="feat ${cls}${inherited ? " inh" : ""}" title="${escapeHtml(title)}">${text}</span>`);
+      if (recordOf(mesh)?.mirror) badge("sym", "対", false, "左右対称：相方あり（個別）");
+      if (mesh.userData.sag) {
+        const from = mesh.userData.sagFrom ? folderById(mesh.userData.sagFrom) : null;
+        badge("sag", "揺", Boolean(from), from ? `揺れ（垂れ・ぷるん）：フォルダ「${from.name}」から` : "揺れ（垂れ・ぷるん）：個別");
+      }
+      if (mesh.userData.squish) {
+        const from = mesh.userData.squishFrom ? folderById(mesh.userData.squishFrom) : null;
+        badge("soft", "凹", Boolean(from), from ? `へこみ（柔らかさ）：フォルダ「${from.name}」から` : "へこみ（柔らかさ）：個別");
+      }
+      if (mesh.userData.collider) badge("col", "当", false, "当たり判定：個別");
+      return `<span class="feat-badges">${out.join("")}</span>`;
+    }
+
+    function folderFeatureBadges(folder) {
+      const out = [];
+      for (const [key, cls, text, label] of [["sag", "sag", "揺", "揺れ（垂れ・ぷるん）"], ["squish", "soft", "凹", "へこみ（柔らかさ）"]]) {
+        if (folder[key]) out.push(`<span class="feat ${cls}" title="${label}：このフォルダ全体に設定">${text}</span>`);
+        else {
+          const from = folderSettingFor(folder.parentId, key);
+          if (from) out.push(`<span class="feat ${cls} inh" title="${label}：フォルダ「${escapeHtml(from.name)}」から">${text}</span>`);
+        }
+      }
+      return `<span class="feat-badges">${out.join("")}</span>`;
+    }
+
+    const percent = (value) => `${Math.round((value ?? 0) * 100)}%`;
+    const jumpFolder = (folder, suffix = "から") => `<button type="button" class="sum-link" data-jump-folder="${escapeHtml(folder.id)}">フォルダ「${escapeHtml(folder.name)}」${suffix}</button>`;
+    const jumpPart = (mesh, text) => `<button type="button" class="sum-link" data-jump-part="${escapeHtml(mesh.userData.id)}">${escapeHtml(text)}</button>`;
+
+    function squishPresetName(squish) {
+      const hit = Object.values(SQUISH_PRESETS).find((preset) => ["softness", "depth", "speed"].every((key) => Math.abs(preset[key] - squish[key]) < 0.005));
+      return hit ? hit.label : "調整済み";
+    }
+
+    function sumRow(name, cls, state, on, source, extra = "") {
+      return `<div class="sum-row" data-feature="${cls}"><span class="sum-name"><span class="feat ${cls}${on ? "" : " inh"}"></span>${name}</span><span class="sum-state${on ? "" : " off"}">${state}</span>${source ? `<span class="sum-source">${source}</span>` : ""}${extra ? `<div class="sum-extra">${extra}</div>` : ""}</div>`;
+    }
+
+    function partSummaryHtml(mesh) {
+      const rows = [];
+      const record = recordOf(mesh);
+      const locked = Boolean(mesh.userData.locked);
+      const twin = record ? otherOf(record, mesh) : null;
+      rows.push(sumRow("左右対称", "sym",
+        twin ? `オン（相方 ${jumpPart(twin, partName(twin))}）` : onCenterLine(mesh) ? "中心のパーツ（相方なし）" : "オフ",
+        Boolean(twin), "個別（パーツごと）"));
+      // 揺れ
+      const sagFolder = folderSettingFor(mesh.userData.folderId, "sag");
+      const mode = sagMode(mesh);
+      const sag = mesh.userData.sag;
+      let sagState = "オフ";
+      if (mode === "own") sagState = `オン（垂れ ${percent(sag.amount)}・揺れ ${percent(sag.wobble)}）`;
+      else if (mode === "follow") {
+        const host = meshById(sag.follow);
+        sagState = host ? `付いて動く（${jumpPart(host, partName(host))}）` : "付いて動く";
+      }
+      let sagSource = mode === "none" ? "" : "個別";
+      if (mesh.userData.sagFrom && folderById(mesh.userData.sagFrom)) sagSource = jumpFolder(folderById(mesh.userData.sagFrom));
+      else if (mesh.userData.sagOff && sagFolder) sagSource = `個別にオフ（${jumpFolder(sagFolder, "")}の設定を外しています）`;
+      const sagRevert = sagFolder && !mesh.userData.sagFrom && !locked
+        ? `<div class="sum-buttons"><button type="button" data-act="revert" data-key="sag">フォルダの設定に戻す</button></div>` : "";
+      rows.push(sumRow("揺れ（垂れ・ぷるん）", "sag", sagState, mode !== "none", sagSource, sagRevert));
+      // へこみ
+      const squishFolder = folderSettingFor(mesh.userData.folderId, "squish");
+      const squish = mesh.userData.squish;
+      let squishSource = squish ? "個別" : "";
+      if (squish && mesh.userData.squishFrom && folderById(mesh.userData.squishFrom)) squishSource = jumpFolder(folderById(mesh.userData.squishFrom));
+      else if (mesh.userData.squishOff && squishFolder) squishSource = `個別にオフ（${jumpFolder(squishFolder, "")}の設定を外しています）`;
+      const squishRevert = squishFolder && !mesh.userData.squishFrom && !locked
+        ? `<div class="sum-buttons"><button type="button" data-act="revert" data-key="squish">フォルダの設定に戻す</button></div>` : "";
+      rows.push(sumRow("へこみ（柔らかさ）", "soft", squish ? `オン（${squishPresetName(squish)}）` : "オフ", Boolean(squish), squishSource, squishRevert));
+      const collider = mesh.userData.collider;
+      rows.push(sumRow("当たり判定", "col", collider ? `オン（${collider.shape === "sphere" ? "球" : "カプセル"}）` : "オフ", Boolean(collider), collider ? "個別（パーツごと）" : ""));
+      const chain = chainOfBone(mesh.userData.bone ?? "");
+      rows.push(sumRow("揺れボーン", "bone", chain ? `「${escapeHtml(chain.name)}」に割り当て` : "割り当てなし", Boolean(chain), chain ? "個別（ボーンとモーションの「パーツの割り当て」）" : ""));
+      return rows.join("");
+    }
+
+    function folderSummaryHtml(folder) {
+      const parts = descendantMeshes(folder.id).filter(inheritablePart);
+      const count = (test) => parts.filter(test).length;
+      const rows = [`<p class="hint">フォルダ「${escapeHtml(folder.name)}」（中のパーツ ${parts.length} 個）。揺れとへこみはフォルダ全体にも設定でき、個別の設定がないパーツが受け継ぎます。</p>`];
+      const scopeButtons = (key, folderOk = true) => `<div class="sum-buttons">
+          <button type="button" data-act="folder" data-key="${key}"${folderOk ? "" : ` disabled title="当たり判定はパーツの形に合わせて付くので、フォルダ全体には付けられません"`}>フォルダ全体に設定</button>
+          <button type="button" data-act="each" data-key="${key}">中のパーツそれぞれに設定</button>
+        </div>`;
+      const inherited = (key) => folderSettingFor(folder.parentId, key);
+      // 揺れ
+      const sagOwn = count((mesh) => mesh.userData.sag && !mesh.userData.sagFrom);
+      let sagExtra = "";
+      if (folder.sag) {
+        sagExtra = `<div class="slider-row"><span>垂れ</span><input type="range" min="0" max="100" step="1" value="${Math.round(folder.sag.amount * 100)}" data-folder-slider="sag.amount" aria-label="フォルダの垂れ" /></div>
+          <div class="slider-row"><span>揺れ</span><input type="range" min="0" max="100" step="1" value="${Math.round(folder.sag.wobble * 100)}" data-folder-slider="sag.wobble" aria-label="フォルダの揺れ" /></div>
+          <div class="sum-buttons"><button type="button" data-act="each" data-key="sag">中のパーツそれぞれに設定</button><button type="button" data-act="clear" data-key="sag">フォルダの設定を外す</button></div>`;
+      } else sagExtra = scopeButtons("sag");
+      rows.push(sumRow("揺れ（垂れ・ぷるん）", "sag",
+        folder.sag ? `フォルダ全体：オン（垂れ ${percent(folder.sag.amount)}・揺れ ${percent(folder.sag.wobble)}）` : inherited("sag") ? `${jumpFolder(inherited("sag"))}受け継ぎ` : "フォルダ全体：オフ",
+        Boolean(folder.sag), `個別の設定があるパーツ：${sagOwn} 個`, sagExtra));
+      // へこみ
+      const squishOwn = count((mesh) => mesh.userData.squish && !mesh.userData.squishFrom);
+      let squishExtra = "";
+      if (folder.squish) {
+        squishExtra = `<div class="sum-buttons">${Object.entries(SQUISH_PRESETS).map(([key, preset]) => `<button type="button" data-act="preset" data-preset="${key}">${preset.label}</button>`).join("")}</div>
+          ${[["softness", "柔らかさ"], ["depth", "厚み"], ["speed", "戻りの速さ"]].map(([field, label]) => `<div class="slider-row"><span>${label}</span><input type="range" min="0" max="100" step="1" value="${Math.round(folder.squish[field] * 100)}" data-folder-slider="squish.${field}" aria-label="フォルダの${label}" /></div>`).join("")}
+          <div class="sum-buttons"><button type="button" data-act="each" data-key="squish">中のパーツそれぞれに設定</button><button type="button" data-act="clear" data-key="squish">フォルダの設定を外す</button></div>`;
+      } else squishExtra = scopeButtons("squish");
+      rows.push(sumRow("へこみ（柔らかさ）", "soft",
+        folder.squish ? `フォルダ全体：オン（${squishPresetName(folder.squish)}）` : inherited("squish") ? `${jumpFolder(inherited("squish"))}受け継ぎ` : "フォルダ全体：オフ",
+        Boolean(folder.squish), `個別の設定があるパーツ：${squishOwn} 個`, squishExtra));
+      const colliders = count((mesh) => mesh.userData.collider);
+      rows.push(sumRow("当たり判定", "col", `パーツごと：${colliders} / ${parts.length} 個`, colliders > 0, "フォルダには付けられません（パーツごとの設定です）", scopeButtons("collider", false)));
+      const paired = count((mesh) => recordOf(mesh)?.mirror);
+      rows.push(sumRow("左右対称", "sym", `相方のあるパーツ：${paired} / ${parts.length} 個`, paired > 0, "パーツごとの設定です（右クリックの「左右対称のパーツを作る」）"));
+      const bones = count((mesh) => chainOfBone(mesh.userData.bone ?? ""));
+      rows.push(sumRow("揺れボーン", "bone", `割り当て：${bones} / ${parts.length} 個`, bones > 0, "パーツごとの設定です（ボーンとモーションの「パーツの割り当て」）"));
+      if (folderEach === folder.id) rows.push(`<p class="hint">「中のパーツそれぞれに設定」中：下のパネルの変更は、選択中の ${selection.length} 個のパーツそれぞれに個別の設定として付きます。</p>`);
+      return rows.join("");
+    }
+
+    function refreshSummaryUI() {
+      const body = document.getElementById("summary-body");
+      if (!body.dataset.ready) return;
+      const section = document.getElementById("summary-section");
+      const blocked = Boolean(maskTarget) || Boolean(reliefTarget) || Boolean(featureTarget) || Boolean(softTarget) || Boolean(faceSession);
+      const folder = folderSelected();
+      const mesh = folder ? null : (inheritablePart(selected) ? selected : null);
+      section.hidden = blocked || (!folder && !mesh);
+      if (section.hidden) return;
+      document.getElementById("summary-heading").textContent = folder ? "このフォルダの設定" : "このパーツの設定";
+      if (folderEach && (!folder || folder.id !== folderEach)) folderEach = null;
+      const note = !folder && selection.length > 1 ? `<p class="hint">選択中 ${selection.length} 個のうち「${escapeHtml(partName(mesh))}」の設定です。</p>` : "";
+      body.innerHTML = folder ? folderSummaryHtml(folder) : `<div class="sum-title">${escapeHtml(partName(mesh))}</div>${note}${partSummaryHtml(mesh)}`;
+    }
+
+    function refreshFolderPanels() {
+      if (!document.getElementById("summary-body").dataset.ready) return;
+      refreshSummaryUI();
+      refreshSagUI();
+      refreshSquishUI();
+      refreshColliderUI();
+    }
+
+    function folderParts(folder) {
+      return descendantMeshes(folder.id).filter((mesh) => inheritablePart(mesh) && !mesh.userData.locked);
+    }
+
+    function applyFolderAction(act, key, button) {
+      const folder = folderSelected();
+      if (act === "revert") {
+        const mesh = selected;
+        if (!mesh || mesh.userData.locked) return;
+        const targets = [mesh];
+        if (symmetric) {
+          const twin = otherOf(recordOf(mesh), mesh);
+          if (twin && !twin.userData.locked) targets.push(twin);
+        }
+        for (const item of targets) {
+          if (key === "sag") setSag(item, null);
+          else setSquish(item, null);
+          delete item.userData[`${key}Off`];
+        }
+        commit();
+        setFileStatus(`「${partName(mesh)}」を、フォルダの${key === "sag" ? "揺れ" : "へこみ"}の設定に戻しました`);
+        return;
+      }
+      if (!folder) return;
+      const label = { sag: "揺れ（垂れ・ぷるん）", squish: "へこみ（柔らかさ）", collider: "当たり判定" }[key];
+      if (act === "folder") {
+        if (key === "sag") folder.sag = readFolderSag({ amount: 0.3, wobble: 0.3, anchor: "back", ease: 1 });
+        else if (key === "squish") folder.squish = { ...readSquish(SQUISH_PRESETS.normal) };
+        else return;
+        commit();
+        const own = folderParts(folder).filter((mesh) => mesh.userData[key] && !mesh.userData[`${key}From`]).length;
+        setFileStatus(`フォルダ「${folder.name}」全体に${label}を設定しました${own ? `（個別の設定がある ${own} 個はそのままです）` : ""}`);
+      } else if (act === "clear") {
+        delete folder[key];
+        commit();
+        setFileStatus(`フォルダ「${folder.name}」の${label}を外しました（個別の設定はそのままです）`);
+      } else if (act === "preset") {
+        const preset = SQUISH_PRESETS[button.dataset.preset];
+        if (!preset || !folder.squish) return;
+        folder.squish = { ...readSquish(preset) };
+        commit();
+        setFileStatus(`フォルダ「${folder.name}」のへこみを「${preset.label}」にしました`);
+      } else if (act === "each") {
+        const parts = folderParts(folder);
+        if (key === "sag") {
+          folderEach = folder.id;
+          setFileStatus(`下の「揺れ（垂れ・ぷるん）」で、中のパーツ ${selection.length} 個それぞれに個別の揺れを設定します`);
+        } else if (key === "squish") {
+          let made = 0;
+          for (const mesh of parts) {
+            if (mesh.userData.squish && !mesh.userData.squishFrom) continue;
+            setSquish(mesh, SQUISH_PRESETS.normal);
+            made++;
+          }
+          commit();
+          setFileStatus(made ? `中のパーツ ${made} 個それぞれを柔らかく（へこみ「普通」）しました。強さはパーツを選んで変えられます` : "中のパーツはすべて個別にへこみが付いています");
+        } else if (key === "collider") {
+          let made = 0;
+          for (const mesh of parts) {
+            if (mesh.userData.collider || !canAddCollider(mesh)) continue;
+            const fitted = fitCollider(mesh);
+            if (!fitted) continue;
+            setCollider(mesh, fitted);
+            syncColliderTwin(mesh);
+            made++;
+          }
+          commit();
+          setFileStatus(made ? `中のパーツ ${made} 個それぞれに当たり判定を付けました` : "当たり判定を付けられるパーツがありませんでした（すでに付いているか、ロック中です）");
+        }
+      }
+      renderOutliner();
+      requestRender();
+    }
+
+    {
+      const body = document.getElementById("summary-body");
+      body.addEventListener("click", (event) => {
+        const folderLink = event.target.closest("[data-jump-folder]");
+        if (folderLink) {
+          selectFolderById(folderLink.dataset.jumpFolder);
+          return;
+        }
+        const partLink = event.target.closest("[data-jump-part]");
+        if (partLink) {
+          selectPartById(partLink.dataset.jumpPart);
+          return;
+        }
+        const button = event.target.closest("button[data-act]");
+        if (button && !button.disabled) applyFolderAction(button.dataset.act, button.dataset.key, button);
+      });
+      body.addEventListener("input", (event) => {
+        const range = event.target.closest("[data-folder-slider]");
+        const folder = folderSelected();
+        if (!range || !folder) return;
+        const [key, field] = range.dataset.folderSlider.split(".");
+        if (!folder[key]) return;
+        const next = { ...folder[key], [field]: Number(range.value) / 100 };
+        folder[key] = (key === "sag" ? readFolderSag(next) : readSquish(next)) ?? folder[key];
+        syncFolderSettings();
+        requestRender();
+      });
+      body.addEventListener("change", (event) => {
+        if (!event.target.closest("[data-folder-slider]")) return;
+        commit();
+        renderOutliner();
+      });
+      body.dataset.ready = "1";
+    }
+
     renderer.setAnimationLoop((time) => {
       if (busyJob?.gpu) return;
       const now = performance.now();
@@ -26397,8 +28296,11 @@ void main() {
         for (const shape of mesh.userData.masks ?? []) if (settled(shape)) boundMasks.add(shape);
       }
       for (const shape of boundMasks) updateCurveBinding(shape);
+      colliderFrameShapes = null;
       updateRigMotion(frameDt);
+      updateStaticChains();
       applyRigPose();
+      colliderFrameShapes = null;
       applyPathSags(frameDt);
       refreshMaskPeers(maskMeshes);
       for (const mesh of maskMeshes) {
@@ -26410,6 +28312,8 @@ void main() {
       updateSoftPreview(frameDt);
       updateSags(maskMeshes, frameDt);
       updateSagGuides();
+      updateColliderGuide();
+      updateSquish(frameDt);
       syncFolderColors();
       updateReliefFrame();
       for (const mesh of maskMeshes) if (shownInScene(mesh)) updateDecal(mesh);
