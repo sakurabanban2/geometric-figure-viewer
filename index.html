@@ -9821,6 +9821,35 @@ self.onmessage = (event) => {
       return anchor?.userData.primary ?? anchor ?? hits[0].object;
     }
 
+    // 中央（ビュー）で選んだものを右のパーツ一覧で見えるようにする。
+    // 閉じたフォルダの中なら祖先フォルダを開き、スクロールの外なら行が見える所までスクロールする。
+    // 一覧のクリック・すべて選択などからは呼ばない（中央で選んだ主選択だけ）。
+    function revealInOutliner(item) {
+      if (!item || faceSession || renaming || item.userData.isMask) return;
+      let type = "part";
+      let id = item.userData.id;
+      if (isCurve(item) || isCurvePart(item)) {
+        type = "curve";
+        id = curveOf(item)?.userData.id;
+      } else if (isLinkAnchor(item)) {
+        type = "link";
+        id = item.userData.linkId;
+      }
+      if (!id) return;
+      let opened = false;
+      const seen = new Set();
+      for (let parentId = itemParent(type, id); parentId && !seen.has(parentId); parentId = itemParent("folder", parentId)) {
+        seen.add(parentId);
+        if (collapsedFolders.delete(parentId)) opened = true;
+      }
+      if (opened) renderOutliner();
+      const tree = document.getElementById("outliner-tree");
+      const row = tree.querySelector(`.outliner-row[data-type="${type}"][data-id="${CSS.escape(id)}"]`);
+      if (!row) return;
+      // 見えていれば動かさない（nearest）。重いモデルでも引っかからないよう、なめらかスクロールは使わない
+      row.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+
     renderer.domElement.addEventListener("contextmenu", (event) => event.preventDefault());
     renderer.domElement.addEventListener("pointerdown", (event) => {
       if (event.button === 0) press = { x: event.clientX, y: event.clientY };
@@ -9877,15 +9906,20 @@ self.onmessage = (event) => {
       if (event.shiftKey && !event.ctrlKey && !event.metaKey) {
         if (selection.includes(hit)) setSelection(selection, hit);
         else setSelection([...selection, hit], hit);
+        revealInOutliner(hit);
         return;
       }
       if (event.ctrlKey || event.metaKey) {
         if (selection.includes(hit)) {
           setSelection(selection.filter((mesh) => mesh !== hit), selected === hit ? null : selected);
-        } else setSelection([...selection, hit], hit);
+        } else {
+          setSelection([...selection, hit], hit);
+          revealInOutliner(hit);
+        }
         return;
       }
       select(hit);
+      revealInOutliner(hit);
     });
 
     document.getElementById("add-sphere").addEventListener("click", () => addShape("sphere"));
