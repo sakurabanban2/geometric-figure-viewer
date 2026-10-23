@@ -5433,6 +5433,15 @@ if (decalOn > 0.5) {
       return 6;
     }
 
+    function hasThin(node) {
+      return Boolean(node?.thin) || (node?.kind === "merged" && Array.isArray(node.parts) && node.parts.some(hasThin));
+    }
+
+    // 平面（印 thin）を含む距離場の結合は、間引かずに全部の格子点で面を作る（間引くと 1 マス厚の平面が消える）
+    function mergeStepOf(merge, detail) {
+      return merge?.parts?.some(hasThin) ? 1 : mergeStep(detail);
+    }
+
     const TRIANGLE_SPEC = Object.freeze({ sides: 3, height: 0.2, circumradius: 0.1, theta0: 0, cone: true });
     const BOX_SPEC = Object.freeze({ sides: 4, height: 0.16, circumradius: 0.08 * Math.SQRT2, theta0: Math.PI / 4, cone: false });
 
@@ -6508,6 +6517,58 @@ if (decalOn > 0.5) {
       return spec;
     }
 
+    const CUT_KINDS = new Set(["sphere", "box", "triangle", "circle", "flatTriangle", "flatSquare"]);
+
+    // 押し込み・盛り上げマスク（シェーダで頂点を動かしている）を CPU で同じ計算をして焼き込んだ形（部品のローカル座標）を返す。なければ null
+    function pushedGeometry(mesh) {
+      const shapes = (mesh.userData.masks || []).filter((shape) => shape.userData.push);
+      if (!shapes.length || !mesh.geometry?.attributes.position) return null;
+      mesh.updateWorldMatrix(true, false);
+      const { boxes, probes, target } = pushRegions(mesh, shapes);
+      // 表示用より 1 段粗く分割する（結合の計算量を約 1/4 に抑える。押し込みはなだらかなので形はほぼ変わらない）
+      const geometry = refinePushGeometry(mesh.geometry, boxes, probes, target * 2);
+      if (!geometry.attributes.normal) geometry.computeVertexNormals();
+      const sums = pushDirections(geometry, probes);
+      const world = mesh.matrixWorld;
+      const toLocal = world.clone().invert();
+      const normalMatrix = new THREE.Matrix3().getNormalMatrix(world);
+      const masks = shapes.map((shape, slot) => {
+        const toShape = maskWorldMatrix(shape, new THREE.Matrix4()).invert();
+        const linear = new THREE.Matrix3().setFromMatrix4(toShape);
+        const sum = sums[slot];
+        const dir = sum && sum.lengthSq() >= 1e-14 ? sum.clone().applyMatrix3(normalMatrix).normalize() : null;
+        return { toShape, fromShape: toShape.clone().invert(), linear, dir, side: shape.userData.raise ? 1 : -1, k: PUSH_SOFT_REACH * Math.min(1, Math.max(0, shape.userData.soft ?? PUSH_SOFT_DEFAULT)), distance: probes[slot].distance };
+      });
+      const position = geometry.attributes.position;
+      const normal = geometry.attributes.normal;
+      const p = new THREE.Vector3();
+      const n = new THREE.Vector3();
+      const q = new THREE.Vector3();
+      const dir = new THREE.Vector3();
+      for (let index = 0; index < position.count; index += 1) {
+        p.fromBufferAttribute(position, index).applyMatrix4(world);
+        n.fromBufferAttribute(normal, index).applyMatrix3(normalMatrix).normalize();
+        for (const mask of masks) {
+          q.copy(p).applyMatrix4(mask.toShape);
+          const at = (x, y, z) => mask.distance(x, y, z) - mask.k;
+          let d = at(q.x, q.y, q.z);
+          if (d >= 0) continue;
+          dir.copy(mask.dir ?? n).applyMatrix3(mask.linear).normalize().multiplyScalar(mask.side);
+          let t = 0;
+          for (let step = 0; step < 48; step += 1) {
+            t += Math.max(-d, 0.0003);
+            d = at(q.x + dir.x * t, q.y + dir.y * t, q.z + dir.z * t);
+            if (d > -0.0003) break;
+          }
+          const push = mask.k > 0.00001 ? t - mask.k + mask.k * Math.exp(-t / mask.k) : t;
+          p.copy(q).addScaledVector(dir, push).applyMatrix4(mask.fromShape);
+        }
+        p.applyMatrix4(toLocal);
+        position.setXYZ(index, p.x, p.y, p.z);
+      }
+      return geometry;
+    }
+
     function mergeNode(mesh, frameInv) {
       mesh.updateWorldMatrix(true, false);
       if (mesh.userData.curveBind) {
@@ -6515,7 +6576,9 @@ if (decalOn > 0.5) {
         mesh.geometry.computeBoundingBox();
       }
       if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
-      const { min, max } = mesh.geometry.boundingBox;
+      const min = mesh.geometry.boundingBox.min.clone();
+      const max = mesh.geometry.boundingBox.max.clone();
+      const pushed = mesh.userData.kind === "merged" ? null : pushedGeometry(mesh);
       let node;
       if (mesh.userData.kind === "merged") {
         const world = mesh.matrixWorld.clone();
@@ -6531,10 +6594,12 @@ if (decalOn > 0.5) {
         };
         const x = mesh.userData.merge.mirrored ? [-max.x, -min.x] : [min.x, max.x];
         node.box = [x[0], min.y, min.z, x[1], max.y, max.z];
-      } else if (mesh.userData.curveBind || domeActive(mesh) || mesh.userData.kind === "loft") {
-        const source = mesh.geometry.attributes.position.array;
+      } else if (pushed || mesh.userData.curveBind || domeActive(mesh) || mesh.userData.kind === "loft") {
+        // パスに沿って曲げたもの・押し込みマスクでへこませたものは、見えている形そのもの（頂点）で結合する
+        const shown = pushed ?? mesh.geometry;
+        const source = shown.attributes.position.array;
         const count = source.length / 3;
-        const original = mesh.geometry.index ? mesh.geometry.index.array : Array.from({ length: count }, (_, index) => index);
+        const original = shown.index ? shown.index.array : Array.from({ length: count }, (_, index) => index);
         const lookup = new Map();
         const remap = new Int32Array(count);
         const positions = [];
@@ -6554,6 +6619,12 @@ if (decalOn > 0.5) {
           const c = remap[original[index + 2]];
           if (a !== b && b !== c && a !== c) indices.push(a, b, c);
         }
+        if (pushed) {
+          pushed.computeBoundingBox();
+          min.copy(pushed.boundingBox.min);
+          max.copy(pushed.boundingBox.max);
+          pushed.dispose();
+        }
         node = {
           kind: "mesh",
           matrix: roundMatrix(new THREE.Matrix4().multiplyMatrices(frameInv, mesh.matrixWorld)),
@@ -6565,7 +6636,10 @@ if (decalOn > 0.5) {
         node = shapeSnapshot(mesh, frameInv);
         node.box = [min.x, min.y, min.z, max.x, max.y, max.z];
       }
-      const cuts = (mesh.userData.masks || []).map((shape) => shapeSnapshot({
+      // 平面（厚み 4mm）は、距離場で結合するときに格子より薄くて消えないよう印を付ける
+      if (FLAT_KINDS.has(mesh.userData.kind)) node.thin = true;
+      // 押し込み・盛り上げのマスクは削らない（上で形に焼き込み済み）
+      const cuts = (mesh.userData.masks || []).filter((shape) => !shape.userData.push && CUT_KINDS.has(shape.userData.kind)).map((shape) => shapeSnapshot({
         userData: shape.userData,
         matrixWorld: maskWorldMatrix(shape, new THREE.Matrix4()),
       }, frameInv));
@@ -6882,6 +6956,7 @@ if (decalOn > 0.5) {
       const lo = [0, 1, 2].map((axis) => Math.max(0, Math.floor((box.min.getComponent(axis) - pad - origin[axis]) / cell)));
       const hi = [nx, ny, nz].map((count, axis) => Math.min(count - 1, Math.ceil((box.max.getComponent(axis) + pad - origin[axis]) / cell)));
       const out = distanceGrid(spec, matrix, grid, lo, hi);
+      const grow = thinGrowth(spec, grid);
       const cuts = (spec.cuts || []).map((cut) => distanceGrid(cut, new THREE.Matrix4().fromArray(cut.matrix), grid, lo, hi));
       const { min, max } = box;
       for (let k = 0; k < nz; k += 1) {
@@ -6900,6 +6975,7 @@ if (decalOn > 0.5) {
               out[index] = Math.max(Math.hypot(Math.max(min.x - x, 0, x - max.x), dy, dz), pad);
               continue;
             }
+            out[index] -= grow;
             for (const cut of cuts) out[index] = carve(out[index], cut[index], cutK);
           }
         }
@@ -6914,12 +6990,24 @@ if (decalOn > 0.5) {
         const fields = node.parts.map((child) => nodeField(child, matrix, grid, own));
         return applyCuts(roundField(unionFields(fields, (node.smooth ?? 0) * MERGE_BLEND), node, grid), node.cuts, parentMatrix, grid, cutK);
       }
-      if (node.kind === "mesh") return applyCuts(meshField(node, matrix, grid), node.cuts, parentMatrix, grid, cutK);
+      if (node.kind === "mesh") return applyCuts(thickenField(meshField(node, matrix, grid), node, grid), node.cuts, parentMatrix, grid, cutK);
       const cuts = (node.cuts || []).map((cut) => ({
         ...cut,
         matrix: roundMatrix(parentMatrix.clone().multiply(new THREE.Matrix4().fromArray(cut.matrix))),
       }));
       return primitiveField({ ...node, cuts }, matrix, grid, cutK);
+    }
+
+    // 4mm の平面は格子（1 マス数 mm〜1cm）より薄く、距離場では面が拾えず消えてしまう。
+    // 印の付いた平面だけ、表面から半マスずつ膨らませて（厚み 4mm + 1 マス）どの向きでも格子に拾われるようにする
+    function thinGrowth(node, grid) {
+      return node.thin ? grid.cell * 0.5 : 0;
+    }
+
+    function thickenField(field, node, grid) {
+      const grow = thinGrowth(node, grid);
+      if (grow > 0) for (let index = 0; index < field.length; index += 1) field[index] -= grow;
+      return field;
     }
 
     function mergeNeed(node) {
@@ -7873,7 +7961,7 @@ if (decalOn > 0.5) {
     function mergedSurface(merge, detail = 1) {
       if (usesFieldMerge(merge)) {
         const entry = mergeEntry(merge);
-        return surfaceNets(roundField(unionFields(entry.fields, (merge.smooth ?? 0) * MERGE_BLEND), merge, entry.grid), entry.grid, mergeStep(detail));
+        return surfaceNets(roundField(unionFields(entry.fields, (merge.smooth ?? 0) * MERGE_BLEND), merge, entry.grid), entry.grid, mergeStepOf(merge, detail));
       }
       return fusedSurface(merge, detail) ?? contactSurface(merge, detail);
     }
@@ -8258,7 +8346,7 @@ if (decalOn > 0.5) {
     // Worker のコードは、同じ関数の本文（toString）と定数から組み立てるので、結果はメインスレッドで計算したものと同じになる。
     const MERGE_WORKER_FUNCTIONS = [mergeNeed, mergeGrid, worldBox, specBox, nodeField, primitiveField, carve, distanceGrid, distanceFunction,
       taperHalf, shapeSpec, shapeDistanceFunction, roundedDistance, intersectRound, sdRoundedPoly, bodyDistance, roundLimit, bodyRounding,
-      polygonDistance, flatOutline, roundMatrix, meshField, unionFields, contactMin, smoothMin, roundField, blurField, applyCuts, surfaceNets, creaseDistance];
+      polygonDistance, flatOutline, roundMatrix, meshField, thinGrowth, thickenField, unionFields, contactMin, smoothMin, roundField, blurField, applyCuts, surfaceNets, creaseDistance];
     const mergeWorkers = [];
     let mergeWorkerSource = null;
     let mergeWorkerBroken = false;
@@ -8399,7 +8487,7 @@ self.onmessage = (event) => {
     async function prefetchMergedGeometry(merge, detail = 1) {
       if (!merge || merge.flat) return;
       const entry = await mergeEntryAsync(merge);
-      const step = mergeStep(detail);
+      const step = mergeStepOf(merge, detail);
       const key = mergeSurfaceKey(merge, entry, step);
       if (mergeSurfaceCache.has(key)) return;
       try {
@@ -8421,14 +8509,14 @@ self.onmessage = (event) => {
     function buildMergedGeometry(mesh) {
       const merge = mesh.userData.merge;
       const entry = merge.flat ? null : mergeEntry(merge);
-      const ready = entry ? mergeSurfaceCache.get(mergeSurfaceKey(merge, entry, mergeStep(detailOf(mesh)))) : null;
+      const ready = entry ? mergeSurfaceCache.get(mergeSurfaceKey(merge, entry, mergeStepOf(merge, detailOf(mesh)))) : null;
       const field = !entry ? null : ready ? ready.field : roundField(unionFields(entry.fields, merge.smooth * MERGE_BLEND), merge, entry.grid);
       const prebuilt = ready?.built && usesFieldMerge(merge)
         ? { positions: ready.built.positions.slice(), normals: ready.built.normals.slice(), indices: ready.built.indices.slice() }
         : null;
       const built = !entry
         ? buildFlatShape(merge, detailOf(mesh))
-        : prebuilt ?? (usesFieldMerge(merge) ? surfaceNets(field, entry.grid, mergeStep(detailOf(mesh))) : mergedSurface(merge, detailOf(mesh)));
+        : prebuilt ?? (usesFieldMerge(merge) ? surfaceNets(field, entry.grid, mergeStepOf(merge, detailOf(mesh))) : mergedSurface(merge, detailOf(mesh)));
       if (merge.mirrored) {
         for (let i = 0; i < built.positions.length; i += 3) {
           built.positions[i] = -built.positions[i];
@@ -8511,7 +8599,8 @@ self.onmessage = (event) => {
       if (!node || depth > 8 || !(MERGE_KINDS.has(node.kind) || FLAT_KINDS.has(node.kind)) || !isVector(node.matrix, 16)) return false;
       if (node.box != null && !isVector(node.box, 6)) return false;
       if (node.flat != null && typeof node.flat !== "boolean") return false;
-      if (node.cuts != null && (!Array.isArray(node.cuts) || !node.cuts.every((cut) => cut && ["sphere", "box", "triangle"].includes(cut.kind) && isVector(cut.matrix, 16)))) return false;
+      if (node.thin != null && typeof node.thin !== "boolean") return false;
+      if (node.cuts != null && (!Array.isArray(node.cuts) || !node.cuts.every((cut) => cut && CUT_KINDS.has(cut.kind) && isVector(cut.matrix, 16)))) return false;
       for (const field of ["morph", "sphere", "bulge", "taper", "smooth", "round", "cut"]) {
         if (node[field] != null && (typeof node[field] !== "number" || node[field] < 0 || node[field] > 1)) return false;
       }
@@ -8565,7 +8654,9 @@ self.onmessage = (event) => {
       if (maskTarget) return;
       const picked = mergeCandidates();
       if (picked.length < 2) return;
-      if (picked.every(isFlatPart)) fuseParts(picked, { smooth: 0, flat: true });
+      // パスに沿って曲げた平面は平らな板としては結合できない（曲がりが消えて元の位置に戻る）ので、見えている形のまま立体として結合する
+      const bent = picked.some((mesh) => mesh.userData.curveBind);
+      if (picked.every(isFlatPart)) fuseParts(picked, bent ? { smooth: 0 } : { smooth: 0, flat: true });
       else fuseParts(picked, { smooth: MERGE_DEFAULT });
     }
 
