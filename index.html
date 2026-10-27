@@ -2044,8 +2044,8 @@
   <div id="cloth-pane" hidden>
     <header><strong>布の展開図</strong><button id="cloth-make" type="button" title="選んでいる平面パーツを布パーツにする／やめる">布にする</button><button id="cloth-fit" type="button" title="全体が見えるように表示">全体</button><button id="cloth-close" type="button" title="閉じる">×</button></header>
     <div id="seam-tools" title="布どうし・布と体をつなぐ（つなぎ）">つなぐ:<button type="button" data-seam="sew" title="縫い：2つの布の点を縫い合わせる">縫い</button><button type="button" data-seam="edge" title="辺縫い：布の辺と辺をまるごと縫い合わせる（同じ布の向かいの辺なら筒になる）">辺縫い</button><button type="button" data-seam="pin" title="留め：布の点を別の布か体のパーツに固定（2点目を布の外でクリックすると体に留める）">留め</button><button type="button" data-seam="slide" title="スライド：つないだまま滑れる">スライド</button><button type="button" data-seam="cinch" title="締め：布を締める帯（いまは印のみ。変形はあとで）">締め</button><button type="button" id="seam-help-toggle" title="つなぎの使い方">?</button></div>
-    <div id="seam-help" hidden>「縫い／留め／スライド／締め」を押してから、展開図で布の1点目→2点目をクリックするとつなぎができます（頂点・辺に吸着）。留めは2点目を布の外でクリックすると、いちばん近い体のパーツに留めます。3Dビューでも「留め」を押した状態（またはメニュー「布を体に留める（3Dでクリック）」）で、布の点→体のパーツの表面の順にクリックすると、その場所に留められます。3Dでつなぎの線をクリックして選び、Deleteで削除できます。つなぎの線をクリックで選択し、下の欄で種類の変更・削除（Deleteキー）ができ、端をドラッグで位置を動かせます。「辺縫い」は辺の上を2回クリック（1本目の辺→2本目の辺）で、辺どうしをまるごと縫い合わせます。同じ布の向かいの辺を選ぶと筒・輪になります。ねじれたら下の欄の「向きを反転」。Escで中止。3Dビューにも線と点で表示され、保存・元に戻すに対応しています。<br>「布シミュ」の「開始」で布がばねで動きます（重力で垂れ、縫いは引き寄せ、留めは固定、スライドは弱くつなぎ、締めは縮める）。両端を縫った細い布は輪になります。「停止」で元の布に戻ります（パーツは変わりません）。</div>
-    <div id="sim-tools" title="ばねで布を動かして、垂れ方や縫い合わせの形を見る">布シミュ:<button type="button" id="sim-run">開始</button><button type="button" id="sim-reset" title="最初の形からやり直す">やり直し</button><label title="布の伸びにくさ">硬さ<input id="sim-stiff" type="range" min="0" max="1" step="0.05"></label><label title="折れ曲がりにくさ">曲げ<input id="sim-bend" type="range" min="0" max="1" step="0.05"></label><label><input id="sim-gravity" type="checkbox">重力</label><label><input id="sim-collide" type="checkbox">体に当たる</label></div>
+    <div id="seam-help" hidden>「縫い／留め／スライド／締め」を押してから、展開図で布の1点目→2点目をクリックするとつなぎができます（頂点・辺に吸着）。留めは2点目を布の外でクリックすると、いちばん近い体のパーツに留めます。3Dビューでも「留め」を押した状態（またはメニュー「布を体に留める（3Dでクリック）」）で、布の点→体のパーツの表面の順にクリックすると、その場所に留められます。3Dでつなぎの線をクリックして選び、Deleteで削除できます。つなぎの線をクリックで選択し、下の欄で種類の変更・削除（Deleteキー）ができ、端をドラッグで位置を動かせます。「辺縫い」は辺の上を2回クリック（1本目の辺→2本目の辺）で、辺どうしをまるごと縫い合わせます。同じ布の向かいの辺を選ぶと筒・輪になります。ねじれたら下の欄の「向きを反転」。Escで中止。3Dビューにも線と点で表示され、保存・元に戻すに対応しています。<br>「布シミュ」の「開始」で布がばねで動きます（重力で垂れ、縫いは引き寄せ、留めは固定、スライドは弱くつなぎ、締めは縮める）。両端を縫った細い布は輪になります。「停止」で元の布に戻ります（パーツは変わりません）。「密着」を上げると体の表面に沿って吸い付きます。体との当たりは見た目の表面（垂れも含む）で調べ、とがった所は布を突き抜けにくくしています。</div>
+    <div id="sim-tools" title="ばねで布を動かして、垂れ方や縫い合わせの形を見る">布シミュ:<button type="button" id="sim-run">開始</button><button type="button" id="sim-reset" title="最初の形からやり直す">やり直し</button><label title="布の伸びにくさ">硬さ<input id="sim-stiff" type="range" min="0" max="1" step="0.05"></label><label title="折れ曲がりにくさ">曲げ<input id="sim-bend" type="range" min="0" max="1" step="0.05"></label><label title="体の表面にどれだけ吸い付くか">密着<input id="sim-hug" type="range" min="0" max="1" step="0.05"></label><label><input id="sim-gravity" type="checkbox">重力</label><label><input id="sim-collide" type="checkbox">体に当たる</label></div>
     <canvas id="cloth-canvas"></canvas>
     <div id="seam-info">つなぎ: なし</div>
     <div id="cloth-info">布パーツはまだありません</div>
@@ -29357,13 +29357,139 @@ void main() {
       canvas.addEventListener("pointerleave", () => { seamHover = null; clothPaneDirty = true; });
     }
 
+    // ===== 布の当たり：体のパーツの表面を細かい点（位置と向き）で表し、近い点で押し出す =====
+    // とがった所（頂点の面の向きがばらばら）は布の目より少し大きく守り、平らな所はぴったり付ける。
+    const COLLIDE_CELL = 0.02;
+    const colHashKey = (x, y, z) => ((x * 73856093) ^ (y * 19349663) ^ (z * 83492791)) | 0;
+    function buildSurfaceSamples(mesh, spacing) {
+      const geometry = mesh.geometry;
+      const pos = geometry.attributes.position;
+      if (!pos) return null;
+      const index = geometry.index;
+      const count = index ? index.count : pos.count;
+      mesh.updateWorldMatrix(true, false);
+      const m = mesh.matrixWorld;
+      const world = new Float32Array(pos.count * 3);
+      const v = new THREE.Vector3();
+      for (let i = 0; i < pos.count; i++) { v.fromBufferAttribute(pos, i).applyMatrix4(m); world.set([v.x, v.y, v.z], i * 3); }
+      const pts = [], nrm = [], sharp = [];
+      const vertexNormals = new Map();
+      const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), n = new THREE.Vector3(), e1 = new THREE.Vector3(), e2 = new THREE.Vector3();
+      const at = (i, out) => out.set(world[i * 3], world[i * 3 + 1], world[i * 3 + 2]);
+      for (let t = 0; t + 2 < count; t += 3) {
+        const ia = index ? index.getX(t) : t, ib = index ? index.getX(t + 1) : t + 1, ic = index ? index.getX(t + 2) : t + 2;
+        at(ia, a); at(ib, b); at(ic, c);
+        e1.subVectors(b, a); e2.subVectors(c, a); n.crossVectors(e1, e2);
+        const area2 = n.length();
+        if (area2 < 1e-12) continue;
+        n.divideScalar(area2);
+        for (const vi of [ia, ib, ic]) {
+          const key = `${Math.round(world[vi * 3] * 1e4)},${Math.round(world[vi * 3 + 1] * 1e4)},${Math.round(world[vi * 3 + 2] * 1e4)}`;
+          let entry = vertexNormals.get(key);
+          if (!entry) vertexNormals.set(key, entry = { p: [world[vi * 3], world[vi * 3 + 1], world[vi * 3 + 2]], sum: new THREE.Vector3(), list: [] });
+          entry.sum.addScaledVector(n, area2);
+          if (entry.list.length < 12) entry.list.push(n.clone());
+        }
+        const steps = Math.max(1, Math.min(40, Math.ceil(Math.sqrt(area2 / 2) / spacing)));
+        for (let i = 0; i <= steps; i++) for (let j = 0; j + i <= steps; j++) {
+          const u = (i + 0.33) / (steps + 1), w = (j + 0.33) / (steps + 1);
+          if (u + w > 1) continue;
+          pts.push(a.x + e1.x * u + e2.x * w, a.y + e1.y * u + e2.y * w, a.z + e1.z * u + e2.z * w);
+          nrm.push(n.x, n.y, n.z);
+          sharp.push(0);
+        }
+      }
+      for (const entry of vertexNormals.values()) {
+        const avg = entry.sum.clone().normalize();
+        let spread = 0;
+        for (const item of entry.list) spread = Math.max(spread, 1 - item.dot(avg));
+        if (spread < 0.15) continue; // なめらかな所は面の点で十分
+        pts.push(...entry.p); nrm.push(avg.x, avg.y, avg.z); sharp.push(Math.min(1, spread));
+      }
+      const hash = new Map();
+      for (let i = 0; i < sharp.length; i++) {
+        const key = colHashKey(Math.floor(pts[i * 3] / COLLIDE_CELL), Math.floor(pts[i * 3 + 1] / COLLIDE_CELL), Math.floor(pts[i * 3 + 2] / COLLIDE_CELL));
+        let list = hash.get(key);
+        if (!list) hash.set(key, list = []);
+        list.push(i);
+      }
+      const sphere = new THREE.Sphere();
+      if (!geometry.boundingSphere) geometry.computeBoundingSphere();
+      sphere.copy(geometry.boundingSphere).applyMatrix4(m);
+      sphere.radius += COLLIDE_CELL;
+      return { pts: new Float32Array(pts), nrm: new Float32Array(nrm), sharp: new Float32Array(sharp), hash, sphere, key: m.elements.join(",") };
+    }
+
+    function buildColliders(cellSize) {
+      const list = [];
+      const meshes = editableMeshes().filter((mesh) => !mesh.userData.cloth && !mesh.userData.hidden && !mesh.userData.isMask && mesh.visible && mesh.geometry?.attributes?.position);
+      let tris = 0;
+      for (const mesh of meshes) tris += (mesh.geometry.index ? mesh.geometry.index.count : mesh.geometry.attributes.position.count) / 3;
+      const spacing = Math.max(0.004, Math.min(cellSize * 0.6, 0.012));
+      for (const mesh of meshes) {
+        const surface = buildSurfaceSamples(mesh, tris > 60000 ? spacing * 1.5 : spacing);
+        if (surface && surface.sharp.length) list.push({ mesh, surface });
+      }
+      return list;
+    }
+
+    function collideCloth(state) {
+      const sagD = new THREE.Vector3(), q = new THREE.Vector3(), guess = new THREE.Vector3();
+      const hug = clothSim.hug ?? 0.5;
+      for (const col of state.colliders) {
+        col.mesh.updateWorldMatrix(true, false);
+        if (col.surface.key !== col.mesh.matrixWorld.elements.join(",")) col.surface = buildSurfaceSamples(col.mesh, state.sampleSpacing) ?? col.surface;
+        col.sag = sagUniformsOf(col.mesh);
+        col.reach = col.surface.sphere.radius + (col.sag ? Math.abs(col.sag.sagStrength.value) * 1.4 + col.sag.sagWobble.value.length() : 0);
+      }
+      const base = 0.0025, guard = state.cellSize * 0.7, hugRange = 0.004 + hug * 0.02;
+      for (const c of state.cloths) {
+        const p = c.pos, prev = c.prev;
+        for (let k = 0; k < p.length; k += 3) {
+          for (const col of state.colliders) {
+            q.set(p[k], p[k + 1], p[k + 2]);
+            if (q.distanceToSquared(col.surface.sphere.center) > col.reach * col.reach) continue;
+            if (col.sag) { sagOffsetCpu(col.sag, q, sagD); guess.copy(q).sub(sagD); sagOffsetCpu(col.sag, guess, sagD); q.sub(sagD); }
+            const { pts, nrm, sharp, hash } = col.surface;
+            const cx = Math.floor(q.x / COLLIDE_CELL), cy = Math.floor(q.y / COLLIDE_CELL), cz = Math.floor(q.z / COLLIDE_CELL);
+            let best = -1, bestD = COLLIDE_CELL * COLLIDE_CELL * 2.2;
+            for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
+              const list = hash.get(colHashKey(cx + dx, cy + dy, cz + dz));
+              if (!list) continue;
+              for (const i of list) {
+                const ox = q.x - pts[i * 3], oy = q.y - pts[i * 3 + 1], oz = q.z - pts[i * 3 + 2];
+                // とがった点は少し遠くても優先する
+                const d2 = (ox * ox + oy * oy + oz * oz) * (1 - sharp[i] * 0.5);
+                if (d2 < bestD) { bestD = d2; best = i; }
+              }
+            }
+            if (best < 0) continue;
+            const nx = nrm[best * 3], ny = nrm[best * 3 + 1], nz = nrm[best * 3 + 2];
+            const d = (q.x - pts[best * 3]) * nx + (q.y - pts[best * 3 + 1]) * ny + (q.z - pts[best * 3 + 2]) * nz;
+            const margin = base + sharp[best] * guard;
+            let move = 0;
+            if (d < margin) move = margin - d;
+            else if (hug > 0 && d < margin + hugRange) move = -(d - margin) * 0.25 * hug;
+            else continue;
+            q.x += nx * move; q.y += ny * move; q.z += nz * move;
+            if (col.sag) q.add(sagOffsetCpu(col.sag, q, sagD));
+            p[k] = q.x; p[k + 1] = q.y; p[k + 2] = q.z;
+            if (move > 0) {
+              // 当たっている所は少し止めて、表面に落ち着かせる
+              prev[k] += (p[k] - prev[k]) * 0.35; prev[k + 1] += (p[k + 1] - prev[k + 1]) * 0.35; prev[k + 2] += (p[k + 2] - prev[k + 2]) * 0.35;
+            }
+          }
+        }
+      }
+    }
+
     // ===== 布シミュレーション（ばね） =====
-    var clothSim = { stiff: 0.9, bend: 0.3, gravity: true, collide: true };
+    var clothSim = { stiff: 0.9, bend: 0.3, hug: 0.5, gravity: true, collide: true };
     let simState = null;
     function readClothSim(value) {
       const v = value && typeof value === "object" ? value : {};
       const num = (x, d) => (Number.isFinite(x) ? roundNumber(Math.max(0, Math.min(1, x))) : d);
-      return { stiff: num(v.stiff, 0.9), bend: num(v.bend, 0.3), gravity: v.gravity !== false, collide: v.collide !== false };
+      return { stiff: num(v.stiff, 0.9), bend: num(v.bend, 0.3), hug: num(v.hug, 0.5), gravity: v.gravity !== false, collide: v.collide !== false };
     }
     function serializeClothSim() {
       const d = readClothSim({});
@@ -29376,7 +29502,7 @@ void main() {
       for (const mesh of clothParts()) {
         if (mesh.userData.hidden) continue;
         const [w, h] = clothSize(mesh);
-        const cell = Math.max(Math.sqrt((w * h) / 500), 0.006);
+        const cell = Math.max(Math.sqrt((w * h) / 900), 0.005);
         const cols = Math.max(2, Math.min(60, Math.round(w / cell) + 1));
         const rows = Math.max(2, Math.min(60, Math.round(h / cell) + 1));
         const n = cols * rows;
@@ -29411,7 +29537,7 @@ void main() {
         const view = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color, side: THREE.DoubleSide, roughness: 0.85 }));
         view.raycast = () => {};
         scene.add(view);
-        const cloth = { mesh, cols, rows, pos, prev, uv, springs, view, wasVisible: mesh.visible, offset: total };
+        const cloth = { cell: Math.min(w / (cols - 1), h / (rows - 1)), mesh, cols, rows, pos, prev, uv, springs, view, wasVisible: mesh.visible, offset: total };
         mesh.visible = false;
         total += n;
         cloths.push(cloth);
@@ -29443,17 +29569,11 @@ void main() {
         const rest = seam.type === "cinch" ? d * (1 - (seam.tight ?? 0.3)) : 0;
         links.push({ kind: seam.type, a, ia, b, ib, rest, k: seam.type === "slide" ? 0.15 : seam.type === "cinch" ? 0.3 : 0.5 });
       }
-      const colliders = [];
-      if (clothSim.collide) {
-        for (const mesh of editableMeshes()) {
-          if (mesh.userData.cloth || mesh.userData.hidden || mesh.userData.isMask || !mesh.visible || !mesh.geometry) continue;
-          if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
-          const box = mesh.geometry.boundingBox;
-          if (!box || box.isEmpty()) continue;
-          colliders.push({ mesh, center: box.getCenter(new THREE.Vector3()), half: box.getSize(new THREE.Vector3()).multiplyScalar(0.5).max(new THREE.Vector3(1e-4, 1e-4, 1e-4)), inv: new THREE.Matrix4(), sphere: new THREE.Sphere() });
-        }
-      }
-      return { cloths, links, colliders, frame: 0 };
+      let minCell = 0.02;
+      for (const c of cloths) minCell = Math.min(minCell, c.cell);
+      const colliders = clothSim.collide ? buildColliders(minCell) : [];
+      const sampleSpacing = Math.max(0.004, Math.min(minCell * 0.6, 0.012));
+      return { cloths, links, colliders, frame: 0, cellSize: minCell, sampleSpacing };
     }
 
     function stepClothSim(state, dt) {
@@ -29501,43 +29621,7 @@ void main() {
           pa[ax] += dx * f; pa[ax + 1] += dy * f; pa[ax + 2] += dz * f;
           pb[bx] -= dx * f; pb[bx + 1] -= dy * f; pb[bx + 2] -= dz * f;
         }
-      }
-      // 体のパーツとの当たり（各パーツの箱を楕円体として近似）
-      if (state.colliders.length) {
-        for (const col of state.colliders) {
-          col.mesh.updateWorldMatrix(true, false);
-          col.inv.copy(col.mesh.matrixWorld).invert();
-          col.sphere.center.copy(col.center).applyMatrix4(col.mesh.matrixWorld);
-          col.sphere.radius = col.half.length() * col.mesh.matrixWorld.getMaxScaleOnAxis() * 1.1;
-          col.sag = sagUniformsOf(col.mesh);
-          if (col.sag) col.sphere.radius += Math.abs(col.sag.sagStrength.value) * 1.4 + col.sag.sagWobble.value.length();
-        }
-        const sagD = new THREE.Vector3();
-        const margin = 1.04;
-        for (const c of state.cloths) {
-          const p = c.pos;
-          for (let k = 0; k < p.length; k += 3) {
-            tmp.set(p[k], p[k + 1], p[k + 2]);
-            for (const col of state.colliders) {
-              if (tmp.distanceToSquared(col.sphere.center) > col.sphere.radius ** 2) continue;
-              // 垂れているパーツは、見た目の位置から元の形の位置へ戻して当たりを調べる（ずれの逆を2回で近似）
-              const rest = tmp.clone();
-              if (col.sag) {
-                sagOffsetCpu(col.sag, rest, sagD);
-                const guess = tmp.clone().sub(sagD);
-                sagOffsetCpu(col.sag, guess, sagD);
-                rest.copy(tmp).sub(sagD);
-              }
-              const local = rest.applyMatrix4(col.inv).sub(col.center);
-              const r = Math.hypot(local.x / col.half.x, local.y / col.half.y, local.z / col.half.z);
-              if (r >= margin || r < 1e-6) continue;
-              local.multiplyScalar(margin / r).add(col.center).applyMatrix4(col.mesh.matrixWorld);
-              if (col.sag) local.add(sagOffsetCpu(col.sag, local, sagD));
-              tmp.copy(local);
-              p[k] = tmp.x; p[k + 1] = tmp.y; p[k + 2] = tmp.z;
-            }
-          }
-        }
+        if ((it === 2 || it === 5) && state.colliders.length) collideCloth(state);
       }
       // 床
       for (const c of state.cloths) for (let k = 1; k < c.pos.length; k += 3) if (c.pos[k] < 0.002) { c.pos[k] = 0.002; c.prev[k] = 0.002; }
@@ -29594,16 +29678,18 @@ void main() {
       const sync = () => {
         document.getElementById("sim-stiff").value = clothSim.stiff;
         document.getElementById("sim-bend").value = clothSim.bend;
+        document.getElementById("sim-hug").value = clothSim.hug;
         document.getElementById("sim-gravity").checked = clothSim.gravity;
         document.getElementById("sim-collide").checked = clothSim.collide;
       };
       sync();
       window.addEventListener("gfv-sim-sync", sync);
-      for (const id of ["sim-stiff", "sim-bend", "sim-gravity", "sim-collide"]) {
+      for (const id of ["sim-stiff", "sim-bend", "sim-hug", "sim-gravity", "sim-collide"]) {
         document.getElementById(id).addEventListener("change", () => {
           clothSim = readClothSim({
             stiff: Number(document.getElementById("sim-stiff").value),
             bend: Number(document.getElementById("sim-bend").value),
+            hug: Number(document.getElementById("sim-hug").value),
             gravity: document.getElementById("sim-gravity").checked,
             collide: document.getElementById("sim-collide").checked,
           });
