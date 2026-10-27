@@ -241,6 +241,11 @@
     #cloth-pane header strong { flex: 1; }
     #cloth-pane button { font-size: 11px; }
     #cloth-canvas { flex: 1; min-height: 0; width: 100%; cursor: default; touch-action: none; }
+    #seam-tools { display: flex; gap: 3px; align-items: center; padding: 3px 6px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); flex-wrap: wrap; }
+    #seam-tools button.active { outline: 2px solid #ffbe6e; background: rgba(255, 190, 110, 0.25); }
+    #seam-help { padding: 4px 6px; color: #bbb; line-height: 1.5; border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
+    #seam-info { padding: 3px 6px; min-height: 26px; box-sizing: border-box; white-space: nowrap; overflow: hidden; border-top: 1px solid rgba(255, 255, 255, 0.12); }
+    #seam-info[hidden], #seam-help[hidden] { display: none; }
     #cloth-info { padding: 3px 6px; border-top: 1px solid rgba(255, 255, 255, 0.12); color: #aaa; }
 
     #ruler-canvas {
@@ -2032,7 +2037,10 @@
   <input id="folder-color-input" type="color" tabindex="-1" aria-hidden="true" />
   <div id="cloth-pane" hidden>
     <header><strong>布の展開図</strong><button id="cloth-make" type="button" title="選んでいる平面パーツを布パーツにする／やめる">布にする</button><button id="cloth-fit" type="button" title="全体が見えるように表示">全体</button><button id="cloth-close" type="button" title="閉じる">×</button></header>
+    <div id="seam-tools" title="布どうし・布と体をつなぐ（つなぎ）">つなぐ:<button type="button" data-seam="sew" title="縫い：2つの布の点を縫い合わせる">縫い</button><button type="button" data-seam="pin" title="留め：布の点を別の布か体のパーツに固定（2点目を布の外でクリックすると体に留める）">留め</button><button type="button" data-seam="slide" title="スライド：つないだまま滑れる">スライド</button><button type="button" data-seam="cinch" title="締め：布を締める帯（いまは印のみ。変形はあとで）">締め</button><button type="button" id="seam-help-toggle" title="つなぎの使い方">?</button></div>
+    <div id="seam-help" hidden>「縫い／留め／スライド／締め」を押してから、展開図で布の1点目→2点目をクリックするとつなぎができます（頂点・辺に吸着）。留めは2点目を布の外でクリックすると、いちばん近い体のパーツに留めます。つなぎの線をクリックで選択し、下の欄で種類の変更・削除（Deleteキー）ができ、端をドラッグで位置を動かせます。Escで中止。3Dビューにも線と点で表示され、保存・元に戻すに対応しています。</div>
     <canvas id="cloth-canvas"></canvas>
+    <div id="seam-info">つなぎ: なし</div>
     <div id="cloth-info">布パーツはまだありません</div>
   </div>
   <div id="cloth-resizer" class="panel-resizer" role="separator" aria-orientation="vertical" aria-label="布の展開図の幅" title="ドラッグで布の展開図の幅を変更" hidden></div>
@@ -10180,7 +10188,7 @@ self.onmessage = (event) => {
           record.solo ? 1 : 0,
           sideSig(record.mesh),
           record.mirror ? sideSig(record.mirror) : "-",
-        ].join("|")).join(";")}|folders:${folderSig}|links:${linkSignature()}|curves:${curveSignature()}|sketches:${sketchSignature()}|rig:${rigSignature()}|planes:${colliderPlaneSignature()}`;
+        ].join("|")).join(";")}|folders:${folderSig}|links:${linkSignature()}|curves:${curveSignature()}|sketches:${sketchSignature()}|rig:${rigSignature()}|planes:${colliderPlaneSignature()}|seams:${seamSignature()}`;
     }
 
     function packMesh(mesh) {
@@ -10266,6 +10274,7 @@ self.onmessage = (event) => {
         sketches: packSketches(),
         rig: rig ? structuredClone(rig) : null,
         colliderPlanes: structuredClone(colliderPlanes),
+        seams: packSeams(),
         anchorMasks: activeAnchors().map((anchor) => ({ anchor, masks: packMaskList(anchor) })),
         records: records.map((record) => ({
           kind: record.kind,
@@ -10396,6 +10405,8 @@ self.onmessage = (event) => {
       if (sketchDrawing && !sketchById(sketchDrawing)) endSketchDraw();
       rig = readRig(state.rig);
       colliderPlanes = readColliderPlanes(state.colliderPlanes);
+      seams = readSeams(state.seams);
+      clothPaneDirty = true;
       if (rigEditing) {
         if (!rig) dropRigMode();
         else if (rigPart && !keep.has(rigPart)) rigPart = null;
@@ -15148,6 +15159,7 @@ self.onmessage = (event) => {
         sketches: sketches.length ? sketches.map(serializeSketch) : undefined,
         rig: rig ? { joints: Object.fromEntries(Object.entries(rig.joints).map(([name, point]) => [name, point.map(roundNumber)])), chains: serializeChains() } : undefined,
         colliderPlanes: serializeColliderPlanes(),
+        seams: serializeSeams(),
         name: MODEL_ID ? modelName : undefined,
         records: records.map((record) => ({
           kind: record.kind,
@@ -15845,6 +15857,8 @@ self.onmessage = (event) => {
       sketches = sanitizeSketches(data.sketches, folderIds);
       rig = readRig(data.rig);
       colliderPlanes = readColliderPlanes(data.colliderPlanes);
+      seams = readSeams(data.seams);
+      clothPaneDirty = true;
       updateMaskView();
       for (const [mesh, packed] of reliefJobs) await restorePartRelief(mesh, packed);
       history.length = 0;
@@ -28714,8 +28728,9 @@ void main() {
           ctx.fillRect(corner[0] - 4, corner[1] - 4, 8, 8);
         }
       }
+      drawSeams(ctx, canvas);
       const info = document.getElementById("cloth-info");
-      info.textContent = parts.length
+      info.textContent = parts.length && seams.length ? `布パーツ ${parts.length} 個 · つなぎ ${seams.length} 本 · 線をクリックで選択・端をドラッグで移動` : parts.length
         ? `布パーツ ${parts.length} 個 · クリックで選択 · ドラッグで配置 · 角で大きさ`
         : "布パーツはまだありません（「追加」の「布」か「布にする」）";
     }
@@ -28803,11 +28818,405 @@ void main() {
       }, { passive: false });
       const loop = () => {
         drawClothPane();
+        refreshSeamInfo();
+        updateSeams3d();
         requestAnimationFrame(loop);
       };
       requestAnimationFrame(loop);
     }
 
+    // ===== 布のつなぎ（縫い・留め・スライド・締め） =====
+    var SEAM_TYPES = {
+      sew: { name: "縫い", color: "#ff9e5e" },
+      pin: { name: "留め", color: "#ff5e8a" },
+      slide: { name: "スライド", color: "#6ee0c8" },
+      cinch: { name: "締め", color: "#c89cff" },
+    };
+    var seams = [];
+    var nextSeamId = 1;
+    let seamTool = "";
+    let seamPending = null;
+    let seamSelected = null;
+    let seamDrag = null;
+    let seamHover = null;
+
+    function readSeamEnd(end) {
+      if (!end || typeof end !== "object" || typeof end.part !== "string") return null;
+      if (Array.isArray(end.p) && end.p.length === 3 && end.p.every(Number.isFinite)) return { part: end.part, p: end.p.map(roundNumber) };
+      if (!Number.isFinite(end.x) || !Number.isFinite(end.y)) return null;
+      const clamp = (value) => roundNumber(Math.max(-0.5, Math.min(0.5, value)));
+      return { part: end.part, x: clamp(end.x), y: clamp(end.y) };
+    }
+
+    function readSeams(list) {
+      if (!Array.isArray(list)) return [];
+      const out = [];
+      for (const item of list) {
+        if (!item || !SEAM_TYPES[item.type]) continue;
+        const a = readSeamEnd(item.a), b = readSeamEnd(item.b);
+        if (!a || !b || a.p) continue;
+        const id = typeof item.id === "string" ? item.id : `seam-${nextSeamId++}`;
+        const match = /^seam-(\d+)$/.exec(id);
+        if (match) nextSeamId = Math.max(nextSeamId, Number(match[1]) + 1);
+        const seam = { id, type: item.type, a, b };
+        if (item.type === "cinch") seam.tight = Number.isFinite(item.tight) ? roundNumber(Math.max(0, Math.min(1, item.tight))) : 0.3;
+        out.push(seam);
+      }
+      return out;
+    }
+
+    function packSeams() { return structuredClone(seams ?? []); }
+    function serializeSeams() { return seams?.length ? packSeams() : undefined; }
+    function seamSignature() { return seams?.length ? JSON.stringify(seams) : "-"; }
+
+    function seamLive(seam) {
+      const a = meshById(seam.a.part), b = meshById(seam.b.part);
+      return a?.userData.cloth && b && (seam.b.p || b.userData.cloth) ? [a, b] : null;
+    }
+
+    // 布の正規化座標（-0.5〜0.5、上が+）→ 展開図座標
+    function seamUnfold(mesh, end) {
+      const [w, h] = clothSize(mesh);
+      return [mesh.userData.cloth.u + end.x * w, mesh.userData.cloth.v + end.y * h];
+    }
+
+    // 布の正規化座標 → 3Dのローカル座標
+    function seamLocal(mesh, end) {
+      if (end.p) return new THREE.Vector3(...end.p);
+      const kind = mesh.userData.kind;
+      if (kind === "circle") return new THREE.Vector3(end.x * 0.18, end.y * 0.18, 0.003);
+      if (kind === "flatTriangle") return new THREE.Vector3(end.x * 0.1732, -0.05 + (end.y + 0.5) * 0.15, 0.003);
+      return new THREE.Vector3(end.x * 0.16, end.y * 0.16, 0.003);
+    }
+
+    function seamWorld(mesh, end) {
+      mesh.updateWorldMatrix(true, false);
+      return mesh.localToWorld(seamLocal(mesh, end));
+    }
+
+    function clothOutline(kind) {
+      if (kind === "flatTriangle") return [[0, 0.5], [0.5, -0.5], [-0.5, -0.5]];
+      if (kind === "circle") return Array.from({ length: 16 }, (_, i) => [Math.cos(i * Math.PI / 8) / 2, Math.sin(i * Math.PI / 8) / 2]);
+      return [[-0.5, -0.5], [0.5, -0.5], [0.5, 0.5], [-0.5, 0.5]];
+    }
+
+    // 画面上の点を布の頂点・辺にスナップ（近くなければ布の内側の点）
+    function seamPick(x, y, canvas, only = null) {
+      const parts = only ? [only] : clothParts().slice().reverse();
+      let best = null;
+      for (const mesh of parts) {
+        if (mesh.userData.hidden) continue;
+        const [w, h] = clothSize(mesh);
+        const { u, v } = mesh.userData.cloth;
+        const zoom = clothView.zoom;
+        const toScreen = ([nx, ny]) => clothToScreen(u + nx * w, v + ny * h, canvas);
+        const outline = clothOutline(mesh.userData.kind);
+        const consider = (nx, ny, extra) => {
+          const [sx, sy] = toScreen([nx, ny]);
+          const d = Math.hypot(sx - x, sy - y) + extra;
+          if (!best || d < best.d) best = { mesh, x: nx, y: ny, d };
+        };
+        for (const point of outline) if (mesh.userData.kind !== "circle") consider(point[0], point[1], -4);
+        for (let i = 0; i < outline.length; i++) {
+          const p = outline[i], q = outline[(i + 1) % outline.length];
+          const [px, py] = toScreen(p), [qx, qy] = toScreen(q);
+          const len = (qx - px) ** 2 + (qy - py) ** 2 || 1;
+          let t = ((x - px) * (qx - px) + (y - py) * (qy - py)) / len;
+          t = Math.max(0, Math.min(1, t));
+          let nx = p[0] + (q[0] - p[0]) * t, ny = p[1] + (q[1] - p[1]) * t;
+          if (mesh.userData.kind === "circle") { const r = Math.hypot(nx, ny) * 2 || 1; nx /= r; ny /= r; }
+          consider(nx, ny, 0);
+        }
+        if (!best || best.mesh !== mesh || best.d > 10) {
+          const nx = (clothFromScreen(x, y, canvas)[0] - u) / w, ny = (clothFromScreen(x, y, canvas)[1] - v) / h;
+          const ctx = canvas.getContext("2d");
+          const ratio = window.devicePixelRatio || 1;
+          ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+          clothShapePath(ctx, mesh, canvas);
+          if (ctx.isPointInPath(x * ratio, y * ratio)) best = { mesh, x: nx, y: ny, d: 10 };
+        }
+        if (best && best.d <= 10 && !only) break;
+        void zoom;
+      }
+      if (!best || (!only && best.d > 10)) return null;
+      return { mesh: best.mesh, x: roundNumber(best.x), y: roundNumber(best.y) };
+    }
+
+    function nearestBodyPart(world, exclude) {
+      let best = null;
+      const box = new THREE.Box3();
+      for (const mesh of editableMeshes()) {
+        if (mesh === exclude || mesh.userData.cloth || mesh.userData.hidden || mesh.userData.isMask || !mesh.visible) continue;
+        box.setFromObject(mesh);
+        if (box.isEmpty()) continue;
+        const d = box.distanceToPoint(world);
+        if (!best || d < best.d) best = { mesh, d };
+      }
+      return best?.mesh ?? null;
+    }
+
+    function seamEndScreen(seam, which, canvas) {
+      const end = seam[which];
+      const mesh = meshById(end.part);
+      if (end.p) {
+        const [a] = seamLive(seam);
+        const [ux, uy] = seamUnfold(a, seam.a);
+        const [sx, sy] = clothToScreen(ux, uy, canvas);
+        return [sx + 18, sy - 18];
+      }
+      return clothToScreen(...seamUnfold(mesh, end), canvas);
+    }
+
+    function setSeamTool(type) {
+      seamTool = seamTool === type ? "" : type;
+      seamPending = null;
+      for (const button of document.querySelectorAll("#seam-tools [data-seam]")) button.classList.toggle("active", button.dataset.seam === seamTool);
+      document.getElementById("cloth-canvas").style.cursor = seamTool ? "crosshair" : "default";
+      clothPaneDirty = true;
+    }
+
+    function addSeam(type, a, b) {
+      const seam = { id: `seam-${nextSeamId++}`, type, a, b };
+      if (type === "cinch") seam.tight = 0.3;
+      seams = [...seams, seam];
+      seamSelected = seam.id;
+      commit();
+      setFileStatus(`${SEAM_TYPES[type].name}を追加しました`);
+    }
+
+    function deleteSeam(id) {
+      seams = seams.filter((seam) => seam.id !== id);
+      if (seamSelected === id) seamSelected = null;
+      commit();
+      setFileStatus("つなぎを削除しました");
+    }
+
+    function seamClick(x, y, canvas) {
+      const pick = seamPick(x, y, canvas);
+      if (!seamPending) {
+        if (!pick) return;
+        seamPending = { part: pick.mesh.userData.id, x: pick.x, y: pick.y };
+        clothPaneDirty = true;
+        return;
+      }
+      const a = seamPending;
+      seamPending = null;
+      clothPaneDirty = true;
+      if (!pick) {
+        if (seamTool !== "pin") return;
+        const cloth = meshById(a.part);
+        const world = seamWorld(cloth, a);
+        const body = nearestBodyPart(world, cloth);
+        if (!body) { setFileStatus("留める体のパーツが見つかりません"); return; }
+        body.updateWorldMatrix(true, false);
+        const local = body.worldToLocal(world.clone());
+        addSeam("pin", a, { part: body.userData.id, p: local.toArray().map(roundNumber) });
+        return;
+      }
+      if (pick.mesh.userData.id === a.part && Math.hypot(pick.x - a.x, pick.y - a.y) < 0.02) return;
+      addSeam(seamTool, a, { part: pick.mesh.userData.id, x: pick.x, y: pick.y });
+    }
+
+    function seamHit(x, y, canvas) {
+      let best = null;
+      for (const seam of seams) {
+        if (!seamLive(seam)) continue;
+        const [ax, ay] = seamEndScreen(seam, "a", canvas), [bx, by] = seamEndScreen(seam, "b", canvas);
+        for (const [which, px, py] of [["a", ax, ay], ["b", bx, by]]) {
+          const d = Math.hypot(px - x, py - y);
+          if (d <= 7 && (!best || d < best.d)) best = { seam, end: which, d };
+        }
+        const len = (bx - ax) ** 2 + (by - ay) ** 2 || 1;
+        const t = Math.max(0, Math.min(1, ((x - ax) * (bx - ax) + (y - ay) * (by - ay)) / len));
+        const d = Math.hypot(ax + (bx - ax) * t - x, ay + (by - ay) * t - y) + 1;
+        if (d <= 5 && (!best || d < best.d)) best = { seam, end: null, d };
+      }
+      return best;
+    }
+
+    function drawSeams(ctx, canvas) {
+      ctx.save();
+      for (const seam of seams) {
+        if (!seamLive(seam)) continue;
+        const type = SEAM_TYPES[seam.type];
+        const active = seam.id === seamSelected;
+        const [ax, ay] = seamEndScreen(seam, "a", canvas), [bx, by] = seamEndScreen(seam, "b", canvas);
+        ctx.strokeStyle = type.color;
+        ctx.lineWidth = active ? 3 : 1.6;
+        ctx.setLineDash(seam.type === "slide" ? [6, 4] : seam.type === "cinch" ? [2, 3] : seam.b.p ? [3, 3] : []);
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+        ctx.setLineDash([]);
+        for (const [px, py, body] of [[ax, ay, false], [bx, by, Boolean(seam.b.p)]]) {
+          ctx.fillStyle = type.color;
+          ctx.beginPath();
+          if (body) ctx.rect(px - 4, py - 4, 8, 8); else ctx.arc(px, py, active ? 5 : 3.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        if (seam.type === "sew" || seam.type === "cinch") {
+          const n = Math.max(1, Math.floor(Math.hypot(bx - ax, by - ay) / 14));
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          const nx = -(by - ay), ny = bx - ax, nl = Math.hypot(nx, ny) || 1;
+          for (let i = 1; i < n; i++) {
+            const t = i / n, mx = ax + (bx - ax) * t, my = ay + (by - ay) * t;
+            ctx.moveTo(mx - nx / nl * 4, my - ny / nl * 4); ctx.lineTo(mx + nx / nl * 4, my + ny / nl * 4);
+          }
+          ctx.stroke();
+        }
+        ctx.fillStyle = type.color;
+        ctx.textAlign = "center";
+        ctx.fillText(seam.b.p ? "体に留め" : type.name, (ax + bx) / 2, (ay + by) / 2 - 6);
+      }
+      if (seamPending) {
+        const mesh = meshById(seamPending.part);
+        if (mesh?.userData.cloth) {
+          const [px, py] = clothToScreen(...seamUnfold(mesh, seamPending), canvas);
+          ctx.strokeStyle = SEAM_TYPES[seamTool]?.color ?? "#fff";
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.stroke();
+          if (seamHover) { ctx.setLineDash([4, 4]); ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(seamHover[0], seamHover[1]); ctx.stroke(); }
+        }
+      }
+      if (seamTool && seamHover && seamHover[2]) {
+        const [px, py] = clothToScreen(...seamUnfold(seamHover[2].mesh, seamHover[2]), canvas);
+        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function seamInfoHtml() {
+      const seam = seams.find((item) => item.id === seamSelected && seamLive(item));
+      if (!seam) {
+        if (seamTool) {
+          const step = seamPending ? (seamTool === "pin" ? "2点目の布の点をクリック（布の外をクリックで体に留める）" : "つなぐ先の布の点をクリック") : "1点目の布の点（頂点・辺にスナップ）をクリック";
+          return `${SEAM_TYPES[seamTool].name}: ${step} · Escで中止`;
+        }
+        return "";
+      }
+      const options = Object.entries(SEAM_TYPES).map(([key, type]) => `<option value="${key}"${key === seam.type ? " selected" : ""}${key !== "pin" && seam.b.p ? " disabled" : ""}>${type.name}</option>`).join("");
+      const tight = seam.type === "cinch" ? ` 締め具合 <input id="seam-tight" type="range" min="0" max="1" step="0.05" value="${seam.tight ?? 0.3}" style="width:70px">` : "";
+      return `つなぎ: <select id="seam-type">${options}</select>${tight} <button id="seam-delete" type="button">削除</button>`;
+    }
+
+    let seamInfoKey = "";
+    function refreshSeamInfo() {
+      const box = document.getElementById("seam-info");
+      const key = `${seamSelected}|${seamTool}|${seamPending ? 1 : 0}|${seamSignature()}`;
+      if (key === seamInfoKey) return;
+      seamInfoKey = key;
+      const html = seamInfoHtml();
+      box.innerHTML = html || (seams?.length ? "つなぎ: 線をクリックで選択" : "つなぎ: 上の「縫い」などを押して布の点をクリック");
+    }
+
+    // 3Dビューでの表示（線とマーカー）
+    const seamGroup = new THREE.Group();
+    seamGroup.name = "cloth-seams";
+    seamGroup.renderOrder = 999;
+    scene.add(seamGroup);
+    let seam3dSig = "";
+    function updateSeams3d() {
+      const items = [];
+      for (const seam of seams) {
+        const live = seamLive(seam);
+        if (!live || live[0].userData.hidden) continue;
+        items.push([seam, seamWorld(live[0], seam.a), seamWorld(live[1], seam.b)]);
+      }
+      const sig = items.map(([seam, a, b]) => `${seam.id}${seam.type}${seam.id === seamSelected ? 1 : 0}:${a.toArray().map((n) => n.toFixed(4))}:${b.toArray().map((n) => n.toFixed(4))}`).join(";");
+      if (sig === seam3dSig) return;
+      seam3dSig = sig;
+      for (const child of [...seamGroup.children]) { seamGroup.remove(child); child.geometry.dispose(); child.material.dispose(); }
+      for (const [seam, a, b] of items) {
+        const color = new THREE.Color(SEAM_TYPES[seam.type].color);
+        const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), new THREE.LineBasicMaterial({ color, depthTest: false, transparent: true, opacity: seam.id === seamSelected ? 1 : 0.8 }));
+        const dots = new THREE.Points(new THREE.BufferGeometry().setFromPoints([a, b]), new THREE.PointsMaterial({ color, size: seam.id === seamSelected ? 9 : 6, sizeAttenuation: false, depthTest: false, transparent: true }));
+        for (const object of [line, dots]) { object.renderOrder = 999; object.raycast = () => {}; seamGroup.add(object); }
+      }
+      seamGroup.visible = items.length > 0;
+      requestRender();
+    }
+
+    function setupSeams() {
+      const canvas = document.getElementById("cloth-canvas");
+      canvas.tabIndex = 0;
+      document.getElementById("seam-help-toggle").addEventListener("click", () => { const help = document.getElementById("seam-help"); help.hidden = !help.hidden; });
+      for (const button of document.querySelectorAll("#seam-tools [data-seam]")) button.addEventListener("click", () => setSeamTool(button.dataset.seam));
+      const info = document.getElementById("seam-info");
+      info.addEventListener("change", (event) => {
+        const seam = seams.find((item) => item.id === seamSelected);
+        if (!seam) return;
+        if (event.target.id === "seam-type") {
+          seams = seams.map((item) => item === seam ? { ...readSeams([{ ...item, type: event.target.value }])[0] } : item);
+          commit();
+        } else if (event.target.id === "seam-tight") {
+          seams = seams.map((item) => item === seam ? { ...item, tight: roundNumber(Number(event.target.value)) } : item);
+          commit();
+        }
+      });
+      info.addEventListener("click", (event) => {
+        if (event.target.id === "seam-delete" && seamSelected) deleteSeam(seamSelected);
+      });
+      canvas.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") { if (seamPending) seamPending = null; else if (seamTool) setSeamTool(seamTool); else seamSelected = null; clothPaneDirty = true; event.stopPropagation(); }
+        else if ((event.key === "Delete" || event.key === "Backspace") && seamSelected) { deleteSeam(seamSelected); event.preventDefault(); event.stopPropagation(); }
+      });
+      // 展開図のpointerdownより先に処理する（captureで登録）
+      canvas.addEventListener("pointerdown", (event) => {
+        canvas.focus({ preventScroll: true });
+        if (event.button !== 0) return;
+        if (!clothView) fitClothView();
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left, y = event.clientY - rect.top;
+        if (seamTool) {
+          event.stopImmediatePropagation();
+          seamClick(x, y, canvas);
+          return;
+        }
+        const hit = seamHit(x, y, canvas);
+        if (hit) {
+          event.stopImmediatePropagation();
+          seamSelected = hit.seam.id;
+          clothPaneDirty = true;
+          if (hit.end && !hit.seam[hit.end].p) {
+            canvas.setPointerCapture(event.pointerId);
+            seamDrag = { id: hit.seam.id, end: hit.end, moved: false };
+          }
+          return;
+        }
+        if (seamSelected) { seamSelected = null; clothPaneDirty = true; }
+      }, true);
+      canvas.addEventListener("pointermove", (event) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left, y = event.clientY - rect.top;
+        if (seamDrag) {
+          event.stopImmediatePropagation();
+          const seam = seams.find((item) => item.id === seamDrag.id);
+          const mesh = seam && meshById(seam[seamDrag.end].part);
+          if (!mesh?.userData.cloth) return;
+          const pick = seamPick(x, y, canvas, mesh);
+          if (!pick) return;
+          seam[seamDrag.end] = { part: seam[seamDrag.end].part, x: pick.x, y: pick.y };
+          seamDrag.moved = true;
+          clothPaneDirty = true;
+          return;
+        }
+        if (seamTool && clothView) {
+          const pick = seamPick(x, y, canvas);
+          seamHover = [x, y, pick];
+          clothPaneDirty = true;
+        }
+      }, true);
+      const end = (event) => {
+        if (!seamDrag) return;
+        event.stopImmediatePropagation();
+        if (seamDrag.moved) { seams = seams.map((item) => ({ ...item })); commit(); }
+        seamDrag = null;
+      };
+      canvas.addEventListener("pointerup", end, true);
+      canvas.addEventListener("pointercancel", end, true);
+      canvas.addEventListener("pointerleave", () => { seamHover = null; clothPaneDirty = true; });
+    }
+
+    setupSeams();
     setupClothPane();
   </script>
 </body>
