@@ -2044,8 +2044,8 @@
   <div id="cloth-pane" hidden>
     <header><strong>布の展開図</strong><button id="cloth-make" type="button" title="選んでいる平面パーツを布パーツにする／やめる">布にする</button><button id="cloth-fit" type="button" title="全体が見えるように表示">全体</button><button id="cloth-close" type="button" title="閉じる">×</button></header>
     <div id="seam-tools" title="布どうし・布と体をつなぐ（つなぎ）">つなぐ:<button type="button" data-seam="sew" title="縫い：2つの布の点を縫い合わせる">縫い</button><button type="button" data-seam="edge" title="辺縫い：布の辺と辺をまるごと縫い合わせる（同じ布の向かいの辺なら筒になる）">辺縫い</button><button type="button" data-seam="pin" title="留め：布の点を別の布か体のパーツに固定（2点目を布の外でクリックすると体に留める）">留め</button><button type="button" data-seam="slide" title="スライド：つないだまま滑れる">スライド</button><button type="button" data-seam="cinch" title="締め：布を締める帯（いまは印のみ。変形はあとで）">締め</button><button type="button" id="seam-help-toggle" title="つなぎの使い方">?</button></div>
-    <div id="seam-help" hidden>「縫い／留め／スライド／締め」を押してから、展開図で布の1点目→2点目をクリックするとつなぎができます（頂点・辺に吸着）。留めは2点目を布の外でクリックすると、いちばん近い体のパーツに留めます。3Dビューでも「留め」を押した状態（またはメニュー「布を体に留める（3Dでクリック）」）で、布の点→体のパーツの表面の順にクリックすると、その場所に留められます。3Dでつなぎの線をクリックして選び、Deleteで削除できます。つなぎの線をクリックで選択し、下の欄で種類の変更・削除（Deleteキー）ができ、端をドラッグで位置を動かせます。「辺縫い」は辺の上を2回クリック（1本目の辺→2本目の辺）で、辺どうしをまるごと縫い合わせます。同じ布の向かいの辺を選ぶと筒・輪になります。ねじれたら下の欄の「向きを反転」。Escで中止。3Dビューにも線と点で表示され、保存・元に戻すに対応しています。<br>「布シミュ」の「開始」で布がばねで動きます（重力で垂れ、縫いは引き寄せ、留めは固定、スライドは弱くつなぎ、締めは縮める）。両端を縫った細い布は輪になります。「停止」で元の布に戻ります（パーツは変わりません）。「密着」を上げると体の表面に沿って吸い付きます。体との当たりは見た目の表面（垂れも含む）で調べ、とがった所は布を突き抜けにくくしています。</div>
-    <div id="sim-tools" title="ばねで布を動かして、垂れ方や縫い合わせの形を見る">布シミュ:<button type="button" id="sim-run">開始</button><button type="button" id="sim-reset" title="最初の形からやり直す">やり直し</button><label title="布の伸びにくさ">硬さ<input id="sim-stiff" type="range" min="0" max="1" step="0.05"></label><label title="折れ曲がりにくさ">曲げ<input id="sim-bend" type="range" min="0" max="1" step="0.05"></label><label title="体の表面にどれだけ吸い付くか">密着<input id="sim-hug" type="range" min="0" max="1" step="0.05"></label><label><input id="sim-gravity" type="checkbox">重力</label><label><input id="sim-collide" type="checkbox">体に当たる</label></div>
+    <div id="seam-help" hidden>「縫い／留め／スライド／締め」を押してから、展開図で布の1点目→2点目をクリックするとつなぎができます（頂点・辺に吸着）。留めは2点目を布の外でクリックすると、いちばん近い体のパーツに留めます。3Dビューでも「留め」を押した状態（またはメニュー「布を体に留める（3Dでクリック）」）で、布の点→体のパーツの表面の順にクリックすると、その場所に留められます。3Dでつなぎの線をクリックして選び、Deleteで削除できます。つなぎの線をクリックで選択し、下の欄で種類の変更・削除（Deleteキー）ができ、端をドラッグで位置を動かせます。「辺縫い」は辺の上を2回クリック（1本目の辺→2本目の辺）で、辺どうしをまるごと縫い合わせます。同じ布の向かいの辺を選ぶと筒・輪になります。ねじれたら下の欄の「向きを反転」。Escで中止。3Dビューにも線と点で表示され、保存・元に戻すに対応しています。<br>「布シミュ」の「開始」で布がばねで動きます（重力で垂れ、縫いは引き寄せ、留めは固定、スライドは弱くつなぎ、締めは縮める）。両端を縫った細い布は輪になります。「停止」で元の布に戻ります（パーツは変わりません）。「密着」を上げると体の表面に沿って吸い付きます。「摩擦」を上げると体の上で布がすべり落ちにくくなります。体との当たりは見た目の表面（垂れも含む）で調べ、とがった所は布を突き抜けにくくしています。</div>
+    <div id="sim-tools" title="ばねで布を動かして、垂れ方や縫い合わせの形を見る">布シミュ:<button type="button" id="sim-run">開始</button><button type="button" id="sim-reset" title="最初の形からやり直す">やり直し</button><label title="布の伸びにくさ">硬さ<input id="sim-stiff" type="range" min="0" max="1" step="0.05"></label><label title="折れ曲がりにくさ">曲げ<input id="sim-bend" type="range" min="0" max="1" step="0.05"></label><label title="体の表面にどれだけ吸い付くか">密着<input id="sim-hug" type="range" min="0" max="1" step="0.05"></label><label title="体の表面ですべりにくくする（高いほどずり落ちない）">摩擦<input id="sim-friction" type="range" min="0" max="1" step="0.05"></label><label><input id="sim-gravity" type="checkbox">重力</label><label><input id="sim-collide" type="checkbox">体に当たる</label></div>
     <canvas id="cloth-canvas"></canvas>
     <div id="seam-info">つなぎ: なし</div>
     <div id="cloth-info">布パーツはまだありません</div>
@@ -29436,6 +29436,7 @@ void main() {
     function collideCloth(state) {
       const sagD = new THREE.Vector3(), q = new THREE.Vector3(), guess = new THREE.Vector3();
       const hug = clothSim.hug ?? 0.5;
+      const friction = clothSim.friction ?? 0.7;
       for (const col of state.colliders) {
         col.mesh.updateWorldMatrix(true, false);
         if (col.surface.key !== col.mesh.matrixWorld.elements.join(",")) col.surface = buildSurfaceSamples(col.mesh, state.sampleSpacing) ?? col.surface;
@@ -29474,9 +29475,14 @@ void main() {
             q.x += nx * move; q.y += ny * move; q.z += nz * move;
             if (col.sag) q.add(sagOffsetCpu(col.sag, q, sagD));
             p[k] = q.x; p[k + 1] = q.y; p[k + 2] = q.z;
-            if (move > 0) {
-              // 当たっている所は少し止めて、表面に落ち着かせる
-              prev[k] += (p[k] - prev[k]) * 0.35; prev[k + 1] += (p[k + 1] - prev[k + 1]) * 0.35; prev[k + 2] += (p[k + 2] - prev[k + 2]) * 0.35;
+            if (friction > 0 && d < margin + 0.0015) {
+              // 摩擦：このステップで表面に沿って動いた分を打ち消す（小さい動きは止め、大きい動きは減らす）
+              const tx0 = p[k] - prev[k], ty0 = p[k + 1] - prev[k + 1], tz0 = p[k + 2] - prev[k + 2];
+              const vn = tx0 * nx + ty0 * ny + tz0 * nz;
+              const tx = tx0 - nx * vn, ty = ty0 - ny * vn, tz = tz0 - nz * vn;
+              const tl = Math.hypot(tx, ty, tz);
+              const keep = tl < friction * 0.003 ? 0 : 1 - friction * 0.85;
+              p[k] -= tx * (1 - keep); p[k + 1] -= ty * (1 - keep); p[k + 2] -= tz * (1 - keep);
             }
           }
         }
@@ -29484,12 +29490,12 @@ void main() {
     }
 
     // ===== 布シミュレーション（ばね） =====
-    var clothSim = { stiff: 0.9, bend: 0.3, hug: 0.5, gravity: true, collide: true };
+    var clothSim = { stiff: 0.9, bend: 0.3, hug: 0.5, friction: 0.7, gravity: true, collide: true };
     let simState = null;
     function readClothSim(value) {
       const v = value && typeof value === "object" ? value : {};
       const num = (x, d) => (Number.isFinite(x) ? roundNumber(Math.max(0, Math.min(1, x))) : d);
-      return { stiff: num(v.stiff, 0.9), bend: num(v.bend, 0.3), hug: num(v.hug, 0.5), gravity: v.gravity !== false, collide: v.collide !== false };
+      return { stiff: num(v.stiff, 0.9), bend: num(v.bend, 0.3), hug: num(v.hug, 0.5), friction: num(v.friction, 0.7), gravity: v.gravity !== false, collide: v.collide !== false };
     }
     function serializeClothSim() {
       const d = readClothSim({});
@@ -29679,17 +29685,19 @@ void main() {
         document.getElementById("sim-stiff").value = clothSim.stiff;
         document.getElementById("sim-bend").value = clothSim.bend;
         document.getElementById("sim-hug").value = clothSim.hug;
+        document.getElementById("sim-friction").value = clothSim.friction;
         document.getElementById("sim-gravity").checked = clothSim.gravity;
         document.getElementById("sim-collide").checked = clothSim.collide;
       };
       sync();
       window.addEventListener("gfv-sim-sync", sync);
-      for (const id of ["sim-stiff", "sim-bend", "sim-hug", "sim-gravity", "sim-collide"]) {
+      for (const id of ["sim-stiff", "sim-bend", "sim-hug", "sim-friction", "sim-gravity", "sim-collide"]) {
         document.getElementById(id).addEventListener("change", () => {
           clothSim = readClothSim({
             stiff: Number(document.getElementById("sim-stiff").value),
             bend: Number(document.getElementById("sim-bend").value),
             hug: Number(document.getElementById("sim-hug").value),
+            friction: Number(document.getElementById("sim-friction").value),
             gravity: document.getElementById("sim-gravity").checked,
             collide: document.getElementById("sim-collide").checked,
           });
