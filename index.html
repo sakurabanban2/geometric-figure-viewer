@@ -28919,9 +28919,33 @@ void main() {
       return new THREE.Vector3(end.x * 0.16, end.y * 0.16, 0.003);
     }
 
+    // 垂れ（GPUで変形）と同じずれをCPUで求める（SAG_LIBのsagOffsetと同じ式）。布の当たりと留め先を見た目の形に合わせる
+    const sagCpuP = new THREE.Vector3(), sagCpuAlong = new THREE.Vector3(), sagCpuAcross = new THREE.Vector3();
+    function sagUniformsOf(mesh) {
+      const uniforms = mesh?.material?.userData?.maskUniforms ?? mesh?.userData?.sagUniforms;
+      return uniforms?.sagOn && uniforms.sagOn.value > 0.5 ? uniforms : null;
+    }
+    function sagOffsetCpu(uniforms, world, out) {
+      sagCpuP.copy(world).applyMatrix4(uniforms.sagFrame.value);
+      const half = uniforms.sagHalf.value;
+      const u = Math.max(0, Math.min(1, (half - sagCpuP.sub(uniforms.sagCenter.value).dot(uniforms.sagAxis.value)) / Math.max(2 * half, 1e-6)));
+      const w = u * u;
+      const gravity = uniforms.sagGravity.value, axis = uniforms.sagAxisWorld.value;
+      const h = Math.max(-1, Math.min(1, (-(world.x - uniforms.sagCenterWorld.value.x) * gravity.x - (world.y - uniforms.sagCenterWorld.value.y) * gravity.y - (world.z - uniforms.sagCenterWorld.value.z) * gravity.z) / Math.max(uniforms.sagRadius.value, 1e-6)));
+      sagCpuAlong.copy(axis).multiplyScalar(gravity.dot(axis));
+      sagCpuAcross.copy(gravity).sub(sagCpuAlong);
+      return out.copy(sagCpuAcross).multiplyScalar(1 - 0.5 * h).addScaledVector(sagCpuAlong, 0.35).multiplyScalar(uniforms.sagStrength.value).add(uniforms.sagWobble.value).multiplyScalar(w);
+    }
+    // 元の形の上の点 → 垂れたあとの見た目の位置
+    function sagDeform(mesh, world) {
+      const uniforms = sagUniformsOf(mesh);
+      if (!uniforms) return world;
+      return world.add(sagOffsetCpu(uniforms, world, new THREE.Vector3()));
+    }
+
     function seamWorld(mesh, end) {
       mesh.updateWorldMatrix(true, false);
-      return mesh.localToWorld(seamLocal(mesh, end));
+      return sagDeform(mesh, mesh.localToWorld(seamLocal(mesh, end)));
     }
 
     function clothOutline(kind) {
@@ -29466,6 +29490,7 @@ void main() {
           if (link.kind === "body") {
             link.body.updateWorldMatrix(true, false);
             tmp.copy(link.local).applyMatrix4(link.body.matrixWorld);
+            sagDeform(link.body, tmp);
             pa[ax] = tmp.x; pa[ax + 1] = tmp.y; pa[ax + 2] = tmp.z;
             continue;
           }
@@ -29484,7 +29509,10 @@ void main() {
           col.inv.copy(col.mesh.matrixWorld).invert();
           col.sphere.center.copy(col.center).applyMatrix4(col.mesh.matrixWorld);
           col.sphere.radius = col.half.length() * col.mesh.matrixWorld.getMaxScaleOnAxis() * 1.1;
+          col.sag = sagUniformsOf(col.mesh);
+          if (col.sag) col.sphere.radius += Math.abs(col.sag.sagStrength.value) * 1.4 + col.sag.sagWobble.value.length();
         }
+        const sagD = new THREE.Vector3();
         const margin = 1.04;
         for (const c of state.cloths) {
           const p = c.pos;
@@ -29492,10 +29520,19 @@ void main() {
             tmp.set(p[k], p[k + 1], p[k + 2]);
             for (const col of state.colliders) {
               if (tmp.distanceToSquared(col.sphere.center) > col.sphere.radius ** 2) continue;
-              const local = tmp.clone().applyMatrix4(col.inv).sub(col.center);
+              // 垂れているパーツは、見た目の位置から元の形の位置へ戻して当たりを調べる（ずれの逆を2回で近似）
+              const rest = tmp.clone();
+              if (col.sag) {
+                sagOffsetCpu(col.sag, rest, sagD);
+                const guess = tmp.clone().sub(sagD);
+                sagOffsetCpu(col.sag, guess, sagD);
+                rest.copy(tmp).sub(sagD);
+              }
+              const local = rest.applyMatrix4(col.inv).sub(col.center);
               const r = Math.hypot(local.x / col.half.x, local.y / col.half.y, local.z / col.half.z);
               if (r >= margin || r < 1e-6) continue;
               local.multiplyScalar(margin / r).add(col.center).applyMatrix4(col.mesh.matrixWorld);
+              if (col.sag) local.add(sagOffsetCpu(col.sag, local, sagD));
               tmp.copy(local);
               p[k] = tmp.x; p[k + 1] = tmp.y; p[k + 2] = tmp.z;
             }
