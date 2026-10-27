@@ -242,7 +242,9 @@
     #cloth-pane button { font-size: 11px; }
     #cloth-canvas { flex: 1; min-height: 0; width: 100%; cursor: default; touch-action: none; }
     #seam-tools { display: flex; gap: 3px; align-items: center; padding: 3px 6px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); flex-wrap: wrap; }
-    #seam-tools button.active { outline: 2px solid #ffbe6e; background: rgba(255, 190, 110, 0.25); }
+    #sim-tools { display: flex; gap: 4px; align-items: center; padding: 3px 6px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); flex-wrap: wrap; }
+    #sim-tools input[type=range] { width: 54px; }
+    #sim-tools button.active, #seam-tools button.active { outline: 2px solid #ffbe6e; background: rgba(255, 190, 110, 0.25); }
     #seam-help { padding: 4px 6px; color: #bbb; line-height: 1.5; border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
     #seam-info { padding: 3px 6px; min-height: 26px; box-sizing: border-box; white-space: nowrap; overflow: hidden; border-top: 1px solid rgba(255, 255, 255, 0.12); }
     #seam-info[hidden], #seam-help[hidden] { display: none; }
@@ -2038,7 +2040,8 @@
   <div id="cloth-pane" hidden>
     <header><strong>布の展開図</strong><button id="cloth-make" type="button" title="選んでいる平面パーツを布パーツにする／やめる">布にする</button><button id="cloth-fit" type="button" title="全体が見えるように表示">全体</button><button id="cloth-close" type="button" title="閉じる">×</button></header>
     <div id="seam-tools" title="布どうし・布と体をつなぐ（つなぎ）">つなぐ:<button type="button" data-seam="sew" title="縫い：2つの布の点を縫い合わせる">縫い</button><button type="button" data-seam="pin" title="留め：布の点を別の布か体のパーツに固定（2点目を布の外でクリックすると体に留める）">留め</button><button type="button" data-seam="slide" title="スライド：つないだまま滑れる">スライド</button><button type="button" data-seam="cinch" title="締め：布を締める帯（いまは印のみ。変形はあとで）">締め</button><button type="button" id="seam-help-toggle" title="つなぎの使い方">?</button></div>
-    <div id="seam-help" hidden>「縫い／留め／スライド／締め」を押してから、展開図で布の1点目→2点目をクリックするとつなぎができます（頂点・辺に吸着）。留めは2点目を布の外でクリックすると、いちばん近い体のパーツに留めます。つなぎの線をクリックで選択し、下の欄で種類の変更・削除（Deleteキー）ができ、端をドラッグで位置を動かせます。Escで中止。3Dビューにも線と点で表示され、保存・元に戻すに対応しています。</div>
+    <div id="seam-help" hidden>「縫い／留め／スライド／締め」を押してから、展開図で布の1点目→2点目をクリックするとつなぎができます（頂点・辺に吸着）。留めは2点目を布の外でクリックすると、いちばん近い体のパーツに留めます。つなぎの線をクリックで選択し、下の欄で種類の変更・削除（Deleteキー）ができ、端をドラッグで位置を動かせます。Escで中止。3Dビューにも線と点で表示され、保存・元に戻すに対応しています。<br>「布シミュ」の「開始」で布がばねで動きます（重力で垂れ、縫いは引き寄せ、留めは固定、スライドは弱くつなぎ、締めは縮める）。両端を縫った細い布は輪になります。「停止」で元の布に戻ります（パーツは変わりません）。</div>
+    <div id="sim-tools" title="ばねで布を動かして、垂れ方や縫い合わせの形を見る">布シミュ:<button type="button" id="sim-run">開始</button><button type="button" id="sim-reset" title="最初の形からやり直す">やり直し</button><label title="布の伸びにくさ">硬さ<input id="sim-stiff" type="range" min="0" max="1" step="0.05"></label><label title="折れ曲がりにくさ">曲げ<input id="sim-bend" type="range" min="0" max="1" step="0.05"></label><label><input id="sim-gravity" type="checkbox">重力</label><label><input id="sim-collide" type="checkbox">体に当たる</label></div>
     <canvas id="cloth-canvas"></canvas>
     <div id="seam-info">つなぎ: なし</div>
     <div id="cloth-info">布パーツはまだありません</div>
@@ -10188,7 +10191,7 @@ self.onmessage = (event) => {
           record.solo ? 1 : 0,
           sideSig(record.mesh),
           record.mirror ? sideSig(record.mirror) : "-",
-        ].join("|")).join(";")}|folders:${folderSig}|links:${linkSignature()}|curves:${curveSignature()}|sketches:${sketchSignature()}|rig:${rigSignature()}|planes:${colliderPlaneSignature()}|seams:${seamSignature()}`;
+        ].join("|")).join(";")}|folders:${folderSig}|links:${linkSignature()}|curves:${curveSignature()}|sketches:${sketchSignature()}|rig:${rigSignature()}|planes:${colliderPlaneSignature()}|seams:${seamSignature()}|sim:${JSON.stringify(clothSim ?? {})}`;
     }
 
     function packMesh(mesh) {
@@ -10275,6 +10278,7 @@ self.onmessage = (event) => {
         rig: rig ? structuredClone(rig) : null,
         colliderPlanes: structuredClone(colliderPlanes),
         seams: packSeams(),
+        clothSim: { ...clothSim },
         anchorMasks: activeAnchors().map((anchor) => ({ anchor, masks: packMaskList(anchor) })),
         records: records.map((record) => ({
           kind: record.kind,
@@ -10406,6 +10410,8 @@ self.onmessage = (event) => {
       rig = readRig(state.rig);
       colliderPlanes = readColliderPlanes(state.colliderPlanes);
       seams = readSeams(state.seams);
+      clothSim = readClothSim(state.clothSim);
+      window.dispatchEvent(new Event("gfv-sim-sync"));
       clothPaneDirty = true;
       if (rigEditing) {
         if (!rig) dropRigMode();
@@ -15160,6 +15166,7 @@ self.onmessage = (event) => {
         rig: rig ? { joints: Object.fromEntries(Object.entries(rig.joints).map(([name, point]) => [name, point.map(roundNumber)])), chains: serializeChains() } : undefined,
         colliderPlanes: serializeColliderPlanes(),
         seams: serializeSeams(),
+        clothSim: serializeClothSim(),
         name: MODEL_ID ? modelName : undefined,
         records: records.map((record) => ({
           kind: record.kind,
@@ -15858,6 +15865,8 @@ self.onmessage = (event) => {
       rig = readRig(data.rig);
       colliderPlanes = readColliderPlanes(data.colliderPlanes);
       seams = readSeams(data.seams);
+      clothSim = readClothSim(data.clothSim);
+      window.dispatchEvent(new Event("gfv-sim-sync"));
       clothPaneDirty = true;
       updateMaskView();
       for (const [mesh, packed] of reliefJobs) await restorePartRelief(mesh, packed);
@@ -28820,6 +28829,7 @@ void main() {
         drawClothPane();
         refreshSeamInfo();
         updateSeams3d();
+        tickClothSim();
         requestAnimationFrame(loop);
       };
       requestAnimationFrame(loop);
@@ -29115,6 +29125,7 @@ void main() {
     scene.add(seamGroup);
     let seam3dSig = "";
     function updateSeams3d() {
+      if (simState) { if (seamGroup.visible) { seamGroup.visible = false; seam3dSig = "sim"; requestRender(); } return; }
       const items = [];
       for (const seam of seams) {
         const live = seamLive(seam);
@@ -29216,7 +29227,246 @@ void main() {
       canvas.addEventListener("pointerleave", () => { seamHover = null; clothPaneDirty = true; });
     }
 
+    // ===== 布シミュレーション（ばね） =====
+    var clothSim = { stiff: 0.9, bend: 0.3, gravity: true, collide: true };
+    let simState = null;
+    function readClothSim(value) {
+      const v = value && typeof value === "object" ? value : {};
+      const num = (x, d) => (Number.isFinite(x) ? roundNumber(Math.max(0, Math.min(1, x))) : d);
+      return { stiff: num(v.stiff, 0.9), bend: num(v.bend, 0.3), gravity: v.gravity !== false, collide: v.collide !== false };
+    }
+    function serializeClothSim() {
+      const d = readClothSim({});
+      return Object.keys(d).some((k) => d[k] !== clothSim[k]) ? { ...clothSim } : undefined;
+    }
+
+    function buildClothSim() {
+      const cloths = [], byPart = new Map();
+      let total = 0;
+      for (const mesh of clothParts()) {
+        if (mesh.userData.hidden) continue;
+        const [w, h] = clothSize(mesh);
+        const cell = Math.max(Math.sqrt((w * h) / 500), 0.006);
+        const cols = Math.max(2, Math.min(60, Math.round(w / cell) + 1));
+        const rows = Math.max(2, Math.min(60, Math.round(h / cell) + 1));
+        const n = cols * rows;
+        const pos = new Float32Array(n * 3), prev = new Float32Array(n * 3), uv = [];
+        mesh.updateWorldMatrix(true, false);
+        for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+          const k = j * cols + i, nx = i / (cols - 1) - 0.5, ny = j / (rows - 1) - 0.5;
+          const p = mesh.localToWorld(seamLocal(mesh, { x: nx, y: ny }));
+          pos.set([p.x, p.y, p.z], k * 3); prev.set([p.x, p.y, p.z], k * 3); uv.push([nx, ny]);
+        }
+        const springs = [];
+        const rest = (a, b) => Math.hypot(pos[a * 3] - pos[b * 3], pos[a * 3 + 1] - pos[b * 3 + 1], pos[a * 3 + 2] - pos[b * 3 + 2]);
+        const add = (a, b, kind) => springs.push([a, b, rest(a, b), kind]);
+        for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+          const k = j * cols + i;
+          if (i + 1 < cols) add(k, k + 1, 0);
+          if (j + 1 < rows) add(k, k + cols, 0);
+          if (i + 1 < cols && j + 1 < rows) { add(k, k + cols + 1, 1); add(k + 1, k + cols, 1); }
+          if (i + 2 < cols) add(k, k + 2, 2);
+          if (j + 2 < rows) add(k, k + cols * 2, 2);
+        }
+        const index = [];
+        for (let j = 0; j + 1 < rows; j++) for (let i = 0; i + 1 < cols; i++) {
+          const k = j * cols + i;
+          index.push(k, k + 1, k + cols, k + 1, k + cols + 1, k + cols);
+        }
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+        geometry.setIndex(index);
+        geometry.computeVertexNormals();
+        const color = mesh.userData.color ?? CLOTH_COLOR;
+        const view = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color, side: THREE.DoubleSide, roughness: 0.85 }));
+        view.raycast = () => {};
+        scene.add(view);
+        const cloth = { mesh, cols, rows, pos, prev, uv, springs, view, wasVisible: mesh.visible, offset: total };
+        mesh.visible = false;
+        total += n;
+        cloths.push(cloth);
+        byPart.set(mesh.userData.id, cloth);
+      }
+      const nearest = (cloth, end) => {
+        const i = Math.round((end.x + 0.5) * (cloth.cols - 1)), j = Math.round((end.y + 0.5) * (cloth.rows - 1));
+        return Math.max(0, Math.min(cloth.rows - 1, j)) * cloth.cols + Math.max(0, Math.min(cloth.cols - 1, i));
+      };
+      const links = [];
+      for (const seam of seams) {
+        const a = byPart.get(seam.a.part);
+        if (!a) continue;
+        const ia = nearest(a, seam.a);
+        if (seam.b.p) {
+          const body = meshById(seam.b.part);
+          if (body) links.push({ kind: "body", a, ia, body, local: new THREE.Vector3(...seam.b.p) });
+          continue;
+        }
+        const b = byPart.get(seam.b.part);
+        if (!b) continue;
+        const ib = nearest(b, seam.b);
+        const d = Math.hypot(a.pos[ia * 3] - b.pos[ib * 3], a.pos[ia * 3 + 1] - b.pos[ib * 3 + 1], a.pos[ia * 3 + 2] - b.pos[ib * 3 + 2]);
+        const rest = seam.type === "cinch" ? d * (1 - (seam.tight ?? 0.3)) : 0;
+        links.push({ kind: seam.type, a, ia, b, ib, rest, k: seam.type === "slide" ? 0.15 : seam.type === "cinch" ? 0.3 : 0.5 });
+      }
+      const colliders = [];
+      if (clothSim.collide) {
+        for (const mesh of editableMeshes()) {
+          if (mesh.userData.cloth || mesh.userData.hidden || mesh.userData.isMask || !mesh.visible || !mesh.geometry) continue;
+          if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+          const box = mesh.geometry.boundingBox;
+          if (!box || box.isEmpty()) continue;
+          colliders.push({ mesh, center: box.getCenter(new THREE.Vector3()), half: box.getSize(new THREE.Vector3()).multiplyScalar(0.5).max(new THREE.Vector3(1e-4, 1e-4, 1e-4)), inv: new THREE.Matrix4(), sphere: new THREE.Sphere() });
+        }
+      }
+      return { cloths, links, colliders, frame: 0 };
+    }
+
+    function stepClothSim(state, dt) {
+      const g = clothSim.gravity ? -9.8 * dt * dt : 0;
+      const damp = 0.985;
+      for (const c of state.cloths) {
+        const { pos, prev } = c;
+        for (let k = 0; k < pos.length; k += 3) {
+          for (let a = 0; a < 3; a++) {
+            const x = pos[k + a];
+            pos[k + a] += (x - prev[k + a]) * damp + (a === 1 ? g : 0);
+            prev[k + a] = x;
+          }
+        }
+      }
+      const stiff = 0.2 + clothSim.stiff * 0.8, bend = clothSim.bend * 0.6;
+      const tmp = new THREE.Vector3();
+      for (let it = 0; it < 6; it++) {
+        for (const c of state.cloths) {
+          const p = c.pos;
+          for (const [a, b, rest, kind] of c.springs) {
+            const s = kind === 2 ? bend : kind === 1 ? stiff * 0.7 : stiff;
+            if (!s) continue;
+            const ax = a * 3, bx = b * 3;
+            const dx = p[bx] - p[ax], dy = p[bx + 1] - p[ax + 1], dz = p[bx + 2] - p[ax + 2];
+            const len = Math.hypot(dx, dy, dz) || 1e-9;
+            const f = ((len - rest) / len) * 0.5 * s;
+            p[ax] += dx * f; p[ax + 1] += dy * f; p[ax + 2] += dz * f;
+            p[bx] -= dx * f; p[bx + 1] -= dy * f; p[bx + 2] -= dz * f;
+          }
+        }
+        for (const link of state.links) {
+          const pa = link.a.pos, ax = link.ia * 3;
+          if (link.kind === "body") {
+            link.body.updateWorldMatrix(true, false);
+            tmp.copy(link.local).applyMatrix4(link.body.matrixWorld);
+            pa[ax] = tmp.x; pa[ax + 1] = tmp.y; pa[ax + 2] = tmp.z;
+            continue;
+          }
+          const pb = link.b.pos, bx = link.ib * 3;
+          const dx = pb[bx] - pa[ax], dy = pb[bx + 1] - pa[ax + 1], dz = pb[bx + 2] - pa[ax + 2];
+          const len = Math.hypot(dx, dy, dz) || 1e-9;
+          const f = (len - link.rest) / len * link.k;
+          pa[ax] += dx * f; pa[ax + 1] += dy * f; pa[ax + 2] += dz * f;
+          pb[bx] -= dx * f; pb[bx + 1] -= dy * f; pb[bx + 2] -= dz * f;
+        }
+      }
+      // 体のパーツとの当たり（各パーツの箱を楕円体として近似）
+      if (state.colliders.length) {
+        for (const col of state.colliders) {
+          col.mesh.updateWorldMatrix(true, false);
+          col.inv.copy(col.mesh.matrixWorld).invert();
+          col.sphere.center.copy(col.center).applyMatrix4(col.mesh.matrixWorld);
+          col.sphere.radius = col.half.length() * col.mesh.matrixWorld.getMaxScaleOnAxis() * 1.1;
+        }
+        const margin = 1.04;
+        for (const c of state.cloths) {
+          const p = c.pos;
+          for (let k = 0; k < p.length; k += 3) {
+            tmp.set(p[k], p[k + 1], p[k + 2]);
+            for (const col of state.colliders) {
+              if (tmp.distanceToSquared(col.sphere.center) > col.sphere.radius ** 2) continue;
+              const local = tmp.clone().applyMatrix4(col.inv).sub(col.center);
+              const r = Math.hypot(local.x / col.half.x, local.y / col.half.y, local.z / col.half.z);
+              if (r >= margin || r < 1e-6) continue;
+              local.multiplyScalar(margin / r).add(col.center).applyMatrix4(col.mesh.matrixWorld);
+              tmp.copy(local);
+              p[k] = tmp.x; p[k + 1] = tmp.y; p[k + 2] = tmp.z;
+            }
+          }
+        }
+      }
+      // 床
+      for (const c of state.cloths) for (let k = 1; k < c.pos.length; k += 3) if (c.pos[k] < 0.002) { c.pos[k] = 0.002; c.prev[k] = 0.002; }
+    }
+
+    function stopClothSim() {
+      if (!simState) return;
+      for (const c of simState.cloths) {
+        scene.remove(c.view); c.view.geometry.dispose(); c.view.material.dispose();
+        c.mesh.visible = !c.mesh.userData.hidden;
+      }
+      simState = null;
+      seam3dSig = "";
+      refreshSimButton();
+      requestRender();
+    }
+
+    function startClothSim() {
+      stopClothSim();
+      if (!clothParts().length) { setFileStatus("布パーツがありません"); return; }
+      simState = buildClothSim();
+      refreshSimButton();
+      setFileStatus("布シミュレーションを開始しました（停止で元の布に戻ります）");
+    }
+
+    function refreshSimButton() {
+      const button = document.getElementById("sim-run");
+      if (button) { button.textContent = simState ? "停止" : "開始"; button.classList.toggle("active", Boolean(simState)); }
+    }
+
+    function tickClothSim() {
+      if (!simState) return;
+      const start = performance.now();
+      for (let s = 0; s < 3 && performance.now() - start < 7; s++) stepClothSim(simState, 1 / 180);
+      for (const c of simState.cloths) {
+        c.view.geometry.attributes.position.needsUpdate = true;
+        c.view.geometry.computeVertexNormals();
+        c.view.geometry.computeBoundingSphere();
+      }
+      simState.frame++;
+      // 描画が重い環境では描画回数を間引いて操作を優先する
+      const now = performance.now();
+      if (now - (simState.lastRender ?? 0) > Math.min(200, (simState.renderCost ?? 0) * 2 + 16)) {
+        simState.lastRender = now;
+        requestRender(50);
+      }
+      simState.renderCost = (simState.renderCost ?? 16) * 0.8 + Math.min(500, now - (simState.lastTick ?? now)) * 0.2;
+      simState.lastTick = now;
+    }
+
+    function setupClothSim() {
+      document.getElementById("sim-run").addEventListener("click", () => (simState ? stopClothSim() : startClothSim()));
+      document.getElementById("sim-reset").addEventListener("click", () => { if (simState) startClothSim(); });
+      const sync = () => {
+        document.getElementById("sim-stiff").value = clothSim.stiff;
+        document.getElementById("sim-bend").value = clothSim.bend;
+        document.getElementById("sim-gravity").checked = clothSim.gravity;
+        document.getElementById("sim-collide").checked = clothSim.collide;
+      };
+      sync();
+      window.addEventListener("gfv-sim-sync", sync);
+      for (const id of ["sim-stiff", "sim-bend", "sim-gravity", "sim-collide"]) {
+        document.getElementById(id).addEventListener("change", () => {
+          clothSim = readClothSim({
+            stiff: Number(document.getElementById("sim-stiff").value),
+            bend: Number(document.getElementById("sim-bend").value),
+            gravity: document.getElementById("sim-gravity").checked,
+            collide: document.getElementById("sim-collide").checked,
+          });
+          commit();
+          if (simState && id === "sim-collide") startClothSim();
+        });
+      }
+    }
+
     setupSeams();
+    setupClothSim();
     setupClothPane();
   </script>
 </body>
