@@ -242,6 +242,8 @@
     #cloth-pane button { font-size: 11px; }
     #cloth-canvas { flex: 1; min-height: 0; width: 100%; cursor: default; touch-action: none; }
     #seam-tools { display: flex; gap: 3px; align-items: center; padding: 3px 6px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); flex-wrap: wrap; }
+    #seam3d-hint { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 30; padding: 4px 10px; border-radius: 6px; background: rgba(255, 94, 138, 0.9); color: #fff; font-size: 12px; pointer-events: none; }
+    #seam3d-hint[hidden] { display: none; }
     #sim-tools { display: flex; gap: 4px; align-items: center; padding: 3px 6px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); flex-wrap: wrap; }
     #sim-tools input[type=range] { width: 54px; }
     #sim-tools button.active, #seam-tools button.active { outline: 2px solid #ffbe6e; background: rgba(255, 190, 110, 0.25); }
@@ -1384,6 +1386,7 @@
         <button class="menu-button" type="button" role="menuitem" aria-haspopup="true" aria-expanded="false">表示</button>
         <div class="menu-list" role="menu" hidden>
           <button type="button" role="menuitem" data-action="cloth-pane">布の展開図を表示/隠す</button>
+          <button type="button" role="menuitem" data-action="cloth-pin3d">布を体に留める（3Dでクリック）</button>
           <button type="button" role="menuitem" data-view="front">正面</button>
           <button type="button" role="menuitem" data-view="side">側面</button>
           <button type="button" role="menuitem" data-view="back">背面</button>
@@ -2037,10 +2040,11 @@
   </aside>
   <div id="side-resizer" class="panel-resizer" role="separator" aria-orientation="vertical" aria-label="左パネルの幅" title="ドラッグで左パネルの幅を変更"></div>
   <input id="folder-color-input" type="color" tabindex="-1" aria-hidden="true" />
+  <div id="seam3d-hint" hidden></div>
   <div id="cloth-pane" hidden>
     <header><strong>布の展開図</strong><button id="cloth-make" type="button" title="選んでいる平面パーツを布パーツにする／やめる">布にする</button><button id="cloth-fit" type="button" title="全体が見えるように表示">全体</button><button id="cloth-close" type="button" title="閉じる">×</button></header>
     <div id="seam-tools" title="布どうし・布と体をつなぐ（つなぎ）">つなぐ:<button type="button" data-seam="sew" title="縫い：2つの布の点を縫い合わせる">縫い</button><button type="button" data-seam="pin" title="留め：布の点を別の布か体のパーツに固定（2点目を布の外でクリックすると体に留める）">留め</button><button type="button" data-seam="slide" title="スライド：つないだまま滑れる">スライド</button><button type="button" data-seam="cinch" title="締め：布を締める帯（いまは印のみ。変形はあとで）">締め</button><button type="button" id="seam-help-toggle" title="つなぎの使い方">?</button></div>
-    <div id="seam-help" hidden>「縫い／留め／スライド／締め」を押してから、展開図で布の1点目→2点目をクリックするとつなぎができます（頂点・辺に吸着）。留めは2点目を布の外でクリックすると、いちばん近い体のパーツに留めます。つなぎの線をクリックで選択し、下の欄で種類の変更・削除（Deleteキー）ができ、端をドラッグで位置を動かせます。Escで中止。3Dビューにも線と点で表示され、保存・元に戻すに対応しています。<br>「布シミュ」の「開始」で布がばねで動きます（重力で垂れ、縫いは引き寄せ、留めは固定、スライドは弱くつなぎ、締めは縮める）。両端を縫った細い布は輪になります。「停止」で元の布に戻ります（パーツは変わりません）。</div>
+    <div id="seam-help" hidden>「縫い／留め／スライド／締め」を押してから、展開図で布の1点目→2点目をクリックするとつなぎができます（頂点・辺に吸着）。留めは2点目を布の外でクリックすると、いちばん近い体のパーツに留めます。3Dビューでも「留め」を押した状態（またはメニュー「布を体に留める（3Dでクリック）」）で、布の点→体のパーツの表面の順にクリックすると、その場所に留められます。3Dでつなぎの線をクリックして選び、Deleteで削除できます。つなぎの線をクリックで選択し、下の欄で種類の変更・削除（Deleteキー）ができ、端をドラッグで位置を動かせます。Escで中止。3Dビューにも線と点で表示され、保存・元に戻すに対応しています。<br>「布シミュ」の「開始」で布がばねで動きます（重力で垂れ、縫いは引き寄せ、留めは固定、スライドは弱くつなぎ、締めは縮める）。両端を縫った細い布は輪になります。「停止」で元の布に戻ります（パーツは変わりません）。</div>
     <div id="sim-tools" title="ばねで布を動かして、垂れ方や縫い合わせの形を見る">布シミュ:<button type="button" id="sim-run">開始</button><button type="button" id="sim-reset" title="最初の形からやり直す">やり直し</button><label title="布の伸びにくさ">硬さ<input id="sim-stiff" type="range" min="0" max="1" step="0.05"></label><label title="折れ曲がりにくさ">曲げ<input id="sim-bend" type="range" min="0" max="1" step="0.05"></label><label><input id="sim-gravity" type="checkbox">重力</label><label><input id="sim-collide" type="checkbox">体に当たる</label></div>
     <canvas id="cloth-canvas"></canvas>
     <div id="seam-info">つなぎ: なし</div>
@@ -25679,6 +25683,7 @@ self.onmessage = (event) => {
         else if (item.dataset.action === "paste") pasteClipboard();
         else if (item.dataset.action === "merge") mergeSelected();
         else if (item.dataset.action === "cloth-pane") toggleClothPane();
+        else if (item.dataset.action === "cloth-pin3d") { if (seamTool !== "pin") setSeamTool("pin"); }
         else if (item.dataset.action === "rasterize") rasterizePart(rasterizeTarget());
         else if (item.dataset.action === "relief") beginReliefEdit(selection[0]);
         else if (item.dataset.action === "feature") beginFeatureEdit(selection[0]);
@@ -28828,6 +28833,7 @@ void main() {
       const loop = () => {
         drawClothPane();
         refreshSeamInfo();
+        refreshSeam3dHint();
         updateSeams3d();
         tickClothSim();
         requestAnimationFrame(loop);
@@ -28980,6 +28986,7 @@ void main() {
     function setSeamTool(type) {
       seamTool = seamTool === type ? "" : type;
       seamPending = null;
+      seam3dPending = null;
       for (const button of document.querySelectorAll("#seam-tools [data-seam]")) button.classList.toggle("active", button.dataset.seam === seamTool);
       document.getElementById("cloth-canvas").style.cursor = seamTool ? "crosshair" : "default";
       clothPaneDirty = true;
@@ -29132,6 +29139,7 @@ void main() {
         if (!live || live[0].userData.hidden) continue;
         items.push([seam, seamWorld(live[0], seam.a), seamWorld(live[1], seam.b)]);
       }
+      if (seam3dPending) { const m = meshById(seam3dPending.part); if (m) items.push([{ id: "pending", type: "pin" }, seamWorld(m, seam3dPending), seamWorld(m, seam3dPending)]); }
       const sig = items.map(([seam, a, b]) => `${seam.id}${seam.type}${seam.id === seamSelected ? 1 : 0}:${a.toArray().map((n) => n.toFixed(4))}:${b.toArray().map((n) => n.toFixed(4))}`).join(";");
       if (sig === seam3dSig) return;
       seam3dSig = sig;
@@ -29465,7 +29473,112 @@ void main() {
       }
     }
 
+    // ===== 3Dビューでのつなぎ（体に留める・選択・削除） =====
+    let seam3dPending = null;
+    const seamRay = new THREE.Raycaster();
+    function seamRayHit(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      const v = new THREE.Vector2(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
+      seamRay.setFromCamera(v, camera);
+      const targets = simState ? [] : editableMeshes().filter((mesh) => mesh.visible && !mesh.userData.isMask);
+      return seamRay.intersectObjects(targets, false)[0] ?? null;
+    }
+    function clothEndFromLocal(mesh, local) {
+      const kind = mesh.userData.kind;
+      let x, y;
+      if (kind === "circle") { x = local.x / 0.18; y = local.y / 0.18; }
+      else if (kind === "flatTriangle") { x = local.x / 0.1732; y = (local.y + 0.05) / 0.15 - 0.5; }
+      else { x = local.x / 0.16; y = local.y / 0.16; }
+      const clamp = (n) => roundNumber(Math.max(-0.5, Math.min(0.5, n)));
+      return { part: mesh.userData.id, x: clamp(x), y: clamp(y) };
+    }
+    function seam3dScreen(world) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      const p = world.clone().project(camera);
+      return [(p.x + 1) / 2 * rect.width + rect.left, (1 - p.y) / 2 * rect.height + rect.top, p.z];
+    }
+    function seam3dHitLine(event) {
+      let best = null;
+      for (const seam of seams) {
+        const live = seamLive(seam);
+        if (!live || live[0].userData.hidden) continue;
+        const [ax, ay, az] = seam3dScreen(seamWorld(live[0], seam.a)), [bx, by, bz] = seam3dScreen(seamWorld(live[1], seam.b));
+        if (az > 1 || bz > 1) continue;
+        const len = (bx - ax) ** 2 + (by - ay) ** 2 || 1;
+        const t = Math.max(0, Math.min(1, ((event.clientX - ax) * (bx - ax) + (event.clientY - ay) * (by - ay)) / len));
+        const d = Math.hypot(ax + (bx - ax) * t - event.clientX, ay + (by - ay) * t - event.clientY);
+        if (d <= 6 && (!best || d < best.d)) best = { seam, d };
+      }
+      return best?.seam ?? null;
+    }
+    function refreshSeam3dHint() {
+      const hint = document.getElementById("seam3d-hint");
+      if (!hint) return;
+      const on = seamTool === "pin";
+      const text = !on ? "" : seam3dPending ? "留め：つなぎ先の体のパーツ（または布）をクリック · Escで中止" : "留め：3Dビューで布パーツの点をクリック · Escで終了";
+      if (hint.textContent !== text) hint.textContent = text;
+      hint.hidden = !on;
+      if (on) { const rect = renderer.domElement.getBoundingClientRect(); const left = `${Math.round(rect.left + rect.width / 2)}px`, top = `${Math.round(rect.top + 34)}px`; if (hint.style.left !== left) hint.style.left = left; if (hint.style.top !== top) hint.style.top = top; }
+    }
+    function setupSeams3d() {
+      const dom = renderer.domElement;
+      let swallowUp = false;
+      window.addEventListener("pointerdown", (event) => {
+        if (event.target !== dom || event.button !== 0) return;
+        if (seamTool === "pin") {
+          const hit = seamRayHit(event);
+          if (!hit) return; // 空いた所はふつうに視点を回せる
+          const mesh = hit.object;
+          event.stopImmediatePropagation(); event.preventDefault();
+          swallowUp = true;
+          mesh.updateWorldMatrix(true, false);
+          const local = mesh.worldToLocal(hit.point.clone());
+          if (!seam3dPending) {
+            if (!mesh.userData.cloth) { setFileStatus("まず布パーツの点をクリックしてください"); return; }
+            seam3dPending = clothEndFromLocal(mesh, local);
+            seamPending = null;
+            clothPaneDirty = true;
+            return;
+          }
+          const a = seam3dPending;
+          seam3dPending = null;
+          if (mesh.userData.id === a.part) { setFileStatus("同じ布には留められません"); return; }
+          const b = mesh.userData.cloth ? clothEndFromLocal(mesh, local) : { part: mesh.userData.id, p: local.toArray().map(roundNumber) };
+          addSeam("pin", a, b);
+          return;
+        }
+        if (seamTool || !seams?.length) return;
+        const seam = seam3dHitLine(event);
+        if (seam) {
+          event.stopImmediatePropagation(); event.preventDefault();
+          swallowUp = true;
+          seamSelected = seam.id;
+          clothPaneDirty = true;
+          setFileStatus(`${seam.b.p ? "体に留め" : SEAM_TYPES[seam.type].name}を選びました（Deleteで削除）`);
+        } else if (seamSelected) { seamSelected = null; clothPaneDirty = true; }
+      }, true);
+      for (const type of ["pointerup", "click"]) window.addEventListener(type, (event) => {
+        if (!swallowUp || event.target !== dom) return;
+        event.stopImmediatePropagation();
+        if (type === "click" || type === "pointerup") { if (type === "click") swallowUp = false; }
+      }, true);
+      window.addEventListener("keydown", (event) => {
+        const field = event.target?.closest?.("input, textarea, select, [contenteditable]");
+        if (field) return;
+        if (event.key === "Escape" && (seam3dPending || seamTool === "pin")) {
+          if (seam3dPending) seam3dPending = null; else setSeamTool("pin");
+          event.stopImmediatePropagation(); event.preventDefault();
+          return;
+        }
+        if ((event.key === "Delete" || event.key === "Backspace") && seamSelected && !simState) {
+          deleteSeam(seamSelected);
+          event.stopImmediatePropagation(); event.preventDefault();
+        }
+      }, true);
+    }
+
     setupSeams();
+    setupSeams3d();
     setupClothSim();
     setupClothPane();
   </script>
