@@ -29399,6 +29399,26 @@ void main() {
           sharp.push(0);
         }
       }
+      // 丸くて小さい出っぱり（乳首・指先など）を見つける：辺ごとの曲がり具合（凸の曲率）を頂点に記録
+      const curvKey = (vi) => `${Math.round(world[vi * 3] * 1e4)},${Math.round(world[vi * 3 + 1] * 1e4)},${Math.round(world[vi * 3 + 2] * 1e4)}`;
+      for (const entry of vertexNormals.values()) { entry.avg = entry.sum.clone().normalize(); entry.curv = 0; }
+      for (let t = 0; t + 2 < count; t += 3) {
+        const ids = [index ? index.getX(t) : t, index ? index.getX(t + 1) : t + 1, index ? index.getX(t + 2) : t + 2];
+        const es = ids.map((vi) => vertexNormals.get(curvKey(vi)));
+        if (es.some((e) => !e)) continue;
+        for (let x = 0; x < 3; x++) for (let y = 0; y < 3; y++) {
+          if (x === y) continue;
+          const A = es[x], B = es[y];
+          const dx = B.p[0] - A.p[0], dy = B.p[1] - A.p[1], dz = B.p[2] - A.p[2], d2 = dx * dx + dy * dy + dz * dz;
+          if (d2 < 1e-10) continue;
+          const k = (-2 * (dx * A.avg.x + dy * A.avg.y + dz * A.avg.z)) / d2;
+          if (k > A.curv) A.curv = k;
+        }
+      }
+      const bumps = [];
+      for (const entry of vertexNormals.values()) {
+        if (entry.curv > 25) bumps.push(entry.p[0], entry.p[1], entry.p[2], entry.avg.x, entry.avg.y, entry.avg.z, entry.curv); // 半径4cmより小さい丸み
+      }
       for (const entry of vertexNormals.values()) {
         const avg = entry.sum.clone().normalize();
         let spread = 0;
@@ -29417,7 +29437,7 @@ void main() {
       if (!geometry.boundingSphere) geometry.computeBoundingSphere();
       sphere.copy(geometry.boundingSphere).applyMatrix4(m);
       sphere.radius += COLLIDE_CELL;
-      return { pts: new Float32Array(pts), nrm: new Float32Array(nrm), sharp: new Float32Array(sharp), hash, sphere, key: m.elements.join(",") };
+      return { pts: new Float32Array(pts), nrm: new Float32Array(nrm), sharp: new Float32Array(sharp), bumps: new Float32Array(bumps), hash, sphere, key: m.elements.join(",") };
     }
 
     function buildColliders(cellSize) {
@@ -29433,7 +29453,7 @@ void main() {
       return list;
     }
 
-    function collideCloth(state) {
+    function collideCloth(state, tips = true) {
       const sagD = new THREE.Vector3(), q = new THREE.Vector3(), guess = new THREE.Vector3();
       const hug = clothSim.hug ?? 0.5;
       const friction = clothSim.friction ?? 0.7;
@@ -29452,9 +29472,11 @@ void main() {
             if (q.distanceToSquared(col.surface.sphere.center) > col.reach * col.reach) continue;
             if (col.sag) { sagOffsetCpu(col.sag, q, sagD); guess.copy(q).sub(sagD); sagOffsetCpu(col.sag, guess, sagD); q.sub(sagD); }
             const { pts, nrm, sharp, hash } = col.surface;
-            const cx = Math.floor(q.x / COLLIDE_CELL), cy = Math.floor(q.y / COLLIDE_CELL), cz = Math.floor(q.z / COLLIDE_CELL);
+            // 近い側の2×2×2マスだけ見る（27マス全部より速い）
+            const fx = q.x / COLLIDE_CELL, fy = q.y / COLLIDE_CELL, fz = q.z / COLLIDE_CELL;
+            const cx = Math.floor(fx - 0.5), cy = Math.floor(fy - 0.5), cz = Math.floor(fz - 0.5);
             let best = -1, bestD = COLLIDE_CELL * COLLIDE_CELL * 2.2;
-            for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
+            for (let dx = 0; dx <= 1; dx++) for (let dy = 0; dy <= 1; dy++) for (let dz = 0; dz <= 1; dz++) {
               const list = hash.get(colHashKey(cx + dx, cy + dy, cz + dz));
               if (!list) continue;
               for (const i of list) {
@@ -29487,7 +29509,7 @@ void main() {
           }
         }
       }
-      collideTips(state, base, guard);
+      if (tips) collideTips(state, base, guard); // 出っぱりの押し出しは最後の当たりで1回だけ
     }
 
     // とがった点が布の粒の「すき間」を抜けないよう、点のまわりの布をまとめて押し出す
@@ -29495,30 +29517,69 @@ void main() {
       const t = new THREE.Vector3(), sagD = new THREE.Vector3();
       for (const c of state.cloths) {
         const p = c.pos, pv = c.prev, cell = c.cell, R = cell * 2.2, hash = new Map();
+        let x0 = Infinity, y0 = Infinity, z0 = Infinity, x1 = -Infinity, y1 = -Infinity, z1 = -Infinity;
         for (let k = 0, i = 0; k < p.length; k += 3, i++) {
-          const key = colHashKey(Math.floor(p[k] / R), Math.floor(p[k + 1] / R), Math.floor(p[k + 2] / R));
+          const x = p[k], y = p[k + 1], z = p[k + 2];
+          if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; if (z < z0) z0 = z; if (z > z1) z1 = z;
+          const key = colHashKey(Math.floor(x / R), Math.floor(y / R), Math.floor(z / R));
           let l = hash.get(key); if (!l) hash.set(key, (l = [])); l.push(i);
         }
+        const bumpK = 1 / (cell * 1.5); // 布の目より細い丸み＝すき間を抜けやすい出っぱり
         for (const col of state.colliders) {
-          const { pts, nrm, sharp } = col.surface;
-          if (!col.surface.tips) { const tips = []; for (let i = 0; i < sharp.length; i++) if (sharp[i] > 0.25) tips.push(i); col.surface.tips = tips; }
-          for (const i of col.surface.tips) {
-            t.set(pts[i * 3], pts[i * 3 + 1], pts[i * 3 + 2]);
+          const sc = col.surface.sphere.center, pad = col.reach + R;
+          if (sc.x < x0 - pad || sc.x > x1 + pad || sc.y < y0 - pad || sc.y > y1 + pad || sc.z < z0 - pad || sc.z > z1 + pad) continue; // 布から遠いパーツは見ない
+          const { pts, nrm, sharp, bumps } = col.surface;
+          if (!col.surface.tips) { const tips = []; for (let i = 0; i < sharp.length; i++) if (sharp[i] > 0.25) tips.push(pts[i * 3], pts[i * 3 + 1], pts[i * 3 + 2], nrm[i * 3], nrm[i * 3 + 1], nrm[i * 3 + 2], sharp[i]); col.surface.tips = tips; }
+          // 布の目より細い丸みだけを残した一覧を、布の目の大きさごとに作っておく
+          if (col.surface.bumpCell !== cell) {
+            // 近すぎる点は布の目の半分ごとに1つ（いちばん出っぱった点）にまとめて、計算を軽くする
+            const cellOf = new Map(), q = cell * 0.5;
+            const put = (arr, o, sv) => {
+              const key = colHashKey(Math.floor(arr[o] / q), Math.floor(arr[o + 1] / q), Math.floor(arr[o + 2] / q));
+              const cur = cellOf.get(key);
+              if (!cur || cur[6] < sv) cellOf.set(key, [arr[o], arr[o + 1], arr[o + 2], arr[o + 3], arr[o + 4], arr[o + 5], sv]);
+            };
+            const tipsArr = col.surface.tips;
+            for (let o = 0; o < tipsArr.length; o += 7) put(tipsArr, o, tipsArr[o + 6]);
+            for (let o = 0; o < (bumps ?? []).length; o += 7) {
+              const sv = Math.min(0.6, (bumps[o + 6] / bumpK - 1) * 0.6);
+              if (sv > 0) put(bumps, o, sv);
+            }
+            col.surface.bumpList = [].concat(...cellOf.values()); col.surface.bumpCell = cell;
+          }
+          const lists = [[col.surface.bumpList, 1]];
+          const near = col.reach - col.surface.sphere.radius + R;
+          for (const [arr, isSharp] of lists) for (let o = 0; o < arr.length; o += 7) {
+            const s = arr[o + 6];
+            if (s <= 0) continue;
+            t.set(arr[o], arr[o + 1], arr[o + 2]);
+            if (t.x < x0 - near || t.x > x1 + near || t.y < y0 - near || t.y > y1 + near || t.z < z0 - near || t.z > z1 + near) continue;
             if (col.sag) t.add(sagOffsetCpu(col.sag, t, sagD));
-            const nx = nrm[i * 3], ny = nrm[i * 3 + 1], nz = nrm[i * 3 + 2];
-            const need = t.x * nx + t.y * ny + t.z * nz + base + sharp[i] * guard;
+            const nx = arr[o + 3], ny = arr[o + 4], nz = arr[o + 5];
+            const surf = t.x * nx + t.y * ny + t.z * nz, need = surf + base + s * guard;
             const cx = Math.floor(t.x / R), cy = Math.floor(t.y / R), cz = Math.floor(t.z / R);
             for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
               const l = hash.get(colHashKey(cx + dx, cy + dy, cz + dz)); if (!l) continue;
               for (const j of l) {
+                // 押す向きは布の面の向き（横向きの点で布を横に裂かない）。点の向きと合わない所は押さない
+                const ci = j % c.cols, cj = (j - ci) / c.cols;
+                const kl = (cj * c.cols + Math.max(0, ci - 1)) * 3, kr = (cj * c.cols + Math.min(c.cols - 1, ci + 1)) * 3;
+                const ku = (Math.max(0, cj - 1) * c.cols + ci) * 3, kd = (Math.min(c.rows - 1, cj + 1) * c.cols + ci) * 3;
+                const ax = p[kr] - p[kl], ay = p[kr + 1] - p[kl + 1], az = p[kr + 2] - p[kl + 2];
+                const bx = p[kd] - p[ku], by = p[kd + 1] - p[ku + 1], bz = p[kd + 2] - p[ku + 2];
+                let mx = ay * bz - az * by, my = az * bx - ax * bz, mz = ax * by - ay * bx;
+                const ml = Math.hypot(mx, my, mz); if (ml < 1e-12) continue;
+                let dot = (mx * nx + my * ny + mz * nz) / ml;
+                if (Math.abs(dot) < 0.5) continue;
+                const sg = dot > 0 ? 1 / ml : -1 / ml; mx *= sg; my *= sg; mz *= sg;
                 const k = j * 3, ox = p[k] - t.x, oy = p[k + 1] - t.y, oz = p[k + 2] - t.z;
-                const h = ox * nx + oy * ny + oz * nz;
+                const h = ox * mx + oy * my + oz * mz;
                 if (h < -R) continue; // 反対側（裏側）の布は触らない
-                const lat = Math.hypot(ox - nx * h, oy - ny * h, oz - nz * h);
+                const lat = Math.hypot(ox - mx * h, oy - my * h, oz - mz * h);
                 if (lat > R) continue;
-                const cur = p[k] * nx + p[k + 1] * ny + p[k + 2] * nz;
-                const f = Math.max(0, (lat - cell) / (R - cell)), want = need - f * f * (need - (t.x * nx + t.y * ny + t.z * nz));
-                if (cur < want) { const m = Math.min(want - cur, cell * 0.5); p[k] += nx * m; p[k + 1] += ny * m; p[k + 2] += nz * m; pv[k] += nx * m; pv[k + 1] += ny * m; pv[k + 2] += nz * m; } // 押した分だけ前の位置も動かし、はね飛ばさない
+                const wantH = (need - surf) * Math.abs(dot), f = Math.max(0, (lat - cell) / (R - cell));
+                const want = wantH * (1 - f * f);
+                if (h < want) { const m = Math.min(want - h, cell * 0.5); p[k] += mx * m; p[k + 1] += my * m; p[k + 2] += mz * m; pv[k] += mx * m; pv[k + 1] += my * m; pv[k + 2] += mz * m; } // 押した分だけ前の位置も動かし、はね飛ばさない
               }
             }
           }
@@ -29664,7 +29725,7 @@ void main() {
           pa[ax] += dx * f; pa[ax + 1] += dy * f; pa[ax + 2] += dz * f;
           pb[bx] -= dx * f; pb[bx + 1] -= dy * f; pb[bx + 2] -= dz * f;
         }
-        if ((it === 2 || it === 5) && state.colliders.length) collideCloth(state);
+        if ((it === 2 || it === 5) && state.colliders.length) collideCloth(state, it === 5);
       }
       // 床
       for (const c of state.cloths) for (let k = 1; k < c.pos.length; k += 3) if (c.pos[k] < 0.002) { c.pos[k] = 0.002; c.prev[k] = 0.002; }
