@@ -29487,6 +29487,43 @@ void main() {
           }
         }
       }
+      collideTips(state, base, guard);
+    }
+
+    // とがった点が布の粒の「すき間」を抜けないよう、点のまわりの布をまとめて押し出す
+    function collideTips(state, base, guard) {
+      const t = new THREE.Vector3(), sagD = new THREE.Vector3();
+      for (const c of state.cloths) {
+        const p = c.pos, pv = c.prev, cell = c.cell, R = cell * 2.2, hash = new Map();
+        for (let k = 0, i = 0; k < p.length; k += 3, i++) {
+          const key = colHashKey(Math.floor(p[k] / R), Math.floor(p[k + 1] / R), Math.floor(p[k + 2] / R));
+          let l = hash.get(key); if (!l) hash.set(key, (l = [])); l.push(i);
+        }
+        for (const col of state.colliders) {
+          const { pts, nrm, sharp } = col.surface;
+          if (!col.surface.tips) { const tips = []; for (let i = 0; i < sharp.length; i++) if (sharp[i] > 0.25) tips.push(i); col.surface.tips = tips; }
+          for (const i of col.surface.tips) {
+            t.set(pts[i * 3], pts[i * 3 + 1], pts[i * 3 + 2]);
+            if (col.sag) t.add(sagOffsetCpu(col.sag, t, sagD));
+            const nx = nrm[i * 3], ny = nrm[i * 3 + 1], nz = nrm[i * 3 + 2];
+            const need = t.x * nx + t.y * ny + t.z * nz + base + sharp[i] * guard;
+            const cx = Math.floor(t.x / R), cy = Math.floor(t.y / R), cz = Math.floor(t.z / R);
+            for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
+              const l = hash.get(colHashKey(cx + dx, cy + dy, cz + dz)); if (!l) continue;
+              for (const j of l) {
+                const k = j * 3, ox = p[k] - t.x, oy = p[k + 1] - t.y, oz = p[k + 2] - t.z;
+                const h = ox * nx + oy * ny + oz * nz;
+                if (h < -R) continue; // 反対側（裏側）の布は触らない
+                const lat = Math.hypot(ox - nx * h, oy - ny * h, oz - nz * h);
+                if (lat > R) continue;
+                const cur = p[k] * nx + p[k + 1] * ny + p[k + 2] * nz;
+                const f = Math.max(0, (lat - cell) / (R - cell)), want = need - f * f * (need - (t.x * nx + t.y * ny + t.z * nz));
+                if (cur < want) { const m = Math.min(want - cur, cell * 0.5); p[k] += nx * m; p[k + 1] += ny * m; p[k + 2] += nz * m; pv[k] += nx * m; pv[k + 1] += ny * m; pv[k + 2] += nz * m; } // 押した分だけ前の位置も動かし、はね飛ばさない
+              }
+            }
+          }
+        }
+      }
     }
 
     // ===== 布シミュレーション（ばね） =====
