@@ -1597,6 +1597,10 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M12 11v9M8 20h8"/></svg>
             体に留める
           </button>
+          <button id="cloth-wrap-open" type="button" title="選んだ布（なければ全部）を体の前面に巻き付けて、着せ始めやすい形にする">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8c4-4 12-4 16 0M4 16c4 4 12 4 16 0M12 4v16"/></svg>
+            体に巻く
+          </button>
         </div>
       </div>
       <div class="add-block" id="add-face">
@@ -1703,9 +1707,12 @@
       <div class="tools">
         <button id="cloth-sec-pane" type="button" title="布の展開図（縫い・留め・布シミュ）を表示/隠す"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="1"/><path d="M12 5v14M4 12h8"/></svg>展開図</button>
         <button id="cloth-sec-pin" type="button" title="3Dビューで布の点→体の表面の順にクリックして留める"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M12 11v9M8 20h8"/></svg>体に留める</button>
+        <button id="cloth-sec-wrap" type="button" title="この布を体の前面に巻き付けて、着せ始めやすい形にする"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8c4-4 12-4 16 0M4 16c4 4 12 4 16 0M12 4v16"/></svg>体に巻く</button>
         <button id="cloth-sec-sim" type="button" title="布シミュレーションを開始/停止"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg><span>シミュ開始</span></button>
+        <button id="cloth-sec-bake" type="button" title="シミュレーション中の垂れた形を布パーツに焼き込んで着せる（停止しても形が残る）" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v4H6zm2 6h8l-1 10H9z"/></svg>着せる</button>
+        <button id="cloth-sec-flat" type="button" title="着せる形を捨てて、平面の布に戻す" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="7" width="14" height="10" rx="1"/></svg>平面に戻す</button>
       </div>
-      <p class="hint cloth-note">縫い・留めの編集やシミュの細かい設定は展開図で行います。</p>
+      <p class="hint cloth-note">型紙→縫い／留め→シミュ→「着せる」の順で服にできます。細かい設定は展開図で。</p>
     </section>
     <div id="cloth-more" hidden>布ではあまり使わない設定</div>
     <section id="transform-section">
@@ -2110,9 +2117,9 @@
   <div id="seam3d-hint" hidden></div>
   <div id="cloth-pane" hidden>
     <header><strong>布の展開図</strong><button id="cloth-make" type="button" title="選んでいる平面パーツを布パーツにする／やめる">布にする</button><button id="cloth-fit" type="button" title="全体が見えるように表示">全体</button><button id="cloth-close" type="button" title="閉じる">×</button></header>
-    <div id="seam-tools" title="布どうし・布と体をつなぐ（つなぎ）">つなぐ:<button type="button" data-seam="sew" title="縫い：2つの布の点を縫い合わせる">縫い</button><button type="button" data-seam="edge" title="辺縫い：布の辺と辺をまるごと縫い合わせる（同じ布の向かいの辺なら筒になる）">辺縫い</button><button type="button" data-seam="pin" title="留め：布の点を別の布か体のパーツに固定（2点目を布の外でクリックすると体に留める）">留め</button><button type="button" data-seam="slide" title="スライド：つないだまま滑れる">スライド</button><button type="button" data-seam="cinch" title="締め：布を締める帯（いまは印のみ。変形はあとで）">締め</button><button type="button" id="seam-help-toggle" title="つなぎの使い方">?</button></div>
-    <div id="seam-help" hidden>「縫い／留め／スライド／締め」を押してから、展開図で布の1点目→2点目をクリックするとつなぎができます（頂点・辺に吸着）。留めは2点目を布の外でクリックすると、いちばん近い体のパーツに留めます。3Dビューでも「留め」を押した状態（またはメニュー「布を体に留める（3Dでクリック）」）で、布の点→体のパーツの表面の順にクリックすると、その場所に留められます。3Dでつなぎの線をクリックして選ぶと両端に白い丸（ハンドル）が出て、ドラッグで位置を微調節できます（体側は体の表面に沿って、別のパーツへも移せます。布側は布の上を動きます。Shiftを押しながらでゆっくり）。Deleteで削除。つなぎの線をクリックで選択し、下の欄で種類の変更・削除（Deleteキー）ができ、端をドラッグで位置を動かせます。「辺縫い」は辺の上を2回クリック（1本目の辺→2本目の辺）で、辺どうしをまるごと縫い合わせます。同じ布の向かいの辺を選ぶと筒・輪になります。ねじれたら下の欄の「向きを反転」。Escで中止。3Dビューにも線と点で表示され、保存・元に戻すに対応しています。<br>「布シミュ」の「開始」で布がばねで動きます（重力で垂れ、縫いは引き寄せ、留めは固定、スライドは弱くつなぎ、締めは縮める）。両端を縫った細い布は輪になります。「停止」で元の布に戻ります（パーツは変わりません）。「密着」を上げると体の表面に沿って吸い付きます。「摩擦」を上げると体の上で布がすべり落ちにくくなります。体との当たりは見た目の表面（垂れも含む）で調べ、とがった所は布を突き抜けにくくしています。</div>
-    <div id="sim-tools" title="ばねで布を動かして、垂れ方や縫い合わせの形を見る">布シミュ:<button type="button" id="sim-run">開始</button><button type="button" id="sim-reset" title="最初の形からやり直す">やり直し</button><label title="布の伸びにくさ">硬さ<input id="sim-stiff" type="range" min="0" max="1" step="0.05"></label><label title="折れ曲がりにくさ">曲げ<input id="sim-bend" type="range" min="0" max="1" step="0.05"></label><label title="体の表面にどれだけ吸い付くか">密着<input id="sim-hug" type="range" min="0" max="1" step="0.05"></label><label title="体の表面ですべりにくくする（高いほどずり落ちない）">摩擦<input id="sim-friction" type="range" min="0" max="1" step="0.05"></label><label><input id="sim-gravity" type="checkbox">重力</label><label><input id="sim-collide" type="checkbox">体に当たる</label></div>
+    <div id="seam-tools" title="布どうし・布と体をつなぐ（つなぎ）">つなぐ:<button type="button" data-seam="sew" title="縫い：2つの布の点を縫い合わせる">縫い</button><button type="button" data-seam="edge" title="辺縫い：布の辺と辺をまるごと縫い合わせる（同じ布の向かいの辺なら筒になる）">辺縫い</button><button type="button" data-seam="pin" title="留め：布の点を別の布か体のパーツに固定（2点目を布の外でクリックすると体に留める）">留め</button><button type="button" data-seam="slide" title="スライド：つないだまま滑れる">スライド</button><button type="button" data-seam="cinch" title="締め：2点を引き寄せて布を縮める（シミュ中に効く）">締め</button><button type="button" id="seam-help-toggle" title="つなぎの使い方">?</button></div>
+    <div id="seam-help" hidden>「縫い／留め／スライド／締め」を押してから、展開図で布の1点目→2点目をクリックするとつなぎができます（頂点・辺に吸着）。留めは2点目を布の外でクリックすると、いちばん近い体のパーツに留めます。3Dビューでも「留め」を押した状態（またはメニュー「布を体に留める（3Dでクリック）」）で、布の点→体のパーツの表面の順にクリックすると、その場所に留められます。3Dでつなぎの線をクリックして選ぶと両端に白い丸（ハンドル）が出て、ドラッグで位置を微調節できます（体側は体の表面に沿って、別のパーツへも移せます。布側は布の上を動きます。Shiftを押しながらでゆっくり）。Deleteで削除。つなぎの線をクリックで選択し、下の欄で種類の変更・削除（Deleteキー）ができ、端をドラッグで位置を動かせます。「辺縫い」は辺の上を2回クリック（1本目の辺→2本目の辺）で、辺どうしをまるごと縫い合わせます。同じ布の向かいの辺を選ぶと筒・輪になります。ねじれたら下の欄の「向きを反転」。Escで中止。3Dビューにも線と点で表示され、保存・元に戻すに対応しています。<br>着せ方の流れ：「体に巻く」で体に沿わせる → 縫い／留めでつなぐ →「布シミュ」の「開始」で垂らす → 形がよければ「着せる」で布パーツに焼き込む（停止しても形が残ります）。「停止」だけだと、まだ着せていない場合は平面に戻ります（すでに着せた形がある場合はその形のまま）。「平面に戻す」で着せた形を捨てて型紙の平面に戻せます。「密着」を上げると体の表面に沿って吸い付きます。「摩擦」を上げると体の上で布がすべり落ちにくくなります。体との当たりは見た目の表面（垂れも含む）で調べ、とがった所は布を突き抜けにくくしています。締めは2点を引き寄せるばねで、シミュ中に効きます（帯状の周長締めではありません）。</div>
+    <div id="sim-tools" title="ばねで布を動かして、垂れ方や縫い合わせの形を見る">布シミュ:<button type="button" id="sim-run">開始</button><button type="button" id="sim-bake" title="いまの垂れた形を布パーツに焼き込んで着せる（停止しても形が残る）" disabled>着せる</button><button type="button" id="sim-reset" title="最初の形からやり直す">やり直し</button><button type="button" id="sim-flat" title="着せる形を捨てて平面の布に戻す" hidden>平面に戻す</button><button type="button" id="sim-wrap" title="選んだ布（なければ全部）を体の前面に巻き付ける">体に巻く</button><label title="布の伸びにくさ">硬さ<input id="sim-stiff" type="range" min="0" max="1" step="0.05"></label><label title="折れ曲がりにくさ">曲げ<input id="sim-bend" type="range" min="0" max="1" step="0.05"></label><label title="体の表面にどれだけ吸い付くか">密着<input id="sim-hug" type="range" min="0" max="1" step="0.05"></label><label title="体の表面ですべりにくくする（高いほどずり落ちない）">摩擦<input id="sim-friction" type="range" min="0" max="1" step="0.05"></label><label><input id="sim-gravity" type="checkbox">重力</label><label><input id="sim-collide" type="checkbox">体に当たる</label></div>
     <canvas id="cloth-canvas"></canvas>
     <div id="seam-info">つなぎ: なし</div>
     <div id="cloth-info">布パーツはまだありません</div>
@@ -2334,7 +2341,8 @@
     <p>パーツを選ぶと左のパネルに「画像の投影」が出ます。「画像を選ぶ」で PNG・JPEG・WebP などの画像を読み込むと、そのパーツに画像が投影されます（透明な部分は元の色のまま）。「投影の向き」でパーツ自身の正面・背面・右・左・上・下のどこから当てるかを選び、横位置・縦位置・回転・大きさ・不透明度で調整します。大きさ 100% でパーツに収まる大きさになります。「繰り返す」で画像を敷き詰め、「裏面にも貼る」で反対側を向いた面にも、反対側から見て同じ向きに読めるように貼ります。画像はパーツと一緒に動き、カーブに沿わせて曲げても追従します。左右対称オンでは反対側のパーツにも鏡写しで投影されます。画像は保存ファイルに含まれます（長辺 1024px までに縮めて保存します）。「外す」で投影をやめます。</p>
 
     <p>平面パーツ（円・三角・四角）を1つ以上選ぶと（フォルダごとでも可）、左のパネルに「表面デカール」が出ます。沿わせる先のパーツを選んで「デカール（表面に沿わせる）」を押すと、平面がその向きのまま先のパーツの表面に投影され、曲面に貼り付いたシールのような形になります（重ねた平面は手前のものほど上に表示されます）。元の平面パーツは非表示のひな形として残ります。先のパーツを選ぶと一覧が出て、ひな形を動かしたあとの「沿わせ直す」や、元に戻す「解除」ができます。</p>
-    <p>「追加」の「布」で、服の型紙のような平らな布パーツを置けます。布パーツを置くと、中央の 3D ビューとパーツ一覧のあいだに「布の展開図」の列が開き（境目のドラッグで幅を変えられます。閉じると 3D ビューが広がります）、着せた状態（3D ビュー）と平らに広げた展開図を同時に見ながら編集できます（表示メニューの「布の展開図を表示/隠す」でも開閉できます）。展開図では布パーツをクリックで選び、ドラッグで展開図の中の配置を動かし、右下の角をドラッグで布の大きさ（縦・横）を変えます。大きさの変更は 3D ビューの布にもすぐ反映されます。3D ビューでは布は体の前に置かれる簡易表示で、いつもの移動・回転ギズモで体に合わせて置きます。新しい布パーツは肌色と見分けやすい青みがかった灰色（#7a9aa8）で置かれ、右クリックの「色を設定…」で変えられます。すでにある平面パーツ（円・三角・四角）は、選んで展開図の「布にする」で布パーツにできます（もう一度押すとやめます）。左右対称オンで相方がいる布パーツは、相方の大きさと展開図の配置も鏡写しで揃いますが、布パーツが勝手に増えたり消えたりすることはありません。ホイールで展開図を拡大・縮小、空いた所のドラッグで表示をずらせます。布パーツの設定はモデルと一緒に保存され、Ctrl+Z で元に戻せます。縫い合わせ・ピン・布のシミュレーションは今後追加予定です。</p>
+    <p>「追加」の「布」で、服の型紙のような平らな布パーツを置けます。布パーツを置くと、中央の 3D ビューとパーツ一覧のあいだに「布の展開図」の列が開き（境目のドラッグで幅を変えられます。閉じると 3D ビューが広がります）、3D ビューと平らに広げた展開図を同時に見ながら編集できます（表示メニューの「布の展開図を表示/隠す」でも開閉できます）。展開図では布パーツをクリックで選び、ドラッグで展開図の中の配置を動かし、右下の角をドラッグで布の大きさ（縦・横）を変えます。新しい布パーツは肌色と見分けやすい青みがかった灰色（#7a9aa8）で置かれ、右クリックの「色を設定…」で変えられます。すでにある平面パーツ（円・三角・四角）は、選んで展開図の「布にする」で布パーツにできます（もう一度押すとやめます）。左右対称オンで相方がいる布パーツは、相方の大きさと展開図の配置も鏡写しで揃いますが、布パーツが勝手に増えたり消えたりすることはありません。</p>
+    <p>着せ方は次の流れです。「体に巻く」で体の前面に沿わせる（またはギズモで置く）→ 展開図か 3D で「縫い」「辺縫い」「留め」「スライド」「締め」をつなぐ →「布シミュ」の「開始」で重力・ばね・体との当たりを動かして垂らす → 形がよければ「着せる」でその形を布パーツに焼き込みます。「着せる」後はシミュを止めても形が残り、モデルと一緒に保存できます。「停止」だけだと、まだ着せていない布は平面に戻り、すでに着せた形がある布はそのままです。「平面に戻す」で着せた形を捨てて型紙の平面に戻せます。シミュ中は密着・摩擦・硬さ・曲げを変えられ、体との当たりは見た目の表面（垂れも含む）で調べます。布どうしの突き抜け防止や、服が体をへこませる効果はまだありません。</p>
     <p>「追加」の「顔デカールを追加…」を押すと、顔デカールの専用画面が開きます。正面からの平行投影で、沿わせる先のパーツ（「頭」、なければ選んでいるパーツ、一番大きいパーツ）が薄く表示され、ほかのパーツは隠れます。「顔デカール」から右目（ちびキャラ風の3種を含む8種）・口・右眉の5種類ずつと右ほおのほお紅を選んで置き、平面パーツの位置・色・大きさをいつもの道具で整えます（追加した平面パーツも中身になります。目・眉・ほおは左右対称オンなら反対側も鏡写しで置かれます）。上の「編集を終える」で自動で表面に沿わせて元の画面に戻り、「キャンセル」または Esc で変更を破棄します。元の画面のパーツ一覧では、沿わせた先のパーツの下に「顔デカール」の行が1つだけ表示され、中の平面パーツは出てきません（リンクパーツと同じく中身は専用画面で編集します。鉛筆のボタンでも開けます）。行を選ぶと左のパネルで、まとまりのまま上下左右に動かす・拡大縮小・回転・削除・「パーツに戻す」ができます。左右の組は1つとして扱われ、元に戻すも1回で戻ります。</p>    <div class="modal-actions">
       <button id="help-close" type="button">閉じる</button>
     </div>
@@ -8908,7 +8916,7 @@ self.onmessage = (event) => {
       target.scale.copy(source.scale);
       setShear(target, source.userData.shear && [source.userData.shear[0], -source.userData.shear[1], -source.userData.shear[2]]);
       setSag(target, mirroredSag(source.userData.sag));
-      setCloth(target, source.userData.cloth ? { ...source.userData.cloth, u: -source.userData.cloth.u } : null);
+      setCloth(target, mirroredCloth(source.userData.cloth));
       if (FLAT_KINDS.has(source.userData.kind)) setDome(target, source.userData.dome);
       if (source.userData.kind === "loft") setLoft(target, mirroredLoft(source.userData.loft));
       if (detailOf(source) !== detailOf(target)) setDetail(target, detailOf(source));
@@ -10135,7 +10143,10 @@ self.onmessage = (event) => {
     document.getElementById("add-cloth").addEventListener("click", () => addClothPart());
     for (const id of ["cloth-pane-open", "cloth-sec-pane"]) document.getElementById(id).addEventListener("click", () => { toggleClothPane(); refreshClothSection(); });
     for (const id of ["cloth-pin-open", "cloth-sec-pin"]) document.getElementById(id).addEventListener("click", () => { setSeamTool("pin"); refreshClothSection(); });
+    for (const id of ["cloth-wrap-open", "cloth-sec-wrap"]) document.getElementById(id).addEventListener("click", () => wrapClothAroundBody());
     document.getElementById("cloth-sec-sim").addEventListener("click", () => { document.getElementById("sim-run").click(); refreshClothSection(); });
+    document.getElementById("cloth-sec-bake").addEventListener("click", () => bakeClothSim());
+    document.getElementById("cloth-sec-flat").addEventListener("click", () => clearSelectedClothWorn());
     document.getElementById("add-loft").addEventListener("click", () => addShape("loft"));
     document.getElementById("add-curve").addEventListener("click", () => addPath(false));
     document.getElementById("add-loop").addEventListener("click", () => addPath(true));
@@ -10295,7 +10306,7 @@ self.onmessage = (event) => {
         sag: mesh.userData.sag ?? null,
         collider: mesh.userData.collider ? structuredClone(mesh.userData.collider) : null,
         squish: mesh.userData.squish ? { ...mesh.userData.squish } : null,
-        cloth: mesh.userData.cloth ? { ...mesh.userData.cloth } : null,
+        cloth: mesh.userData.cloth ? structuredClone(mesh.userData.cloth) : null,
         sagFrom: mesh.userData.sagFrom ?? null,
         squishFrom: mesh.userData.squishFrom ?? null,
         sagOff: Boolean(mesh.userData.sagOff),
@@ -15216,7 +15227,7 @@ self.onmessage = (event) => {
         bone: mesh.userData.bone ?? undefined,
         collider: serializeCollider(mesh.userData.collider),
         squish: serializeSquish(mesh.userData.squish),
-        cloth: mesh.userData.cloth ? { ...mesh.userData.cloth } : undefined,
+        cloth: mesh.userData.cloth ? structuredClone(mesh.userData.cloth) : undefined,
         sagFrom: mesh.userData.sag && mesh.userData.sagFrom ? mesh.userData.sagFrom : undefined,
         squishFrom: mesh.userData.squish && mesh.userData.squishFrom ? mesh.userData.squishFrom : undefined,
         sagOff: mesh.userData.sagOff || undefined,
@@ -28504,7 +28515,11 @@ void main() {
       for (const id of ["cloth-pin-open", "cloth-sec-pin"]) document.getElementById(id).setAttribute("aria-pressed", String(seamTool === "pin"));
       const label = document.querySelector("#cloth-sec-sim span");
       const text = simState ? "シミュ停止" : "シミュ開始";
-      if (label.textContent !== text) label.textContent = text;
+      if (label && label.textContent !== text) label.textContent = text;
+      const bake = document.getElementById("cloth-sec-bake");
+      if (bake) bake.disabled = !simState;
+      const flat = document.getElementById("cloth-sec-flat");
+      if (flat) flat.hidden = !(selected?.userData?.cloth?.worn);
     }
     function refreshSummaryUI() {
       refreshClothSection();
@@ -28734,16 +28749,124 @@ void main() {
     });
 
     // ===== 布パーツと展開図 =====
+    function readWorn(value) {
+      if (!value || typeof value !== "object") return null;
+      const cols = Math.max(2, Math.min(60, Math.round(Number(value.cols))));
+      const rows = Math.max(2, Math.min(60, Math.round(Number(value.rows))));
+      if (!Number.isFinite(cols) || !Number.isFinite(rows)) return null;
+      const need = cols * rows * 3;
+      if (!Array.isArray(value.pos) || value.pos.length < need) return null;
+      const pos = new Array(need);
+      for (let i = 0; i < need; i++) pos[i] = roundNumber(Number(value.pos[i]) || 0);
+      return { cols, rows, pos };
+    }
+
     function readCloth(value) {
       if (!value || typeof value !== "object") return null;
       const num = (item) => (Number.isFinite(item) ? roundNumber(item) : 0);
-      return { u: num(value.u), v: num(value.v) };
+      const cloth = { u: num(value.u), v: num(value.v) };
+      const worn = readWorn(value.worn);
+      if (worn) cloth.worn = worn;
+      return cloth;
+    }
+
+    function mirroredCloth(cloth) {
+      const base = readCloth(cloth);
+      if (!base) return null;
+      const next = { u: -base.u, v: base.v };
+      if (base.worn) {
+        const { cols, rows, pos } = base.worn;
+        const out = new Array(pos.length);
+        for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+          const src = (j * cols + i) * 3;
+          const dst = (j * cols + (cols - 1 - i)) * 3;
+          out[dst] = roundNumber(-pos[src]);
+          out[dst + 1] = pos[src + 1];
+          out[dst + 2] = pos[src + 2];
+        }
+        next.worn = { cols, rows, pos: out };
+      }
+      return next;
+    }
+
+    function clothGridIndex(cols, rows) {
+      const index = [];
+      for (let j = 0; j + 1 < rows; j++) for (let i = 0; i + 1 < cols; i++) {
+        const k = j * cols + i;
+        index.push(k, k + 1, k + cols, k + 1, k + cols + 1, k + cols);
+      }
+      return index;
+    }
+
+    function applyClothWornGeometry(mesh) {
+      const worn = mesh.userData.cloth?.worn;
+      if (!worn) {
+        if (mesh.userData.clothWorn) {
+          delete mesh.userData.clothWorn;
+          replaceShapeGeometry(mesh);
+        }
+        return false;
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.Float32BufferAttribute(Float32Array.from(worn.pos), 3));
+      geometry.setIndex(clothGridIndex(worn.cols, worn.rows));
+      geometry.computeVertexNormals();
+      geometry.computeBoundingBox();
+      geometry.computeBoundingSphere();
+      const old = mesh.geometry;
+      mesh.geometry = geometry;
+      if (old && old !== geometry) old.dispose();
+      mesh.userData.clothWorn = true;
+      return true;
+    }
+
+    function clearClothWorn(mesh, commitChange = false) {
+      if (!mesh?.userData.cloth?.worn && !mesh?.userData.clothWorn) return false;
+      if (mesh.userData.cloth?.worn) {
+        const cloth = { u: mesh.userData.cloth.u, v: mesh.userData.cloth.v };
+        mesh.userData.cloth = cloth;
+      }
+      delete mesh.userData.clothWorn;
+      replaceShapeGeometry(mesh);
+      clothPaneDirty = true;
+      if (commitChange) commit();
+      return true;
+    }
+
+    // 着せた布の格子から、型紙上の正規化座標 (nx,ny) に対応するローカル位置を取る
+    const clothWornA = new THREE.Vector3(), clothWornB = new THREE.Vector3(), clothWornC = new THREE.Vector3(), clothWornD = new THREE.Vector3();
+    function clothWornLocal(mesh, nx, ny, out = new THREE.Vector3()) {
+      const worn = mesh.userData.cloth?.worn;
+      if (!worn) return null;
+      const { cols, rows, pos } = worn;
+      const u = (nx + 0.5) * (cols - 1);
+      const v = (ny + 0.5) * (rows - 1);
+      const i0 = Math.max(0, Math.min(cols - 2, Math.floor(u)));
+      const j0 = Math.max(0, Math.min(rows - 2, Math.floor(v)));
+      const fu = Math.max(0, Math.min(1, u - i0));
+      const fv = Math.max(0, Math.min(1, v - j0));
+      const at = (i, j, target) => {
+        const o = (j * cols + i) * 3;
+        return target.set(pos[o], pos[o + 1], pos[o + 2]);
+      };
+      at(i0, j0, clothWornA); at(i0 + 1, j0, clothWornB); at(i0, j0 + 1, clothWornC); at(i0 + 1, j0 + 1, clothWornD);
+      clothWornA.lerp(clothWornB, fu);
+      clothWornC.lerp(clothWornD, fu);
+      return out.copy(clothWornA).lerp(clothWornC, fv);
     }
 
     function setCloth(mesh, value) {
       const cloth = FLAT_KINDS.has(mesh.userData.kind) ? readCloth(value) : null;
       if (cloth) mesh.userData.cloth = cloth;
-      else delete mesh.userData.cloth;
+      else {
+        delete mesh.userData.cloth;
+        delete mesh.userData.clothWorn;
+      }
+      if (cloth?.worn) applyClothWornGeometry(mesh);
+      else if (mesh.userData.clothWorn) {
+        delete mesh.userData.clothWorn;
+        replaceShapeGeometry(mesh);
+      }
       clothPaneDirty = true;
     }
 
@@ -28925,8 +29048,10 @@ void main() {
       }
       drawSeams(ctx, canvas);
       const info = document.getElementById("cloth-info");
-      info.textContent = parts.length && seams.length ? `布パーツ ${parts.length} 個 · つなぎ ${seams.length} 本 · 線をクリックで選択・端をドラッグで移動` : parts.length
-        ? `布パーツ ${parts.length} 個 · クリックで選択 · ドラッグで配置 · 角で大きさ`
+      const worn = parts.filter((mesh) => mesh.userData.cloth?.worn).length;
+      const wornNote = worn ? ` · 着用 ${worn} 枚` : "";
+      info.textContent = parts.length && seams.length ? `布パーツ ${parts.length} 個 · つなぎ ${seams.length} 本${wornNote} · 線をクリックで選択・端をドラッグで移動` : parts.length
+        ? `布パーツ ${parts.length} 個${wornNote} · クリックで選択 · ドラッグで配置 · 角で大きさ`
         : "布パーツはまだありません（「追加」の「布」か「布にする」）";
     }
 
@@ -29091,9 +29216,11 @@ void main() {
       return [mesh.userData.cloth.u + end.x * w, mesh.userData.cloth.v + end.y * h];
     }
 
-    // 布の正規化座標 → 3Dのローカル座標
+    // 布の正規化座標 → 3Dのローカル座標（着せていればその格子から）
     function seamLocal(mesh, end) {
       if (end.p) return new THREE.Vector3(...end.p);
+      const worn = clothWornLocal(mesh, end.x, end.y);
+      if (worn) return worn;
       const kind = mesh.userData.kind;
       if (kind === "circle") return new THREE.Vector3(end.x * 0.18, end.y * 0.18, 0.003);
       if (kind === "flatTriangle") return new THREE.Vector3(end.x * 0.1732, -0.05 + (end.y + 0.5) * 0.15, 0.003);
@@ -29188,6 +29315,33 @@ void main() {
         if (!best || d < best.d) best = { mesh, d };
       }
       return best?.mesh ?? null;
+    }
+
+    function clearBodyPinsForCloth(mesh) {
+      const id = mesh?.userData?.id;
+      if (!id || !seams?.length) return;
+      const next = seams.filter((seam) => !(seam.type === "pin" && seam.a.part === id && seam.b?.p));
+      if (next.length !== seams.length) seams = next;
+    }
+
+    // 布の上辺などを体に自動で留め、巻いたあとにずり落ちにくくする
+    function pinClothEdgeToBody(mesh, y = 0.48, count = 5) {
+      if (!mesh?.userData?.cloth) return 0;
+      mesh.updateWorldMatrix(true, false);
+      let added = 0;
+      for (let i = 0; i < count; i++) {
+        const x = count === 1 ? 0 : -0.48 + (0.96 * i) / (count - 1);
+        const a = { part: mesh.userData.id, x: roundNumber(x), y: roundNumber(y) };
+        if (seams.some((seam) => seam.type === "pin" && seam.a.part === a.part && Math.hypot((seam.a.x ?? 0) - a.x, (seam.a.y ?? 0) - a.y) < 0.04)) continue;
+        const world = seamWorld(mesh, a);
+        const body = nearestBodyPart(world, mesh);
+        if (!body) continue;
+        body.updateWorldMatrix(true, false);
+        const local = body.worldToLocal(world.clone());
+        seams = [...seams, { id: `seam-${nextSeamId++}`, type: "pin", a, b: { part: body.userData.id, p: local.toArray().map(roundNumber) } }];
+        added += 1;
+      }
+      return added;
     }
 
     function seamEndScreen(seam, which, canvas) {
@@ -29804,9 +29958,12 @@ void main() {
         const n = cols * rows;
         const pos = new Float32Array(n * 3), prev = new Float32Array(n * 3), uv = [];
         mesh.updateWorldMatrix(true, false);
+        const fromWorn = Boolean(mesh.userData.cloth?.worn);
         for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
           const k = j * cols + i, nx = i / (cols - 1) - 0.5, ny = j / (rows - 1) - 0.5;
-          const p = mesh.localToWorld(seamLocal(mesh, { x: nx, y: ny }));
+          // 着せていればその形から、なければ型紙の平面から始める
+          const local = fromWorn ? (clothWornLocal(mesh, nx, ny) ?? seamLocal(mesh, { x: nx, y: ny })) : seamLocal(mesh, { x: nx, y: ny });
+          const p = mesh.localToWorld(local);
           pos.set([p.x, p.y, p.z], k * 3); prev.set([p.x, p.y, p.z], k * 3); uv.push([nx, ny]);
         }
         const springs = [];
@@ -29928,9 +30085,148 @@ void main() {
       for (const c of simState.cloths) {
         scene.remove(c.view); c.view.geometry.dispose(); c.view.material.dispose();
         c.mesh.visible = !c.mesh.userData.hidden;
+        // 着せていればその形を表示し、なければ型紙の平面へ
+        if (c.mesh.userData.cloth?.worn) applyClothWornGeometry(c.mesh);
       }
       simState = null;
       seam3dSig = "";
+      refreshSimButton();
+      requestRender();
+    }
+
+    function bakeClothSim() {
+      if (!simState?.cloths?.length) {
+        setFileStatus("シミュレーション中ではありません");
+        return false;
+      }
+      const inv = new THREE.Matrix4();
+      const v = new THREE.Vector3();
+      let count = 0;
+      for (const c of simState.cloths) {
+        if (!c.mesh.userData.cloth) continue;
+        c.mesh.updateWorldMatrix(true, false);
+        inv.copy(c.mesh.matrixWorld).invert();
+        const pos = new Array(c.pos.length);
+        for (let k = 0; k < c.pos.length; k += 3) {
+          v.set(c.pos[k], c.pos[k + 1], c.pos[k + 2]).applyMatrix4(inv);
+          pos[k] = roundNumber(v.x);
+          pos[k + 1] = roundNumber(v.y);
+          pos[k + 2] = roundNumber(v.z);
+        }
+        c.mesh.userData.cloth = { u: c.mesh.userData.cloth.u, v: c.mesh.userData.cloth.v, worn: { cols: c.cols, rows: c.rows, pos } };
+        applyClothWornGeometry(c.mesh);
+        count += 1;
+      }
+      if (!count) {
+        setFileStatus("着せられる布がありません");
+        return false;
+      }
+      commit();
+      stopClothSim();
+      setFileStatus(`${count}枚の布を着せました（平面に戻すで型紙に戻せます）`);
+      return true;
+    }
+
+    function bodyBoundsForCloth() {
+      const box = new THREE.Box3();
+      for (const mesh of editableMeshes()) {
+        if (mesh.userData.cloth || mesh.userData.hidden || mesh.userData.isMask || !mesh.visible) continue;
+        mesh.updateWorldMatrix(true, false);
+        if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+        box.union(mesh.geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld));
+      }
+      return box.isEmpty() ? null : box;
+    }
+
+    // 体の前面に円弧状に巻き付け、着せ始めやすい初期形にする
+    function wrapClothAroundBody(targets = null) {
+      if (simState) stopClothSim();
+      const box = bodyBoundsForCloth();
+      if (!box) {
+        setFileStatus("巻き付ける体のパーツがありません");
+        return;
+      }
+      let list = Array.isArray(targets) && targets.length ? targets.filter((mesh) => mesh?.userData?.cloth) : null;
+      if (!list?.length) {
+        list = selection.filter((mesh) => mesh?.userData?.cloth);
+        if (!list.length) list = clothParts();
+      }
+      if (!list.length) {
+        setFileStatus("布パーツがありません");
+        return;
+      }
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      const radius = Math.max(0.04, Math.max(size.x, size.z) * 0.32);
+      const span = Math.min(Math.PI * 1.05, Math.max(Math.PI * 0.55, (list[0] ? clothSize(list[0])[0] : radius) / Math.max(radius, 1e-6)));
+      const height = Math.max(0.06, Math.min(size.y * 0.55, list.reduce((max, mesh) => Math.max(max, clothSize(mesh)[1]), 0.1)));
+      const cols = 24, rows = 18;
+      const local = new THREE.Vector3();
+      const parent = edits;
+      parent.updateWorldMatrix(true, false);
+      let done = 0;
+      for (const mesh of list) {
+        if (!mesh.userData.cloth) continue;
+        const [pw, ph] = clothSize(mesh);
+        const wrapW = radius * span;
+        const wrapH = Math.max(0.05, Math.min(height, ph * 1.15));
+        mesh.scale.set(Math.max(0.2, wrapW / CLOTH_BASE), Math.max(0.2, wrapH / CLOTH_BASE), 1);
+        const worldPos = center.clone();
+        worldPos.z = center.z + radius * 0.15;
+        parent.worldToLocal(worldPos);
+        mesh.position.copy(worldPos);
+        mesh.quaternion.identity();
+        mesh.userData.home = mesh.position.toArray();
+        mesh.updateWorldMatrix(true, false);
+        const inv = mesh.matrixWorld.clone().invert();
+        const pos = [];
+        for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+          const u = i / (cols - 1);
+          const v = j / (rows - 1);
+          const ang = -span / 2 + u * span;
+          local.set(center.x + Math.sin(ang) * radius, center.y + (v - 0.5) * wrapH, center.z + Math.cos(ang) * radius).applyMatrix4(inv);
+          pos.push(roundNumber(local.x), roundNumber(local.y), roundNumber(local.z));
+        }
+        mesh.userData.cloth = { u: mesh.userData.cloth.u, v: mesh.userData.cloth.v, worn: { cols, rows, pos } };
+        applyClothWornGeometry(mesh);
+        clearBodyPinsForCloth(mesh);
+        pinClothEdgeToBody(mesh, 0.48, 5);
+        const partner = clothPartner(mesh);
+        if (partner?.userData.cloth && !list.includes(partner)) {
+          applyMirror(mesh, partner);
+          partner.scale.copy(mesh.scale);
+          if (partner.userData.cloth?.worn) {
+            clearBodyPinsForCloth(partner);
+            pinClothEdgeToBody(partner, 0.48, 5);
+          }
+        }
+        done += 1;
+      }
+      if (!done) {
+        setFileStatus("巻き付けられる布がありません");
+        return;
+      }
+      showClothPane(true);
+      commit();
+      setFileStatus(`${done}枚の布を体に巻き付け、上辺を体に留めました。シミュ→着せる、と進めてください`);
+      requestRender();
+    }
+
+    function clearSelectedClothWorn() {
+      if (simState) stopClothSim();
+      const list = selection.filter((mesh) => mesh?.userData?.cloth?.worn);
+      const targets = list.length ? list : clothParts().filter((mesh) => mesh.userData.cloth?.worn);
+      if (!targets.length) {
+        setFileStatus("着せた形の布がありません");
+        return;
+      }
+      for (const mesh of targets) {
+        clearClothWorn(mesh);
+        const partner = clothPartner(mesh);
+        if (partner?.userData.cloth?.worn && !targets.includes(partner)) clearClothWorn(partner);
+      }
+      commit();
+      setFileStatus(`${targets.length}枚の布を平面に戻しました`);
       refreshSimButton();
       requestRender();
     }
@@ -29940,12 +30236,22 @@ void main() {
       if (!clothParts().length) { setFileStatus("布パーツがありません"); return; }
       simState = buildClothSim();
       refreshSimButton();
-      setFileStatus("布シミュレーションを開始しました（停止で元の布に戻ります）");
+      setFileStatus("布シミュレーションを開始しました（「着せる」で形を残せます。停止だけだと未着用は平面に戻ります）");
     }
 
     function refreshSimButton() {
       const button = document.getElementById("sim-run");
       if (button) { button.textContent = simState ? "停止" : "開始"; button.classList.toggle("active", Boolean(simState)); }
+      const baking = Boolean(simState);
+      for (const id of ["sim-bake", "cloth-sec-bake"]) {
+        const el = document.getElementById(id);
+        if (el) el.disabled = !baking;
+      }
+      const hasWorn = clothParts().some((mesh) => mesh.userData.cloth?.worn);
+      for (const id of ["sim-flat", "cloth-sec-flat"]) {
+        const el = document.getElementById(id);
+        if (el) el.hidden = !hasWorn;
+      }
       refreshClothSection();
     }
 
@@ -29971,7 +30277,10 @@ void main() {
 
     function setupClothSim() {
       document.getElementById("sim-run").addEventListener("click", () => (simState ? stopClothSim() : startClothSim()));
+      document.getElementById("sim-bake").addEventListener("click", () => bakeClothSim());
       document.getElementById("sim-reset").addEventListener("click", () => { if (simState) startClothSim(); });
+      document.getElementById("sim-flat").addEventListener("click", () => clearSelectedClothWorn());
+      document.getElementById("sim-wrap").addEventListener("click", () => wrapClothAroundBody());
       const sync = () => {
         document.getElementById("sim-stiff").value = clothSim.stiff;
         document.getElementById("sim-bend").value = clothSim.bend;
@@ -29979,6 +30288,7 @@ void main() {
         document.getElementById("sim-friction").value = clothSim.friction;
         document.getElementById("sim-gravity").checked = clothSim.gravity;
         document.getElementById("sim-collide").checked = clothSim.collide;
+        refreshSimButton();
       };
       sync();
       window.addEventListener("gfv-sim-sync", sync);
