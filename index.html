@@ -196,6 +196,14 @@
 
     #sidebar > section { flex: none; padding: 12px 0; border-bottom: 1px solid var(--line); }
     #sidebar > section > h2 { margin-bottom: 10px; }
+    /* 長い説明は「?」の中へ。押すと開く・マウスを乗せると吹き出しで読める */
+    #sidebar .help-text { display: none; }
+    #sidebar > section.help-open .help-text:not([hidden]) { display: block; margin: 6px 0; padding: 6px 8px; border-left: 2px solid var(--accent); border-radius: 0 4px 4px 0; background: rgba(231, 181, 164, 0.07); color: var(--muted); font-size: 11px; line-height: 1.5; white-space: normal; }
+    .help-mark { flex: none; margin-left: auto; width: 18px; height: 18px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: transparent; color: var(--muted); font-size: 11px; font-weight: 700; line-height: 16px; text-align: center; cursor: help; letter-spacing: 0; }
+    .help-mark:hover, .help-mark[aria-pressed="true"] { border-color: var(--accent); color: var(--text); }
+    .help-mark[hidden] { display: none; }
+    #sidebar > section > h2 { display: flex; align-items: center; gap: 6px; }
+    #sidebar .sub-heading { margin: 12px 0 6px; }
     #sidebar > section > h2.collapsible {
       display: flex;
       align-items: center;
@@ -491,7 +499,7 @@
     .chain-card .chain-quick { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
     .chain-card .chain-quick button { flex: 1 1 auto; font-size: 12px; padding: 3px 6px; }
     .rig-time { min-width: 72px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; text-align: right; }
-    #sag-open-edit { margin: 0 0 8px; }
+    #sag-open-edit { display: block; width: 100%; margin: 4px 0 8px; font-size: 12px; }
     #sag-open-edit[hidden],
     #sag-group-block[hidden],
     #sag-follow-row[hidden],
@@ -25286,6 +25294,54 @@ self.onmessage = (event) => {
           field.blur();
         }
       });
+    }
+
+    // ===== 左メニューのヘルプ（?）：長い説明文は隠して、見出しの「?」で開く =====
+    const HELP_MIN_CHARS = 30;
+    const HELP_KEEP = new Set(["rig-motion-name", "rig-focus", "sag-group-info"]); // 状態の表示は出したまま
+    function tidySidebarHelp() {
+      for (const section of document.querySelectorAll("#sidebar > section[id]")) {
+        const heading = section.querySelector(":scope > h2");
+        if (!heading) continue;
+        let mark = heading.querySelector(":scope > .help-mark");
+        const texts = [];
+        for (const el of section.querySelectorAll("p.hint, p.relief-note")) {
+          const long = !HELP_KEEP.has(el.id) && el.textContent.trim().length >= HELP_MIN_CHARS;
+          if (el.classList.contains("help-text") !== long) el.classList.toggle("help-text", long);
+          if (long && !el.closest("[hidden]")) texts.push(el.textContent.trim());
+        }
+        if (!texts.length) { if (mark && !mark.hidden) mark.hidden = true; continue; }
+        if (!mark) {
+          mark = document.createElement("button");
+          mark.type = "button";
+          mark.className = "help-mark";
+          mark.textContent = "?";
+          mark.setAttribute("aria-label", "説明を表示");
+          mark.setAttribute("aria-pressed", "false");
+          mark.addEventListener("click", (event) => {
+            event.stopPropagation();
+            const open = !section.classList.contains("help-open");
+            section.classList.toggle("help-open", open);
+            mark.setAttribute("aria-pressed", String(open));
+            if (open && section.classList.contains("collapsed")) heading.click(); // 閉じた欄なら開く
+          });
+          mark.addEventListener("keydown", (event) => event.stopPropagation());
+          heading.appendChild(mark);
+        }
+        if (mark.hidden) mark.hidden = false;
+        const title = texts.join("\n\n");
+        if (mark.title !== title) mark.title = title;
+      }
+    }
+    {
+      let queued = false;
+      const observer = new MutationObserver(() => {
+        if (queued) return;
+        queued = true;
+        requestAnimationFrame(() => { queued = false; tidySidebarHelp(); });
+      });
+      observer.observe(document.getElementById("sidebar"), { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["hidden"] });
+      tidySidebarHelp();
     }
 
     const SIDEBAR_COLLAPSED_KEY = "editor.sidebarCollapsed";
