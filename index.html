@@ -572,6 +572,12 @@
     body.masking #add-sketches { display: none; }
     #add-sketches .tools { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     #add-solids .tools { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    #add-cloth-block button[aria-pressed="true"], #cloth-section button[aria-pressed="true"] { border-color: var(--accent); color: var(--text); background: rgba(231, 181, 164, 0.14); }
+    .cloth-note { margin: 8px 0 0; font-size: 11px; color: var(--muted); white-space: normal; }
+    /* 布を選んでいるときは、布で使う欄を上に、あまり使わない欄を下にまとめる */
+    #cloth-more { display: none; order: 50; margin: 14px 0 0; padding-top: 8px; color: var(--muted); font-size: 10px; font-weight: 650; letter-spacing: 0.12em; }
+    body.cloth-selected #cloth-more { display: block; }
+    body.cloth-selected #dome-section, body.cloth-selected #sag-section, body.cloth-selected #collider-section, body.cloth-selected #conform-section, body.cloth-selected #decal-section, body.cloth-selected #squish-section { order: 51; opacity: 0.8; }
     .add-category {
       margin: 12px 0 6px;
       color: var(--muted);
@@ -1536,9 +1542,22 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="1"/></svg>
             四角
           </button>
+        </div>
+      </div>
+      <div class="add-block" id="add-cloth-block">
+        <h3 class="add-category">布</h3>
+        <div class="tools">
           <button id="add-cloth" type="button" title="布パーツ（展開図で編集できる平らな布）">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6c3-2 11-2 14 0v12c-3 2-11 2-14 0z"/></svg>
-            布
+            布を追加
+          </button>
+          <button id="cloth-pane-open" type="button" aria-pressed="false" title="布の展開図（縫い・留め・布シミュ）を表示/隠す">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="1"/><path d="M12 5v14M4 12h8"/></svg>
+            展開図
+          </button>
+          <button id="cloth-pin-open" type="button" aria-pressed="false" title="3Dビューで布の点→体の表面の順にクリックして留める">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M12 11v9M8 20h8"/></svg>
+            体に留める
           </button>
         </div>
       </div>
@@ -1641,6 +1660,16 @@
       <h2 id="summary-heading">このパーツの設定</h2>
       <div id="summary-body"></div>
     </section>
+    <section id="cloth-section" hidden>
+      <h2>布</h2>
+      <div class="tools">
+        <button id="cloth-sec-pane" type="button" title="布の展開図（縫い・留め・布シミュ）を表示/隠す"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="1"/><path d="M12 5v14M4 12h8"/></svg>展開図</button>
+        <button id="cloth-sec-pin" type="button" title="3Dビューで布の点→体の表面の順にクリックして留める"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M12 11v9M8 20h8"/></svg>体に留める</button>
+        <button id="cloth-sec-sim" type="button" title="布シミュレーションを開始/停止"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg><span>シミュ開始</span></button>
+      </div>
+      <p class="hint cloth-note">縫い・留めの編集やシミュの細かい設定は展開図で行います。</p>
+    </section>
+    <div id="cloth-more" hidden>布ではあまり使わない設定</div>
     <section id="transform-section">
       <h2>変形</h2>
       <div class="tools">
@@ -10066,6 +10095,9 @@ self.onmessage = (event) => {
     document.getElementById("add-flat-triangle").addEventListener("click", () => addShape("flatTriangle"));
     document.getElementById("add-flat-square").addEventListener("click", () => addShape("flatSquare"));
     document.getElementById("add-cloth").addEventListener("click", () => addClothPart());
+    for (const id of ["cloth-pane-open", "cloth-sec-pane"]) document.getElementById(id).addEventListener("click", () => { toggleClothPane(); refreshClothSection(); });
+    for (const id of ["cloth-pin-open", "cloth-sec-pin"]) document.getElementById(id).addEventListener("click", () => { setSeamTool("pin"); refreshClothSection(); });
+    document.getElementById("cloth-sec-sim").addEventListener("click", () => { document.getElementById("sim-run").click(); refreshClothSection(); });
     document.getElementById("add-loft").addEventListener("click", () => addShape("loft"));
     document.getElementById("add-curve").addEventListener("click", () => addPath(false));
     document.getElementById("add-loop").addEventListener("click", () => addPath(true));
@@ -28327,7 +28359,23 @@ void main() {
       return rows.join("");
     }
 
+    var clothSectionReady = false;
+    // 左メニューの「布」まわり（選んだ布の欄・ボタンの押し込み表示）
+    function refreshClothSection() {
+      if (!clothSectionReady) return; // 起動中（つなぎの状態がまだ無い）は何もしない
+      const blocked = Boolean(maskTarget) || Boolean(reliefTarget) || Boolean(featureTarget) || Boolean(softTarget) || Boolean(faceSession);
+      const cloth = !blocked && selected?.userData?.cloth && selection.length === 1;
+      document.getElementById("cloth-section").hidden = !cloth;
+      document.body.classList.toggle("cloth-selected", Boolean(cloth));
+      const paneOpen = !document.getElementById("cloth-pane").hidden;
+      for (const id of ["cloth-pane-open", "cloth-sec-pane"]) document.getElementById(id).setAttribute("aria-pressed", String(paneOpen));
+      for (const id of ["cloth-pin-open", "cloth-sec-pin"]) document.getElementById(id).setAttribute("aria-pressed", String(seamTool === "pin"));
+      const label = document.querySelector("#cloth-sec-sim span");
+      const text = simState ? "シミュ停止" : "シミュ開始";
+      if (label.textContent !== text) label.textContent = text;
+    }
     function refreshSummaryUI() {
+      refreshClothSection();
       const body = document.getElementById("summary-body");
       if (!body.dataset.ready) return;
       const section = document.getElementById("summary-section");
@@ -28637,6 +28685,7 @@ void main() {
       document.body.classList.toggle("cloth-open", on);
       if (on && !clothView) fitClothView();
       clothPaneDirty = true;
+      refreshClothSection();
     }
 
     function toggleClothPane() {
@@ -29028,6 +29077,7 @@ void main() {
       for (const button of document.querySelectorAll("#seam-tools [data-seam]")) button.classList.toggle("active", button.dataset.seam === seamTool);
       document.getElementById("cloth-canvas").style.cursor = seamTool ? "crosshair" : "default";
       clothPaneDirty = true;
+      refreshClothSection();
     }
 
     function addSeam(type, a, b) {
@@ -29764,6 +29814,7 @@ void main() {
     function refreshSimButton() {
       const button = document.getElementById("sim-run");
       if (button) { button.textContent = simState ? "停止" : "開始"; button.classList.toggle("active", Boolean(simState)); }
+      refreshClothSection();
     }
 
     function tickClothSim() {
@@ -29995,6 +30046,8 @@ void main() {
 
     setupSeams();
     setupSeams3d();
+    clothSectionReady = true;
+    refreshClothSection();
     setupClothSim();
     setupClothPane();
   </script>
