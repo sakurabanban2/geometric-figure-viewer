@@ -141,6 +141,12 @@
     .menu-list hr { width: 100%; margin: 4px 0; border: 0; border-top: 1px solid var(--line); }
 
     #context-menu { position: fixed; z-index: 30; min-width: 170px; }
+    .submenu-wrap { position: relative; display: grid; }
+    .submenu-wrap > .menu-list { top: -5px; left: calc(100% - 2px); display: none; z-index: 2; }
+    .submenu-wrap.flip > .menu-list { left: auto; right: calc(100% - 2px); }
+    .submenu-wrap:hover > .menu-list, .submenu-wrap.open > .menu-list { display: grid; }
+    .menu-list button.submenu-trigger::after { content: "›"; margin-left: auto; padding-left: 12px; color: var(--muted, #999); font-size: 14px; }
+    .submenu-wrap:hover > button.submenu-trigger, .submenu-wrap.open > button.submenu-trigger { background: var(--panel-2); }
     #context-menu .context-title {
       padding: 4px 10px 6px;
       color: var(--muted);
@@ -1369,31 +1375,55 @@
           <button type="button" role="menuitem" data-command="undo">戻す<kbd>Ctrl+Z</kbd></button>
           <button type="button" role="menuitem" data-command="redo">やり直す<kbd>Ctrl+Y</kbd></button>
           <hr />
-          <button type="button" role="menuitem" data-action="cut">切り取り<kbd>Ctrl+X</kbd></button>
-          <button type="button" role="menuitem" data-action="copy">コピー<kbd>Ctrl+C</kbd></button>
-          <button type="button" role="menuitem" data-action="paste">貼り付け<kbd>Ctrl+V</kbd></button>
-          <button type="button" role="menuitem" data-action="duplicate">複製<kbd>Ctrl+D</kbd></button>
+          <div class="submenu-wrap">
+            <button type="button" role="menuitem" class="submenu-trigger" aria-haspopup="true">クリップボード</button>
+            <div class="menu-list" role="menu">
+            <button type="button" role="menuitem" data-action="cut">切り取り<kbd>Ctrl+X</kbd></button>
+            <button type="button" role="menuitem" data-action="copy">コピー<kbd>Ctrl+C</kbd></button>
+            <button type="button" role="menuitem" data-action="paste">貼り付け<kbd>Ctrl+V</kbd></button>
+            <button type="button" role="menuitem" data-action="duplicate">複製<kbd>Ctrl+D</kbd></button>
+            </div>
+          </div>
+          <div class="submenu-wrap">
+            <button type="button" role="menuitem" class="submenu-trigger" aria-haspopup="true">選択</button>
+            <div class="menu-list" role="menu">
+            <button type="button" role="menuitem" data-action="select-all">すべて選択<kbd>Ctrl+A</kbd></button>
+            <button type="button" role="menuitem" data-action="select-invert">選択を反転<kbd>Ctrl+I</kbd></button>
+            <button type="button" role="menuitem" data-action="select-none">選択を解除<kbd>Esc</kbd></button>
+            </div>
+          </div>
+          <div class="submenu-wrap">
+            <button type="button" role="menuitem" class="submenu-trigger" aria-haspopup="true">整理・表示</button>
+            <div class="menu-list" role="menu">
+            <button type="button" role="menuitem" data-action="group">新しいフォルダにまとめる<kbd>Ctrl+G</kbd></button>
+            <button type="button" role="menuitem" data-command="lock">ロック<kbd>L</kbd></button>
+            <button type="button" role="menuitem" data-action="hide">表示/非表示<kbd>H</kbd></button>
+            <button type="button" role="menuitem" data-action="show-all">すべて表示<kbd>Alt+H</kbd></button>
+            </div>
+          </div>
           <hr />
-          <button type="button" role="menuitem" data-action="select-all">すべて選択<kbd>Ctrl+A</kbd></button>
-          <button type="button" role="menuitem" data-action="select-invert">選択を反転<kbd>Ctrl+I</kbd></button>
-          <button type="button" role="menuitem" data-action="select-none">選択を解除<kbd>Esc</kbd></button>
+          <div class="submenu-wrap">
+            <button type="button" role="menuitem" class="submenu-trigger" aria-haspopup="true">編集モード</button>
+            <div class="menu-list" role="menu">
+            <button type="button" role="menuitem" data-action="relief">法線編集</button>
+            <button type="button" role="menuitem" data-action="feature">顔・手・足の編集</button>
+            <button type="button" role="menuitem" data-action="soft">揺れの編集</button>
+            <button type="button" role="menuitem" data-action="rig">ボーンとモーション</button>
+            </div>
+          </div>
+          <div class="submenu-wrap">
+            <button type="button" role="menuitem" class="submenu-trigger" aria-haspopup="true">変形・変換</button>
+            <div class="menu-list" role="menu">
+            <button type="button" role="menuitem" data-action="merge">選択中のパーツを結合</button>
+            <button type="button" role="menuitem" data-action="rasterize">ラスタライズ</button>
+            <button type="button" role="menuitem" data-command="reset-position">位置リセット</button>
+            <button type="button" role="menuitem" data-command="reset-rotation">回転リセット</button>
+            <button type="button" role="menuitem" data-action="scale-all" data-main-only>全体を拡縮</button>
+            <button type="button" role="menuitemcheckbox" data-command="symmetry">左右対称</button>
+            </div>
+          </div>
           <hr />
-          <button type="button" role="menuitem" data-action="group">新しいフォルダにまとめる<kbd>Ctrl+G</kbd></button>
-          <button type="button" role="menuitem" data-command="lock">ロック<kbd>L</kbd></button>
-          <button type="button" role="menuitem" data-action="hide">表示/非表示<kbd>H</kbd></button>
-          <button type="button" role="menuitem" data-action="show-all">すべて表示<kbd>Alt+H</kbd></button>
           <button type="button" role="menuitem" data-command="remove">削除<kbd>Del</kbd></button>
-          <button type="button" role="menuitem" data-action="merge">選択中のパーツを結合</button>
-          <button type="button" role="menuitem" data-action="rasterize">ラスタライズ</button>
-          <button type="button" role="menuitem" data-action="relief">法線編集</button>
-          <button type="button" role="menuitem" data-action="feature">顔・手・足の編集</button>
-          <button type="button" role="menuitem" data-action="soft">揺れの編集</button>
-          <button type="button" role="menuitem" data-action="rig">ボーンとモーション</button>
-          <button type="button" role="menuitem" data-command="reset-position">位置リセット</button>
-          <button type="button" role="menuitem" data-command="reset-rotation">回転リセット</button>
-          <hr />
-          <button type="button" role="menuitemcheckbox" data-command="symmetry">左右対称</button>
-          <button type="button" role="menuitem" data-action="scale-all" data-main-only>全体を拡縮</button>
         </div>
       </div>
       <div class="menu">
@@ -11786,20 +11816,21 @@ self.onmessage = (event) => {
       return {
         title: `リンク「${link.name}」`,
         items: [
-          { label: "マスク編集", disabled: !anchor || link.hidden, run: () => beginMaskEdit(anchor) },
-          { label: "リンク先モデルを編集", run: () => openLinkedModel(linkModel(link)) },
-          { label: "リンクをつけなおす…", disabled: masking, run: () => openRelinkDialog({ model: linkModel(link), name: link.name }) },
-          null,
-          ...clipItems(anchor ? [anchor] : []),
+          menuGroup("編集モード", [
+            { label: "マスク編集", disabled: !anchor || link.hidden, run: () => beginMaskEdit(anchor) },
+            { label: "リンク先モデルを編集", run: () => openLinkedModel(linkModel(link)) },
+          ]),
+          menuGroup("クリップボード", clipItems(anchor ? [anchor] : [])),
+          menuGroup("パスに沿わせる", anchor ? bindMenuItems(anchor, masking) : [{ label: "パスに沿わせる", disabled: true }]),
+          menuGroup("リンク", [
+            { label: "リンクをつけなおす…", disabled: masking, run: () => openRelinkDialog({ model: linkModel(link), name: link.name }) },
+            { label: "リンクを解除（パーツに戻す）", disabled: masking, run: () => unlinkModel(link.id) },
+          ]),
           null,
           { label: "名前の変更", disabled: masking, run: () => beginRename("link", link.id) },
           { label: link.hidden ? "表示" : "非表示", disabled: masking, run: () => toggleLinkHidden(link) },
           { label: link.mirror ? "左右対称を解除" : "左右対称に配置", disabled: masking, run: () => toggleLinkMirror(link) },
           null,
-          ...(anchor ? bindMenuItems(anchor, masking) : [{ label: "パスに沿わせる", disabled: true }]),
-          null,
-          null,
-          { label: "リンクを解除（パーツに戻す）", disabled: masking, run: () => unlinkModel(link.id) },
           {
             label: "削除",
             danger: true,
@@ -11826,9 +11857,8 @@ self.onmessage = (event) => {
         return {
           title: `マスク範囲「${shape.userData.label ?? ""}」`,
           items: [
-            ...bindMenuItems(shape, false),
-            null,
-            ...clipItems([shape]),
+            menuGroup("パスに沿わせる", bindMenuItems(shape, false)),
+            menuGroup("クリップボード", clipItems([shape])),
             null,
             {
               label: "削除",
@@ -11850,32 +11880,34 @@ self.onmessage = (event) => {
         return {
           title: multi ? `${sideText(mesh)}${mesh.userData.label ?? "パーツ"}（ほか${multi - 1}個を選択中）` : `${sideText(mesh)}${mesh.userData.label ?? "パーツ"}`,
           items: [
-            { label: "マスク編集", disabled: Boolean(reliefTarget) || Boolean(featureTarget) || Boolean(softTarget) || rigEditing, run: () => beginMaskEdit(mesh) },
-            { label: "法線編集", disabled: masking || hidden || Boolean(reliefTarget) || Boolean(featureTarget) || Boolean(softTarget) || rigEditing, run: () => beginReliefEdit(mesh) },
-            { label: "顔・手・足の編集", disabled: !canFeatureEdit(mesh), run: () => beginFeatureEdit(mesh) },
-            { label: "揺れの編集", disabled: !canSoftEdit(mesh), run: () => beginSoftEdit(mesh) },
-            { label: "別モデル化して別タブで編集", disabled: !canLink, run: () => makeLinkedModel({ type: "part", mesh }) },
-            {
-              label: "選択中のパーツを結合",
-              disabled: masking || !selection.includes(mesh) || mergeCandidates().length < 2,
-              run: () => mergeSelected(),
-            },
-            { label: "ラスタライズ", disabled: !canRasterize(mesh), run: () => rasterizePart(mesh) },
+            menuGroup("編集モード", [
+              { label: "マスク編集", disabled: Boolean(reliefTarget) || Boolean(featureTarget) || Boolean(softTarget) || rigEditing, run: () => beginMaskEdit(mesh) },
+              { label: "法線編集", disabled: masking || hidden || Boolean(reliefTarget) || Boolean(featureTarget) || Boolean(softTarget) || rigEditing, run: () => beginReliefEdit(mesh) },
+              { label: "顔・手・足の編集", disabled: !canFeatureEdit(mesh), run: () => beginFeatureEdit(mesh) },
+              { label: "揺れの編集", disabled: !canSoftEdit(mesh), run: () => beginSoftEdit(mesh) },
+              null,
+              { label: "別モデル化して別タブで編集", disabled: !canLink, run: () => makeLinkedModel({ type: "part", mesh }) },
+            ]),
+            menuGroup("クリップボード", clipItems([mesh])),
             null,
-            ...colliderMenuItems(mesh, masking),
-            ...squishMenuItems(mesh, masking),
+            menuGroup("変形・変換", [
+              {
+                label: "選択中のパーツを結合",
+                disabled: masking || !selection.includes(mesh) || mergeCandidates().length < 2,
+                run: () => mergeSelected(),
+              },
+              { label: "ラスタライズ", disabled: !canRasterize(mesh), run: () => rasterizePart(mesh) },
+            ]),
+            menuGroup("物理（当たり判定・柔らかさ）", [...colliderMenuItems(mesh, masking), ...squishMenuItems(mesh, masking)]),
+            menuGroup("左右対称", symmetryMenuItems(mesh, masking)),
+            menuGroup("パスに沿わせる", bindMenuItems(mesh, masking || locked)),
             null,
-            ...symmetryMenuItems(mesh, masking),
-            null,
-            ...bindMenuItems(mesh, masking || locked),
-            null,
-            ...clipItems([mesh]),
-            null,
-            ...folderItems(mesh, masking),
-            null,
-            { label: "名前の変更", disabled: masking, run: () => beginRename("part", mesh.userData.id) },
-            { label: "色を設定…", disabled: masking, run: () => pickPartColor(mesh, subject.x ?? 0, subject.y ?? 0) },
-            ...(colorTargets(mesh).some((item) => item.userData.color) ? [{ label: "色を元に戻す", disabled: masking, run: () => clearPartColor(mesh) }] : []),
+            menuGroup("フォルダ", folderItems(mesh, masking)),
+            menuGroup("名前と色", [
+              { label: "名前の変更", disabled: masking, run: () => beginRename("part", mesh.userData.id) },
+              { label: "色を設定…", disabled: masking, run: () => pickPartColor(mesh, subject.x ?? 0, subject.y ?? 0) },
+              ...(colorTargets(mesh).some((item) => item.userData.color) ? [{ label: "色を元に戻す", disabled: masking, run: () => clearPartColor(mesh) }] : []),
+            ]),
             ...(multi
               ? [
                 { label: `選択中の${multi}個をロック/解除`, disabled: masking, run: () => toggleLock() },
@@ -11913,18 +11945,21 @@ self.onmessage = (event) => {
       return {
         title: `フォルダ「${folder?.name ?? ""}」`,
         items: [
-          { label: "マスク編集", disabled: !visible.length && !visibleAnchors.length, run: () => beginMaskEdit([...visible, ...visibleAnchors], folder?.name ?? "") },
-          {
-            label: "別モデル化して別タブで編集",
-            disabled: !canLink || !meshes.length || linked.length > 0,
-            run: () => makeLinkedModel({ type: "folder", id: subject.id }),
-          },
+          menuGroup("編集モード", [
+            { label: "マスク編集", disabled: !visible.length && !visibleAnchors.length, run: () => beginMaskEdit([...visible, ...visibleAnchors], folder?.name ?? "") },
+            {
+              label: "別モデル化して別タブで編集",
+              disabled: !canLink || !meshes.length || linked.length > 0,
+              run: () => makeLinkedModel({ type: "folder", id: subject.id }),
+            },
+          ]),
+          menuGroup("クリップボード", clipItems([...visible, ...visibleAnchors, ...pathsInFolder.filter((curve) => !curve.userData.hidden)], subject.id)),
+          menuGroup("名前と色", [
+            { label: "名前の変更", disabled: masking, run: () => beginRename("folder", subject.id) },
+            { label: "色を設定…", disabled: masking, run: () => pickFolderColor(subject.id, subject.x ?? 0, subject.y ?? 0) },
+            ...(folder?.color ? [{ label: "色を元に戻す", disabled: masking, run: () => clearFolderColor(subject.id) }] : []),
+          ]),
           null,
-          ...clipItems([...visible, ...visibleAnchors, ...pathsInFolder.filter((curve) => !curve.userData.hidden)], subject.id),
-          null,
-          { label: "名前の変更", disabled: masking, run: () => beginRename("folder", subject.id) },
-          { label: "色を設定…", disabled: masking, run: () => pickFolderColor(subject.id, subject.x ?? 0, subject.y ?? 0) },
-          ...(folder?.color ? [{ label: "色を元に戻す", disabled: masking, run: () => clearFolderColor(subject.id) }] : []),
           { label: allLocked ? "ロック解除" : "ロック", disabled: masking || !lockables.length, run: () => toggleFolderLock(subject.id) },
           { label: allHidden ? "表示" : "非表示", disabled: masking || !hiddenFlags.length, run: () => toggleFolderHidden(subject.id) },
           folderSymmetryItem(subject.id, masking),
@@ -11992,13 +12027,61 @@ self.onmessage = (event) => {
       heading.className = "context-title";
       heading.textContent = title;
       nodes.push(heading);
+      nodes.push(...buildContextNodes(items));
+      contextMenu.replaceChildren(...nodes);
+      contextMenu.hidden = false;
+      const width = contextMenu.offsetWidth;
+      const height = contextMenu.offsetHeight;
+      contextMenu.style.left = `${Math.max(4, Math.min(x, window.innerWidth - width - 4))}px`;
+      contextMenu.style.top = `${Math.max(4, Math.min(y, window.innerHeight - height - 4))}px`;
+      const flip = contextMenu.getBoundingClientRect().right + 220 > window.innerWidth;
+      for (const wrap of contextMenu.querySelectorAll(".submenu-wrap")) wrap.classList.toggle("flip", flip);
+      contextMenu.querySelector("button:not(:disabled)")?.focus();
+    }
+
+    // 右クリックメニューの分類：{ label, submenu: [...] } はカーソルを乗せると開く下の階層になる
+    function menuGroup(label, items) {
+      if (!items.some(Boolean)) return false;
+      return { label, submenu: items };
+    }
+
+    function buildContextNodes(items) {
+      const nodes = [];
+      const clean = [];
       for (const item of items) {
+        if (item === false || item === undefined) continue; // 空の分類は出さない
+        if (item === null && (!clean.length || clean[clean.length - 1] === null)) continue;
+        clean.push(item);
+      }
+      while (clean.length && clean[clean.length - 1] === null) clean.pop();
+      for (const item of clean) {
         if (!item) {
           nodes.push(document.createElement("hr"));
           continue;
         }
         const button = document.createElement("button");
         button.type = "button";
+        if (item.submenu) {
+          const wrap = document.createElement("div");
+          wrap.className = "submenu-wrap";
+          button.className = "submenu-trigger";
+          button.setAttribute("role", "menuitem");
+          button.setAttribute("aria-haspopup", "true");
+          button.textContent = item.label;
+          const children = item.submenu.filter(Boolean);
+          button.disabled = children.length > 0 && children.every((child) => child.disabled);
+          const list = document.createElement("div");
+          list.className = "menu-list";
+          list.setAttribute("role", "menu");
+          list.append(...buildContextNodes(item.submenu));
+          button.addEventListener("click", () => wrap.classList.toggle("open"));
+          wrap.addEventListener("pointerenter", () => {
+            for (const other of wrap.parentElement.querySelectorAll(":scope > .submenu-wrap.open")) if (other !== wrap) other.classList.remove("open");
+          });
+          wrap.append(button, list);
+          nodes.push(wrap);
+          continue;
+        }
         button.setAttribute("role", item.checked === undefined ? "menuitem" : "menuitemcheckbox");
         if (item.checked !== undefined) button.setAttribute("aria-checked", String(Boolean(item.checked)));
         button.textContent = item.label;
@@ -12010,13 +12093,7 @@ self.onmessage = (event) => {
         });
         nodes.push(button);
       }
-      contextMenu.replaceChildren(...nodes);
-      contextMenu.hidden = false;
-      const width = contextMenu.offsetWidth;
-      const height = contextMenu.offsetHeight;
-      contextMenu.style.left = `${Math.max(4, Math.min(x, window.innerWidth - width - 4))}px`;
-      contextMenu.style.top = `${Math.max(4, Math.min(y, window.innerHeight - height - 4))}px`;
-      contextMenu.querySelector("button:not(:disabled)")?.focus();
+      return nodes;
     }
 
     document.addEventListener("pointerdown", (event) => {
@@ -17702,12 +17779,11 @@ self.onmessage = (event) => {
             disabled: !drawing && (masking || Boolean(reliefTarget)),
             run: () => (drawing ? endSketchDraw() : beginSketchDraw(sketch.id)),
           },
-          null,
-          ...[0, 25, 50, 75].map((value) => ({
+          menuGroup(`透過率（${transparency}%）`, [0, 25, 50, 75].map((value) => ({
             label: `透過率 ${value}%`,
             checked: transparency === value,
             run: () => setSketchOpacity(sketch, 1 - value / 100, true),
-          })),
+          }))),
           null,
           { label: "名前の変更", disabled: masking, run: () => beginRename("sketch", sketch.id) },
           { label: sketch.hidden ? "表示" : "非表示", run: () => toggleSketchHidden(sketch) },
@@ -19062,6 +19138,7 @@ self.onmessage = (event) => {
       return {
         title: point ? `${noun}「${name}」の点 ${index + 1}` : `${noun}「${name}」`,
         items: [
+          menuGroup(point ? "点の編集" : "点の追加", [
           ...adders,
           ...(point
             ? [{ label: point.userData.corner ? "滑らかな点にする" : "角にする", disabled: blocked, run: () => toggleCurveCorner(point) }]
@@ -19083,10 +19160,9 @@ self.onmessage = (event) => {
             disabled: blocked,
             run: () => toggleCurveMirror(curve, point),
           },
-          null,
-          ...clipItems([curve]),
-          null,
-          ...folderItems(curve, masking),
+          ]),
+          menuGroup("クリップボード", clipItems([curve])),
+          menuGroup("フォルダ", folderItems(curve, masking)),
           null,
           { label: "名前の変更", disabled: masking, run: () => beginRename("curve", curve.userData.id) },
           ...(curveMulti(curve)
@@ -25750,7 +25826,7 @@ self.onmessage = (event) => {
       });
       menu.querySelector(".menu-list").addEventListener("click", (event) => {
         const item = event.target.closest("button");
-        if (!item || item.disabled) return;
+        if (!item || item.disabled || item.classList.contains("submenu-trigger")) return;
         closeMenus();
         if (item.dataset.command) document.getElementById(item.dataset.command).click();
         else if (item.dataset.view) setView(item.dataset.view);
