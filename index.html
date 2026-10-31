@@ -754,7 +754,8 @@
 
     #scale-modal,
     #import-modal,
-    #relink-modal {
+    #relink-modal,
+    #template-modal {
       border: 1px solid var(--line);
       background: var(--panel);
       color: var(--text);
@@ -763,13 +764,17 @@
       width: min(380px, calc(100vw - 32px));
     }
 
+    #template-modal { width: min(520px, calc(100vw - 32px)); }
+
     #scale-modal::backdrop,
     #import-modal::backdrop,
-    #relink-modal::backdrop { background: rgba(8, 9, 12, 0.62); }
+    #relink-modal::backdrop,
+    #template-modal::backdrop { background: rgba(8, 9, 12, 0.62); }
 
     #scale-modal h2,
     #import-modal h2,
-    #relink-modal h2 {
+    #relink-modal h2,
+    #template-modal h2 {
       margin: 0 0 6px;
       color: var(--text);
       font-size: 15px;
@@ -779,12 +784,34 @@
 
     #scale-modal p,
     #import-modal p,
-    #relink-modal p {
+    #relink-modal p,
+    #template-modal p {
       margin: 0;
       color: var(--muted);
       font-size: 13px;
       line-height: 1.5;
     }
+
+    .template-choices {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .template-choices label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 12px 12px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      cursor: pointer;
+      min-height: 88px;
+    }
+    .template-choices label:has(input:checked) { border-color: var(--accent); background: rgba(231, 181, 164, 0.08); }
+    .template-choices input { position: absolute; opacity: 0; pointer-events: none; }
+    .template-choices strong { display: block; font-size: 14px; font-weight: 650; color: var(--text); }
+    .template-choices small { display: block; color: var(--muted); font-size: 12px; line-height: 1.45; }
 
     #relink-modal .relink-note { margin-top: 8px; font-size: 12px; }
 
@@ -2213,6 +2240,41 @@
       <button id="scale-apply" type="button">適用</button>
     </div>
   </dialog>
+  <dialog id="template-modal" aria-labelledby="template-title">
+    <h2 id="template-title">新しいモデル</h2>
+    <p>はじめの形を選んでください。あとからパーツの追加や変形で自由に変えられます。</p>
+    <div class="template-choices" role="radiogroup" aria-label="テンプレート">
+      <label>
+        <input type="radio" name="figure-template" value="female" checked />
+        <strong>女性</strong>
+        <small>頭・胴・胸・腕・脚のある直立の体。服や髪を足す土台向け。</small>
+      </label>
+      <label>
+        <input type="radio" name="figure-template" value="male" />
+        <strong>男性</strong>
+        <small>肩幅が広めで胸の膨らみがない直立の体。</small>
+      </label>
+      <label>
+        <input type="radio" name="figure-template" value="quadruped" />
+        <strong>四足動物</strong>
+        <small>頭・胴・前脚・後脚・しっぽ。犬や猫などの土台向け。</small>
+      </label>
+      <label>
+        <input type="radio" name="figure-template" value="bird" />
+        <strong>鳥</strong>
+        <small>頭・くちばし・胴・翼・脚・尾。鳥型キャラの土台向け。</small>
+      </label>
+      <label>
+        <input type="radio" name="figure-template" value="blank" />
+        <strong>空白</strong>
+        <small>パーツのない状態から自分で組みます。</small>
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button id="template-cancel" type="button">キャンセル</button>
+      <button id="template-apply" type="button">作成</button>
+    </div>
+  </dialog>
   <dialog id="import-modal" aria-labelledby="import-title">
     <h2 id="import-title">モデルをインポート</h2>
     <p id="import-summary"></p>
@@ -2314,7 +2376,7 @@
     <p>「パス」の「クリック」を押すと、中央の画面をクリックした位置に点を打ってパスを描けます。マウスの先に表示中のパーツがあればその表面に、何もなければ直前の点と同じ奥行きに点が付きます（カーソルの点が黄色なら表面、灰色なら空中です）。点が2つ以上の状態で右クリック・Enter・Esc を押すとカーブとして確定し、3点以上打ってから最初の点をクリックするとループになります。Backspace（または Ctrl+Z）で直前の点を取り消せます。描いている間は右ドラッグで視点を回せます。点のあいだは滑らかにつながり、確定後は通常のパスと同じように編集できます。</p>
     <p>「追加」の「下書き」で、画面に重ねて描ける下書きレイヤーを置けます。下書きは視点を回しても動かず、画面に貼り付いたまま表示されます（画面の中央を基準に、画面の高さに合わせて拡縮されます）。右のパーツ一覧にパーツやパスと同じように並び、ドラッグで並べ替えやフォルダへの出し入れができます。一覧で上にある下書きほど手前に表示されます。行を右クリックして「描く」を選ぶか、行のペンのボタンを押すと描画モードになり、画面上部のバーでペン・鉛筆・マーカー・直線・消しゴムを切り替え、色と太さを選んで左ドラッグで描けます。描画モード中も、右ドラッグで視点を回し、中ドラッグで平行移動、ホイールで拡大縮小できます。「透過率」で下書きの透け具合を変えられ、右クリックのメニューからも 0〜75% を選べます。描いた線は Ctrl+Z で1本ずつ取り消せ、保存ファイルにも含まれます。「完了」か Esc で描画モードを終えます。</p>
     <p>パーツを2つ以上選んで右クリック（または「編集」メニュー）から「選択中のパーツを結合」を選ぶと、重なった内側の面が消え、表面がすき間なくつながった1つのメッシュになります。元のパーツの表面はそのまま残り、変わるのはパーツどうしが接している部分だけです。左のパネルの「なだらか」で、接している部分のまわりの表面そのものを粘土のように盛り上げてなめらかにつなげます（つなぎ目のまわりは自動で細かく分割されます）。立体と平面の板も結合できます。結合したあとは元のパーツに戻せません（戻すには Ctrl+Z）。左右対称オンで片側のパーツだけを選んで結合すると、反対側も鏡像で結合されます。平面の円・三角・四角どうしも、同じ向きなら結合でき、輪郭が1つにつながった板になります。前後に重ねた平面は、飛び出した部分の厚みをそのまま残します。平面の「なだらか」は、パーツどうしが接している部分（輪郭が交わる角や、重ねた板の段差の付け根）にだけ丸みを付け、ほかの輪郭は変えません。パーツを1つ右クリックして「ラスタライズ」を選ぶと、モーフ・マスク・カーブに沿った曲がりをそのまま焼き込んだ形に変わります（リンクパーツ以外）。ラスタライズしたパーツや結合したパーツは、左のパネルの「角の丸み」で角や切り口をまとめて丸められます。マスクで切り取ったパーツでは「切り口」も表示され、ほかの角はそのままで切り口の縁だけを丸められます。マスク編集中でもラスタライズできます。</p>
-    <p>保存したモデルファイル（.json）を画面にドラッグ＆ドロップすると、「読み込み」と同じように開けます。「ファイル」→「新規作成」で、パーツが1つもないまっさらな状態から始められます。保存していない変更は破棄されます。「インポート」では、保存済みのモデルファイルを、1つのリンクパーツとして取り込むか、パーツとフォルダをすべて取り込むかを選べます。左のパネルと右のパーツ一覧は、境目をドラッグして幅を変えられます。左のパネルの見出し（「追加」「変形」など）をクリックすると、その項目を折りたためます。折りたたんだ状態は次に開いたときも保たれます。</p>
+    <p>保存したモデルファイル（.json）を画面にドラッグ＆ドロップすると、「読み込み」と同じように開けます。「ファイル」→「新規作成」（Ctrl+N）では、女性・男性・四足動物・鳥・空白のテンプレートから選んで始められます。選んだ形はあとからパーツの追加や変形で変えられます。保存していない変更は破棄されます。「インポート」では、保存済みのモデルファイルを、1つのリンクパーツとして取り込むか、パーツとフォルダをすべて取り込むかを選べます。左のパネルと右のパーツ一覧は、境目をドラッグして幅を変えられます。左のパネルの見出し（「追加」「変形」など）をクリックすると、その項目を折りたためます。折りたたんだ状態は次に開いたときも保たれます。</p>
     <p>フォルダの ×、または右クリックの「フォルダを削除」で、フォルダと中身をまとめて削除できます。中にパーツやリンク、カーブ、ループがあるときは確認が出ます。「フォルダを外す」は中身を残してフォルダだけを外します。右クリックの「色を設定…」でフォルダに色をつけると、中のパーツやリンクパーツ（下の階層のフォルダの中身も含む）がその色になります。中のフォルダに別の色をつけると、そちらが優先されます。「色を元に戻す」で元の肌色（または上のフォルダの色）に戻ります。パーツを右クリックして「色を設定…」を選ぶと、そのパーツだけに色をつけられ、フォルダの色より優先されます（複数選んでいるときは選んでいるパーツすべて、左右対称なら反対側にも同じ色がつきます）。色をつけたパーツやフォルダは、一覧の名前の前に色の印が出ます。パーツ一覧では、複数の行を選んだ状態で選んでいる行のどれかをドラッグすると、まとめて並べ替えたりフォルダに出し入れしたりできます。</p>
     <p>パーツを選ぶと左のパネルの「寸法」に、中心の位置・サイズ（パーツ自身の向きでの幅・高さ・奥行き）を cm で、回転を度で表示します。数値を入力して Enter で反映され、Esc で取り消せます。サイズを変えても中心の位置は変わりません。カーブやループを選んだときも同じように、線全体の中心の位置・サイズ・回転を編集できます（平らなパスで厚みが 0 の向きのサイズは変えられません）。「傾き」は、回転と同じ向きに片側の辺だけを倒して、四角をひし形にするようにパーツを歪ませます（X: 上が前へ、Y: 前が右へ、Z: 上が左へ。±75° まで）。「細かさ」でパーツごとのメッシュの細かさを % で変えられます（100% が標準、新しい三角は 50%）。右には頂点数が表示されます。</p>
     <p>パーツを2つ以上選ぶと「整列」が使えます。最後に選んだパーツが基準になり、ほかのパーツを「中心 X / Y / Z」で中心をそろえたり、「上に載せる」「下に付ける」で中心を合わせて上下にぴったり付けたりできます。「床に置く」は選んだパーツの一番下を床の高さに合わせます。</p>
@@ -12432,6 +12494,13 @@ self.onmessage = (event) => {
       if ((event.ctrlKey || event.metaKey) && event.code === "KeyA" && !isTextField(event.target)) event.preventDefault();
       if (document.getElementById("help-modal").open) return;
       if (document.getElementById("import-modal").open) return;
+      if (document.getElementById("template-modal").open) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          confirmFigureTemplate();
+        }
+        return;
+      }
       if (document.getElementById("scale-modal").open) {
         if (event.key === "Enter") {
           event.preventDefault();
@@ -25491,26 +25560,327 @@ self.onmessage = (event) => {
       return !maskTarget && !reliefTarget && !featureTarget && !softTarget;
     }
 
-    function createNewDocument() {
-      if (!loadingView.hidden || MODEL_ID || !baseline || !leaveEditModes()) return;
-      if (records.length || links.length || folders.length || curves.length || sketches.length) {
-        if (!window.confirm("今のモデルを閉じて、新しいモデルを作ります。保存していない変更は失われます。")) return;
+    // 新規作成用の体テンプレート（設計単位。実際の座標は PX 倍）
+    let startupTemplateDoc = null;
+    let startupTorsoSpan = 0.55;
+    const FIGURE_TEMPLATE_META = {
+      female: { name: "女性", file: "female.json" },
+      male: { name: "男性", file: "male.json" },
+      quadruped: { name: "四足動物", file: "quadruped.json" },
+      bird: { name: "鳥", file: "bird.json" },
+      blank: { name: "空白", file: DEFAULT_FILE_NAME },
+    };
+
+    function templateBodyPart(prefix, index, spec) {
+      const size = [spec.w * PX, spec.h * PX, spec.d * PX].map(roundNumber);
+      const position = [spec.x * PX, spec.y * PX, spec.z * PX].map(roundNumber);
+      const quaternion = (spec.quaternion ?? [0, 0, 0, 1]).map(roundNumber);
+      return {
+        id: `${prefix}-${index}`,
+        kind: "body",
+        label: spec.label,
+        parent: "edits",
+        position,
+        quaternion,
+        scale: [1, 1, 1],
+        size,
+        morph: 0,
+        sphere: BODY_SPHERE,
+        folderId: spec.folderId ?? null,
+        order: spec.order ?? 0,
+        home: [...position],
+      };
+    }
+
+    function templateBounds(parts) {
+      let minX = Infinity, minY = Infinity, minZ = Infinity, maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+      for (const part of parts) {
+        const [x, y, z] = part.position;
+        const [sx, sy, sz] = part.size;
+        minX = Math.min(minX, x - sx / 2); maxX = Math.max(maxX, x + sx / 2);
+        minY = Math.min(minY, y - sy / 2); maxY = Math.max(maxY, y + sy / 2);
+        minZ = Math.min(minZ, z - sz / 2); maxZ = Math.max(maxZ, z + sz / 2);
       }
-      applyState({ ...baseline, selected: null, selection: [], folders: [], links: [], curves: [], sketches: [], anchorMasks: [], records: [] });
-      history.length = 0;
-      historyIndex = -1;
+      return {
+        torso: [roundNumber((minX + maxX) / 2), roundNumber((minY + maxY) / 2), roundNumber((minZ + maxZ) / 2)],
+        height: maxY - minY,
+      };
+    }
+
+    function buildTemplateDocument({ folders, solos, pairs, torsoParts, prefix }) {
+      let index = 0;
+      const records = [];
+      const all = [];
+      for (const spec of solos) {
+        const mesh = templateBodyPart(prefix, index++, spec);
+        records.push({ kind: "body", solo: true, mesh, mirror: null });
+        all.push(mesh);
+      }
+      for (const [leftSpec, rightSpec] of pairs) {
+        const mesh = templateBodyPart(prefix, index++, leftSpec);
+        const mirror = templateBodyPart(prefix, index++, rightSpec);
+        records.push({ kind: "body", mesh, mirror });
+        all.push(mesh, mirror);
+      }
+      const focusLabels = new Set(torsoParts ?? []);
+      const focus = focusLabels.size ? all.filter((part) => focusLabels.has(part.label)) : all;
+      const bounds = templateBounds(focus.length ? focus : all);
+      // ガイド板の高さは起動時の胴に合わせ、体型に応じて scale.y で伸ばす
+      const guideScaleY = roundNumber(Math.max(0.35, (bounds.height + 0.35) / (startupTorsoSpan + 0.35)));
+      return {
+        version: 1,
+        symmetric: true,
+        torso: bounds.torso,
+        guide: {
+          position: bounds.torso,
+          scale: [1, guideScaleY, 1],
+        },
+        folders: folders.map((folder) => ({ ...folder })),
+        records,
+      };
+    }
+
+    function maleTemplateDocument() {
+      const folders = [
+        { id: "folder-1", name: "頭", parentId: null, order: 0 },
+        { id: "folder-2", name: "胴体", parentId: null, order: 1 },
+        { id: "folder-3", name: "腕", parentId: null, order: 2 },
+        { id: "folder-4", name: "左腕", parentId: "folder-3", order: 0 },
+        { id: "folder-5", name: "右腕", parentId: "folder-3", order: 1 },
+        { id: "folder-6", name: "脚", parentId: null, order: 3 },
+        { id: "folder-7", name: "左脚", parentId: "folder-6", order: 0 },
+        { id: "folder-8", name: "右脚", parentId: "folder-6", order: 1 },
+      ];
+      return buildTemplateDocument({
+        prefix: "body-male",
+        folders,
+        torsoParts: ["胸", "腰", "腰回り"],
+        solos: [
+          { label: "頭", w: 8.6, h: 8.4, d: 8.4, x: 0, y: 28.0, z: 0.1, folderId: "folder-1", order: 0 },
+          { label: "首", w: 3.8, h: 2.6, d: 3.6, x: 0, y: 22.6, z: 0, folderId: "folder-1", order: 1 },
+          { label: "胸", w: 8.2, h: 6.4, d: 4.2, x: 0, y: 18.8, z: -0.15, folderId: "folder-2", order: 0 },
+          { label: "腰", w: 5.2, h: 2.6, d: 3.4, x: 0, y: 14.8, z: 0, folderId: "folder-2", order: 1 },
+          { label: "腰回り", w: 8.4, h: 4.2, d: 4.6, x: 0, y: 11.6, z: -0.25, folderId: "folder-2", order: 2 },
+        ],
+        pairs: [
+          [
+            { label: "上腕", w: 3.2, h: 6.2, d: 3.5, x: 6.4, y: 17.8, z: 0.15, folderId: "folder-4", order: 0 },
+            { label: "上腕", w: 3.2, h: 6.2, d: 3.5, x: -6.4, y: 17.8, z: 0.15, folderId: "folder-5", order: 0 },
+          ],
+          [
+            { label: "前腕", w: 2.8, h: 5.8, d: 3.0, x: 7.0, y: 12.0, z: 0.25, folderId: "folder-4", order: 1 },
+            { label: "前腕", w: 2.8, h: 5.8, d: 3.0, x: -7.0, y: 12.0, z: 0.25, folderId: "folder-5", order: 1 },
+          ],
+          [
+            { label: "手", w: 3.2, h: 2.5, d: 2.8, x: 7.2, y: 8.4, z: 0.35, folderId: "folder-4", order: 2 },
+            { label: "手", w: 3.2, h: 2.5, d: 2.8, x: -7.2, y: 8.4, z: 0.35, folderId: "folder-5", order: 2 },
+          ],
+          [
+            { label: "太もも", w: 4.6, h: 6.8, d: 4.6, x: 2.15, y: 8.8, z: 0, folderId: "folder-7", order: 0 },
+            { label: "太もも", w: 4.6, h: 6.8, d: 4.6, x: -2.15, y: 8.8, z: 0, folderId: "folder-8", order: 0 },
+          ],
+          [
+            { label: "すね", w: 3.8, h: 6.2, d: 3.8, x: 2.15, y: 3.4, z: 0, folderId: "folder-7", order: 1 },
+            { label: "すね", w: 3.8, h: 6.2, d: 3.8, x: -2.15, y: 3.4, z: 0, folderId: "folder-8", order: 1 },
+          ],
+          [
+            { label: "足", w: 4.2, h: 1.8, d: 6.0, x: 2.15, y: 0.85, z: 0.75, folderId: "folder-7", order: 2 },
+            { label: "足", w: 4.2, h: 1.8, d: 6.0, x: -2.15, y: 0.85, z: 0.75, folderId: "folder-8", order: 2 },
+          ],
+        ],
+      });
+    }
+
+    function quadrupedTemplateDocument() {
+      const folders = [
+        { id: "folder-1", name: "頭", parentId: null, order: 0 },
+        { id: "folder-2", name: "胴体", parentId: null, order: 1 },
+        { id: "folder-3", name: "前脚", parentId: null, order: 2 },
+        { id: "folder-4", name: "左前脚", parentId: "folder-3", order: 0 },
+        { id: "folder-5", name: "右前脚", parentId: "folder-3", order: 1 },
+        { id: "folder-6", name: "後脚", parentId: null, order: 3 },
+        { id: "folder-7", name: "左後脚", parentId: "folder-6", order: 0 },
+        { id: "folder-8", name: "右後脚", parentId: "folder-6", order: 1 },
+        { id: "folder-9", name: "しっぽ", parentId: null, order: 4 },
+      ];
+      return buildTemplateDocument({
+        prefix: "body-quad",
+        folders,
+        torsoParts: ["胸", "腹", "尻"],
+        solos: [
+          { label: "頭", w: 5.2, h: 4.6, d: 6.2, x: 0, y: 8.6, z: 10.2, folderId: "folder-1", order: 0 },
+          { label: "首", w: 3.6, h: 3.4, d: 4.2, x: 0, y: 8.0, z: 6.6, folderId: "folder-1", order: 1 },
+          { label: "胸", w: 7.2, h: 6.8, d: 7.5, x: 0, y: 8.0, z: 2.2, folderId: "folder-2", order: 0 },
+          { label: "腹", w: 6.2, h: 5.4, d: 7.0, x: 0, y: 7.0, z: -2.8, folderId: "folder-2", order: 1 },
+          { label: "尻", w: 6.6, h: 6.4, d: 5.2, x: 0, y: 7.6, z: -7.2, folderId: "folder-2", order: 2 },
+          { label: "しっぽ", w: 1.6, h: 1.6, d: 6.5, x: 0, y: 9.0, z: -11.2, folderId: "folder-9", order: 0 },
+        ],
+        pairs: [
+          [
+            { label: "耳", w: 1.6, h: 2.8, d: 0.9, x: 2.1, y: 10.8, z: 11.0, folderId: "folder-1", order: 2 },
+            { label: "耳", w: 1.6, h: 2.8, d: 0.9, x: -2.1, y: 10.8, z: 11.0, folderId: "folder-1", order: 3 },
+          ],
+          [
+            { label: "上腕", w: 2.3, h: 4.8, d: 2.3, x: 2.6, y: 4.2, z: 4.0, folderId: "folder-4", order: 0 },
+            { label: "上腕", w: 2.3, h: 4.8, d: 2.3, x: -2.6, y: 4.2, z: 4.0, folderId: "folder-5", order: 0 },
+          ],
+          [
+            { label: "前腕", w: 1.9, h: 4.2, d: 1.9, x: 2.6, y: 1.6, z: 4.1, folderId: "folder-4", order: 1 },
+            { label: "前腕", w: 1.9, h: 4.2, d: 1.9, x: -2.6, y: 1.6, z: 4.1, folderId: "folder-5", order: 1 },
+          ],
+          [
+            { label: "足", w: 2.6, h: 1.2, d: 3.2, x: 2.6, y: 0.55, z: 4.5, folderId: "folder-4", order: 2 },
+            { label: "足", w: 2.6, h: 1.2, d: 3.2, x: -2.6, y: 0.55, z: 4.5, folderId: "folder-5", order: 2 },
+          ],
+          [
+            { label: "太もも", w: 2.6, h: 5.2, d: 2.6, x: 2.6, y: 4.4, z: -6.2, folderId: "folder-7", order: 0 },
+            { label: "太もも", w: 2.6, h: 5.2, d: 2.6, x: -2.6, y: 4.4, z: -6.2, folderId: "folder-8", order: 0 },
+          ],
+          [
+            { label: "すね", w: 2.0, h: 4.2, d: 2.0, x: 2.6, y: 1.6, z: -6.5, folderId: "folder-7", order: 1 },
+            { label: "すね", w: 2.0, h: 4.2, d: 2.0, x: -2.6, y: 1.6, z: -6.5, folderId: "folder-8", order: 1 },
+          ],
+          [
+            { label: "足", w: 2.6, h: 1.2, d: 3.4, x: 2.6, y: 0.55, z: -5.9, folderId: "folder-7", order: 2 },
+            { label: "足", w: 2.6, h: 1.2, d: 3.4, x: -2.6, y: 0.55, z: -5.9, folderId: "folder-8", order: 2 },
+          ],
+        ],
+      });
+    }
+
+    function birdTemplateDocument() {
+      const folders = [
+        { id: "folder-1", name: "頭", parentId: null, order: 0 },
+        { id: "folder-2", name: "胴体", parentId: null, order: 1 },
+        { id: "folder-3", name: "翼", parentId: null, order: 2 },
+        { id: "folder-4", name: "左翼", parentId: "folder-3", order: 0 },
+        { id: "folder-5", name: "右翼", parentId: "folder-3", order: 1 },
+        { id: "folder-6", name: "脚", parentId: null, order: 3 },
+        { id: "folder-7", name: "左脚", parentId: "folder-6", order: 0 },
+        { id: "folder-8", name: "右脚", parentId: "folder-6", order: 1 },
+        { id: "folder-9", name: "尾", parentId: null, order: 4 },
+      ];
+      return buildTemplateDocument({
+        prefix: "body-bird",
+        folders,
+        torsoParts: ["胴"],
+        solos: [
+          { label: "頭", w: 3.6, h: 3.5, d: 3.6, x: 0, y: 14.2, z: 2.6, folderId: "folder-1", order: 0 },
+          { label: "くちばし", w: 1.4, h: 1.1, d: 3.2, x: 0, y: 13.6, z: 4.8, folderId: "folder-1", order: 1 },
+          { label: "首", w: 2.1, h: 3.2, d: 2.1, x: 0, y: 12.0, z: 1.5, folderId: "folder-1", order: 2 },
+          { label: "胴", w: 5.2, h: 5.0, d: 7.2, x: 0, y: 9.0, z: 0, folderId: "folder-2", order: 0 },
+          { label: "尾", w: 4.2, h: 0.9, d: 5.4, x: 0, y: 9.0, z: -5.2, folderId: "folder-9", order: 0 },
+        ],
+        pairs: [
+          [
+            { label: "翼の付け根", w: 5.8, h: 1.1, d: 3.4, x: 4.4, y: 10.0, z: 0.2, folderId: "folder-4", order: 0 },
+            { label: "翼の付け根", w: 5.8, h: 1.1, d: 3.4, x: -4.4, y: 10.0, z: 0.2, folderId: "folder-5", order: 0 },
+          ],
+          [
+            { label: "翼の先", w: 5.0, h: 0.85, d: 2.8, x: 8.6, y: 9.4, z: -0.4, folderId: "folder-4", order: 1 },
+            { label: "翼の先", w: 5.0, h: 0.85, d: 2.8, x: -8.6, y: 9.4, z: -0.4, folderId: "folder-5", order: 1 },
+          ],
+          [
+            { label: "太もも", w: 1.5, h: 3.4, d: 1.5, x: 1.5, y: 5.6, z: 0.4, folderId: "folder-7", order: 0 },
+            { label: "太もも", w: 1.5, h: 3.4, d: 1.5, x: -1.5, y: 5.6, z: 0.4, folderId: "folder-8", order: 0 },
+          ],
+          [
+            { label: "すね", w: 1.15, h: 3.8, d: 1.15, x: 1.5, y: 2.6, z: 0.7, folderId: "folder-7", order: 1 },
+            { label: "すね", w: 1.15, h: 3.8, d: 1.15, x: -1.5, y: 2.6, z: 0.7, folderId: "folder-8", order: 1 },
+          ],
+          [
+            { label: "足", w: 2.6, h: 0.75, d: 3.6, x: 1.5, y: 0.45, z: 1.5, folderId: "folder-7", order: 2 },
+            { label: "足", w: 2.6, h: 0.75, d: 3.6, x: -1.5, y: 0.45, z: 1.5, folderId: "folder-8", order: 2 },
+          ],
+        ],
+      });
+    }
+
+    function figureTemplateDocument(id) {
+      if (id === "female") return structuredClone(startupTemplateDoc);
+      if (id === "male") return maleTemplateDocument();
+      if (id === "quadruped") return quadrupedTemplateDocument();
+      if (id === "bird") return birdTemplateDocument();
+      return null;
+    }
+
+    function clearNewDocumentUi() {
       focusedFolder = null;
       folderPick = null;
       collapsedFolders.clear();
       select(null);
+    }
+
+    function finishBlankDocument() {
+      applyState({ ...baseline, selected: null, selection: [], folders: [], links: [], curves: [], sketches: [], anchorMasks: [], records: [] });
+      history.length = 0;
+      historyIndex = -1;
+      clearNewDocumentUi();
       commit();
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(serialize())); } catch { /* 新しい状態の保存に失敗しても画面は空のまま */ }
       markSaved();
-      setDocFileName(DEFAULT_FILE_NAME, null, false);
-      setFileStatus("新しいモデルを作りました");
+      setDocFileName(FIGURE_TEMPLATE_META.blank.file, null, false);
+      setFileStatus("空白のモデルを作りました");
+    }
+
+    async function applyFigureTemplate(id) {
+      const meta = FIGURE_TEMPLATE_META[id] ?? FIGURE_TEMPLATE_META.blank;
+      if (id === "blank") {
+        finishBlankDocument();
+        return;
+      }
+      const data = figureTemplateDocument(id);
+      if (!data) {
+        finishBlankDocument();
+        return;
+      }
+      const ok = await withLoading(`${meta.name}のテンプレートを開いています`, data, () => loadDocument(data));
+      if (!ok) {
+        setFileStatus("テンプレートを開けませんでした");
+        return;
+      }
+      // loadDocument が履歴を作り直しているので、ここでは UI だけ整える
+      clearNewDocumentUi();
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(serialize())); } catch { /* 保存に失敗してもテンプレートは表示されたまま */ }
+      markSaved();
+      setDocFileName(meta.file, null, false);
+      setFileStatus(`${meta.name}のテンプレートで新しいモデルを作りました`);
+    }
+
+    function openTemplateModal() {
+      const modal = document.getElementById("template-modal");
+      const female = modal.querySelector('input[value="female"]');
+      if (female) female.checked = true;
+      if (!modal.open) modal.showModal();
+    }
+
+    function closeTemplateModal() {
+      const modal = document.getElementById("template-modal");
+      if (modal.open) modal.close();
+    }
+
+    function confirmFigureTemplate() {
+      const modal = document.getElementById("template-modal");
+      if (!modal.open) return;
+      const picked = modal.querySelector('input[name="figure-template"]:checked')?.value || "female";
+      closeTemplateModal();
+      applyFigureTemplate(picked);
+    }
+
+    function createNewDocument() {
+      if (!loadingView.hidden || MODEL_ID || !baseline || !startupTemplateDoc || !leaveEditModes()) return;
+      if (records.length || links.length || folders.length || curves.length || sketches.length) {
+        if (!window.confirm("今のモデルを閉じて、新しいモデルを作ります。保存していない変更は失われます。")) return;
+      }
+      openTemplateModal();
     }
 
     document.getElementById("new-file").addEventListener("click", createNewDocument);
+    document.getElementById("template-cancel").addEventListener("click", closeTemplateModal);
+    document.getElementById("template-apply").addEventListener("click", confirmFigureTemplate);
+    document.getElementById("template-modal").addEventListener("click", (event) => {
+      if (event.target === event.currentTarget) closeTemplateModal();
+    });
     document.getElementById("save").addEventListener("click", () => saveDocument(false));
     document.getElementById("save-as").addEventListener("click", () => saveDocument(true));
     document.getElementById("load").addEventListener("click", () => {
@@ -25878,6 +26248,7 @@ self.onmessage = (event) => {
     resize();
     commit();
     baseline = packState();
+    startupTorsoSpan = Math.max(0.2, torsoBounds.getSize(new THREE.Vector3()).y);
     function showModelTitle() {
       const title = modelName || "リンクモデル";
       document.querySelector("#menubar .brand h1").textContent = `リンク: ${title}`;
@@ -29788,6 +30159,7 @@ void main() {
       return { stiff: num(v.stiff, 0.9), bend: num(v.bend, 0.3), hug: num(v.hug, 0.5), friction: num(v.friction, 0.7), gravity: v.gravity !== false, collide: v.collide !== false };
     }
     function serializeClothSim() {
+      if (!clothSim) return undefined;
       const d = readClothSim({});
       return Object.keys(d).some((k) => d[k] !== clothSim[k]) ? { ...clothSim } : undefined;
     }
@@ -30182,6 +30554,8 @@ void main() {
     refreshClothSection();
     setupClothSim();
     setupClothPane();
+    // 布シミュ初期化後に撮る（serialize が clothSim を読むため）
+    startupTemplateDoc = serialize();
   </script>
 </body>
 </html>
