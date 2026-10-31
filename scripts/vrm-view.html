@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VRM 確認</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #14161c; color: #e7e1d8; font: 14px/1.5 sans-serif; }
+    #bar { display: flex; gap: 8px; align-items: center; padding: 8px 12px; background: #1c1f28; }
+    #bar button, #bar label { background: #2a3142; color: inherit; border: 1px solid #3c4458; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+    #status { padding: 4px 12px 8px; color: #b7b1a8; white-space: pre-wrap; }
+    #view { width: 100%; height: calc(100% - 92px); display: block; }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+      "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.5.5/lib/three-vrm.module.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="bar">
+    <label>VRMを開く<input id="file" type="file" accept=".vrm,.glb" hidden /></label>
+    <button id="pose" type="button" disabled>左腕を上げる</button>
+    <button id="reset" type="button" disabled>元の姿勢</button>
+  </div>
+  <div id="status">VRM 1.0 を読み込んで、人型ボーンで腕が動くか確認します。</div>
+  <canvas id="view"></canvas>
+  <script type="module">
+    import * as THREE from "three";
+    import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+    import { VRMLoaderPlugin } from "@pixiv/three-vrm";
+
+    const REQUIRED = ["hips", "spine", "head", "leftUpperArm", "leftLowerArm", "leftHand", "rightUpperArm", "rightLowerArm", "rightHand", "leftUpperLeg", "leftLowerLeg", "leftFoot", "rightUpperLeg", "rightLowerLeg", "rightFoot"];
+    const status = document.getElementById("status");
+    const canvas = document.getElementById("view");
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(1);
+    renderer.setSize(canvas.clientWidth || 800, canvas.clientHeight || 600, false);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x14161c);
+    const camera = new THREE.PerspectiveCamera(35, 1, 0.05, 50);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+    const key = new THREE.DirectionalLight(0xffffff, 1.4);
+    key.position.set(1.2, 2.4, 2.2);
+    scene.add(key);
+    const fill = new THREE.DirectionalLight(0xffd0c0, 0.45);
+    fill.position.set(-2, 1.2, -1);
+    scene.add(fill);
+
+    let vrm = null;
+    let poseBone = null;
+    const loader = new GLTFLoader();
+    loader.register((parser) => new VRMLoaderPlugin(parser));
+
+    function resize() {
+      const width = canvas.clientWidth || window.innerWidth;
+      const height = canvas.clientHeight || Math.max(200, window.innerHeight - 92);
+      renderer.setSize(width, height, false);
+      camera.aspect = width / Math.max(height, 1);
+      camera.updateProjectionMatrix();
+    }
+    window.addEventListener("resize", resize);
+
+    function meshesOf() {
+      const meshes = [];
+      vrm.scene.traverse((object) => {
+        if (object.isSkinnedMesh) meshes.push(object);
+      });
+      return meshes;
+    }
+
+    function syncSkeleton() {
+      vrm.scene.updateMatrixWorld(true);
+      for (const mesh of meshesOf()) mesh.skeleton.update();
+    }
+
+    function skinnedPoint(mesh, index, target) {
+      const position = mesh.geometry.attributes.position;
+      const skinIndex = mesh.geometry.attributes.skinIndex;
+      const skinWeight = mesh.geometry.attributes.skinWeight;
+      const local = new THREE.Vector4(position.getX(index), position.getY(index), position.getZ(index), 1).applyMatrix4(mesh.bindMatrix);
+      const skinned = new THREE.Vector4();
+      for (let slot = 0; slot < 4; slot += 1) {
+        const weight = skinWeight.getComponent(index, slot);
+        if (weight === 0) continue;
+        const bone = skinIndex.getComponent(index, slot);
+        _boneMatrix.fromArray(mesh.skeleton.boneMatrices, bone * 16);
+        skinned.addScaledVector(_weighted.copy(local).applyMatrix4(_boneMatrix), weight);
+      }
+      skinned.applyMatrix4(mesh.bindMatrixInverse);
+      return target.set(skinned.x, skinned.y, skinned.z).applyMatrix4(mesh.matrixWorld);
+    }
+    const _boneMatrix = new THREE.Matrix4();
+    const _weighted = new THREE.Vector4();
+    const _point = new THREE.Vector3();
+
+    function histogram() {
+      const counts = {};
+      for (const mesh of meshesOf()) {
+        const skinIndex = mesh.geometry.attributes.skinIndex;
+        const bones = mesh.skeleton.bones;
+        for (let i = 0; i < skinIndex.count; i += 1) {
+          const name = bones[skinIndex.getX(i)]?.name ?? "?";
+          counts[name] = (counts[name] ?? 0) + 1;
+        }
+      }
+      return counts;
+    }
+
+    function measure(names) {
+      const wanted = new Set(names);
+      const sum = new THREE.Vector3();
+      let count = 0;
+      let minY = Infinity;
+      let maxY = -Infinity;
+      for (const mesh of meshesOf()) {
+        const skinIndex = mesh.geometry.attributes.skinIndex;
+        const bones = mesh.skeleton.bones;
+        for (let i = 0; i < skinIndex.count; i += 1) {
+          const name = bones[skinIndex.getX(i)]?.name;
+          skinnedPoint(mesh, i, _point);
+          minY = Math.min(minY, _point.y);
+          maxY = Math.max(maxY, _point.y);
+          if (!wanted.has(name)) continue;
+          sum.add(_point);
+          count += 1;
+        }
+      }
+      return { count, mean: count ? sum.multiplyScalar(1 / count) : null, minY, maxY };
+    }
+
+    function frameCamera() {
+      syncSkeleton();
+      const box = new THREE.Box3();
+      for (const mesh of meshesOf()) {
+        const position = mesh.geometry.attributes.position;
+        for (let i = 0; i < position.count; i += 8) {
+          skinnedPoint(mesh, i, _point);
+          box.expandByPoint(_point);
+        }
+      }
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const distance = Math.max(size.y, size.x, 0.5) * 1.8;
+      camera.position.set(center.x, center.y, center.z + distance);
+      camera.lookAt(center);
+      camera.updateProjectionMatrix();
+    }
+
+    function render() {
+      resize();
+      renderer.render(scene, camera);
+    }
+
+    function descendants(bone) {
+      const chain = ["leftShoulder", "leftUpperArm", "leftLowerArm", "leftHand"];
+      const at = chain.indexOf(bone);
+      return at < 0 ? [bone] : chain.slice(at);
+    }
+
+    async function loadVrmBuffer(buffer) {
+      if (vrm) {
+        scene.remove(vrm.scene);
+        vrm = null;
+      }
+      const gltf = await loader.parseAsync(buffer, "");
+      vrm = gltf.userData.vrm;
+      if (!vrm) throw new Error("VRM として読み込めませんでした");
+      scene.add(vrm.scene);
+      poseBone = null;
+      document.getElementById("pose").disabled = false;
+      document.getElementById("reset").disabled = false;
+      const counts = histogram();
+      const bones = {};
+      for (const name of REQUIRED) bones[name] = Boolean(vrm.humanoid.getRawBoneNode(name));
+      const missing = REQUIRED.filter((name) => !bones[name]);
+      const covered = (name) => descendants(name).reduce((sum, bone) => sum + (counts[bone] ?? 0), 0);
+      poseBone = ["leftUpperArm", "leftShoulder", "leftLowerArm", "leftHand"].find((name) => covered(name) > 0) ?? null;
+      syncSkeleton();
+      const all = measure([]);
+      const armNames = poseBone ? descendants(poseBone) : [];
+      const arm = measure(armNames);
+      const torso = measure(["chest", "spine", "hips"]);
+      frameCamera();
+      render();
+      const report = {
+        specVersion: "1.0",
+        metaName: vrm.meta?.name ?? "",
+        missing,
+        humanBones: Object.keys(vrm.humanoid.humanBones),
+        meshCount: meshesOf().length,
+        vertexCount: Object.values(counts).reduce((sum, n) => sum + n, 0),
+        height: Number.isFinite(all.minY) ? all.maxY - all.minY : 0,
+        histogram: counts,
+        poseBone,
+        armVertices: arm.count,
+        torsoVertices: torso.count,
+      };
+      window.__vrmRest = { arm: arm.mean?.toArray() ?? null, torso: torso.mean?.toArray() ?? null };
+      window.__vrmReport = report;
+      status.textContent = missing.length
+        ? `読み込み失敗: 足りないボーン ${missing.join(", ")}`
+        : `読み込みました。高さ ${report.height.toFixed(2)} m、頂点 ${report.vertexCount}、腕のボーン「${poseBone ?? "なし"}」`;
+      return report;
+    }
+
+    function applyPose(raised) {
+      if (!vrm || !poseBone) return null;
+      const node = vrm.humanoid.getNormalizedBoneNode(poseBone);
+      node.rotation.set(0, 0, raised ? 1 : 0);
+      vrm.update(0);
+      syncSkeleton();
+      const arm = measure(descendants(poseBone));
+      const torso = measure(["chest", "spine", "hips"]);
+      const restArm = new THREE.Vector3().fromArray(window.__vrmRest.arm ?? [0, 0, 0]);
+      const restTorso = new THREE.Vector3().fromArray(window.__vrmRest.torso ?? [0, 0, 0]);
+      const armDelta = arm.mean ? arm.mean.distanceTo(restArm) : 0;
+      const torsoDelta = torso.mean ? torso.mean.distanceTo(restTorso) : 0;
+      render();
+      const posed = { poseBone, armDelta, torsoDelta, raised };
+      window.__vrmPose = posed;
+      status.textContent = `「${poseBone}」を${raised ? "回転" : "リセット"}。腕の移動 ${armDelta.toFixed(3)} m、胴体の移動 ${torsoDelta.toFixed(3)} m`;
+      return posed;
+    }
+
+    window.loadVrmBuffer = loadVrmBuffer;
+    window.applyVrmPose = applyPose;
+    window.renderVrm = render;
+
+    document.getElementById("file").addEventListener("change", async (event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      try {
+        await loadVrmBuffer(await file.arrayBuffer());
+      } catch (error) {
+        status.textContent = `読み込めませんでした: ${error.message}`;
+        window.__vrmError = String(error);
+      }
+    });
+    document.getElementById("pose").addEventListener("click", () => applyPose(true));
+    document.getElementById("reset").addEventListener("click", () => applyPose(false));
+    resize();
+    render();
+  </script>
+</body>
+</html>
