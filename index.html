@@ -1904,7 +1904,7 @@
     </section>
     <section id="squish-section" hidden>
       <h2>へこみ（柔らかさ）</h2>
-      <p class="hint">ほかのパーツの当たり判定・平面・「衝突する」揺れボーンに押されると、このパーツがへこんだりつぶれたりします。離すとばねで戻ります。</p>
+      <p class="hint">ほかのパーツの当たり判定・平面・「衝突する」揺れボーン・紐パスに押されると、このパーツがへこんだりつぶれたりします。離すとばねで戻ります。揺れ（垂れ・ぷるん）を付けたパーツは、へこみを付けなくても棒や紐で押されると変形します。</p>
       <div class="rig-transport" id="squish-presets">
         <button type="button" data-squish-preset="soft">柔らかめ</button>
         <button type="button" data-squish-preset="normal">普通</button>
@@ -2113,6 +2113,12 @@
       <h2>点の太さ</h2>
       <div class="slider-row" title="この点を通る所で、パスに沿わせたパーツを太く・細くする倍率"><span>太さ</span><input id="point-size" type="range" min="0" max="300" step="1" value="100" aria-label="点の太さ" /><span class="num-field"><input id="point-size-num" class="num" type="number" aria-label="点の太さ（%）" /><span class="unit">%</span></span></div>
       <p class="hint">「拡縮」を選ぶと、点の拡縮ギズモでも変えられます。点と点のあいだはなめらかにつながります。</p>
+    </section>
+    <section id="path-cord-section" hidden>
+      <h2>紐・締め付け</h2>
+      <label class="relief-check" title="パスをカプセル状の当たり判定にして、揺れやへこみのあるパーツを締め付け・押しつぶす"><input id="path-cord" type="checkbox" /> 柔らかいパーツに当たる（紐）</label>
+      <div class="slider-row" id="path-cord-scale-row" title="紐の当たり判定の太さ（沿わせたパーツの太さを基準に倍率）"><span>太さ</span><input id="path-cord-scale" type="range" min="25" max="300" value="100" step="5" aria-label="紐の太さ" /><span class="num-field"><input id="path-cord-scale-num" class="num" type="number" aria-label="紐の太さ（%）" /><span class="unit">%</span></span></div>
+      <p class="hint" id="path-cord-hint">オンにすると、このパスが紐の当たり判定になり、揺れを付けたおっぱいなどを締め付けたり押しつぶしたりできます。名前に「紐」が付いたループは自動でオンになります。棒状のパーツは「当たり判定」を付けて押し当ててください。</p>
     </section>
     <section id="curve-section" hidden>
       <h2><span id="curve-kind">カーブ</span> <span id="curve-name"></span></h2>
@@ -2393,8 +2399,9 @@
     <p>「揺れ（垂れ・ぷるん）」の「編集モードで動きを確認」（パーツの右クリックや編集メニューの「揺れの編集」からも入れます）を押すと、揺れの編集モードになります。編集するパーツと、その反対側や付いているパーツだけがはっきり表示され、左のパネルで垂れ・揺れ・起点・付き先を変えると、その場ですぐ形と動きに反映されます。起点・重力・弾みの表示は、傾けたときの重力の向きや揺らしたときの弾みにも合わせて動きます。「動きの確認」の「重力」の「大きさ」では、重力の強さを 0%（無重力）〜300% で変えて、垂れ方の違いを確かめられます（青の矢印の長さも変わります）。「体の傾き」や「立ち・前かがみ・仰向け・うつ伏せ・右を下・左を下」で重力の向きを変えると、姿勢を変えたときの垂れ方を確かめられます。「上下・左右・前後」で一度だけ揺らし、「跳ね続ける」で跳ねている間の揺れを見られます。「強さ」で揺らす大きさを 10%〜300% で変えます。100% を超えると、ドラッグで揺らしたときの動きも大きくなり、より大きく揺れるようになります。ビューで左ドラッグすると、体をつかんで揺らしたように揺れ、離すと反動で揺れ戻ります。右ドラッグで視点を回し、パーツをクリックすると編集するパーツを切り替えます。傾きや揺らしは確認用で保存されません。設定は「保存」（Ctrl+S）で確定し、「破棄」で編集モードに入る前に戻します。Esc か「メインエディターに戻る」で終わります。</p>
     <p>編集メニューの「ボーンとモーション」で、体にボーン（骨組み）を入れて、ダンスなどのモーションを再生できます。左のパネルは「モーション」「ボーンの配置」「揺れボーン」「パーツの割り当て」に分かれていて、見出しをクリックすると折りたためます。初めて開くと、モデルの大きさに合わせて腰・背骨・胸・首・頭・肩・上腕・前腕・手・太もも・すね・足のボーンが置かれます（中央は黄色、左は水色、右はピンク）。関節の点をドラッグすると位置を変えられます。「左右対称に動かす」がオンのときは、反対側の関節も鏡写しで一緒に動き、中央のボーンは左右の真ん中から外れません。オンのまま置き直すと、左右がそろった配置になります。「左 → 右に写す」「右 → 左に写す」で、片側のボーンの位置を反対側にそのまま写して左右対称にできます。「自動で置き直す」で体の大きさに合わせた最初の配置に戻せます。それぞれのパーツは、いちばん近いボーンに自動で付いて動きます。「パーツの割り当て」には、ボーンごとにそのボーンで動くパーツが並びます。各パーツの右の欄でボーンを選ぶと付け替えられ、「自動（〜）」に戻すと再びいちばん近いボーン（かっこの中）に付きます。「動かさない」にすると、その場に残ります。ビューの点やパーツをクリックしても、そのボーンで動くパーツだけがはっきり表示され、一覧の行も強調されます。ボーン名やパーツ名をクリックすると、ビューでそのボーンやパーツが強調されます。「モーションを読み込む」で、無料で配布されている MMD のモーション（.vmd）や、モーションキャプチャーの .bvh を読み込むと再生が始まります。足の動きが IK で付けられた VMD にも対応しています。「再生／一時停止」（Space キーでも切り替え）、「位置」で好きな場面へ移動、「速さ」で再生の速さ、「くり返す」で最後まで行ったら最初に戻ります。「移動もする」をオフにすると、前後左右には動かずその場で踊ります。膝立ち・四つんばい・寝そべりのように最初から低い姿勢のモーションでは、体がそのぶん床まで下がります（「移動もする」がオフでも上下には動きます）。「停止」で元の姿勢に戻り、関節を動かせるようになります。揺れの設定を付けたパーツは、踊りに合わせて揺れます。再生中の揺れは体の動きの勢いで決まり、揺れの編集モードの「強さ」は効きません。パーツごとの揺れ方は「揺れ（垂れ・ぷるん）」の「揺れやすさ」で変え、すべてのパーツをまとめて大きく揺らしたいときは、モーションの「全体の揺れ」を 100% より上げてください（最大 500%）。「全体の揺れ」を 0% にすると再生中は揺れません。ボーンの配置とパーツごとのボーンの選び方はモデルと一緒に保存されますが、モーションそのものは保存されません。モデルの腕の向きや体型がモーションの元のモデルと違っても、ボーンの向きに合わせて動きを置き換えます。</p>
     <p>「揺れボーン」で、体のボーンに鎖状のボーンを付け足せます。しっぽ・髪の房・男性器など、動きに合わせてしなって揺れてほしいパーツに使います。ビューか「パーツの割り当て」の一覧で付けたいパーツ（リンクも可）をクリックしてから「揺れボーンを追加」を押すと、そのパーツの形に沿って紫の鎖が置かれ、パーツがその鎖に割り当てられます（何も選んでいないときは、選んでいるボーンか腰から前向きに置かれます）。紫の点はパーツの手前に透けて描かれ、ポインターを乗せると明るくなります。点をクリックすると黄色になって選ばれ、移動ハンドルが出ます。矢印をドラッグするとその向き（X・Y・Z）だけに、四角をドラッグするとその面の中だけで動きます。点そのものをドラッグすると画面に沿って動きます。ふつうはその点から先がまとめて動き（根元をつかむと鎖ごと移動）、Alt を押しながら動かすとその点だけが動きます。カードの「先の点も一緒に動かす」をオフにすると、その逆になります。カードの「点」の欄でも点を選べ、選んだ点の X・Y・Z を数字で直せます。「根元をパーツの付け根に」「先端をパーツの先端に」で、割り当てたパーツ（なければ選んでいるパーツ）の端に根元や先端を合わせられ（反対の端は動かず、あいだの点はなだらかについてきます）、「まっすぐに並べる」で根元と先端のあいだに点を等間隔に一直線に並べます。節の長さは、点を置いた位置からそのつど決まります。揺れボーンを選んでいる間は、点が見やすいようにパーツが半透明になります（「揺れボーンを選んでいる間はパーツを透かす」で切り替え）。Esc で点の選択を外せます。どの操作も 1 回ごとに元に戻せます。カードでは、名前、付け根になる「親ボーン」、「節の数」（1〜8、多いほどなめらかにしなる）、揺れ方を変えられます。「硬さ」を上げると速く小さく揺れ、下げるとゆっくり大きく揺れます。「落ち着き」を上げると揺れがすぐ収まり、下げるといつまでも揺れます。「重力」で垂れ下がる強さ、「曲がる角度」で 1 節あたりに曲がれる最大の角度を決めます。「割り当て」の欄で、選んでいるパーツ、フォルダの中身すべて、リンクをまとめてこの揺れボーンに付けたり、すべて外したりできます。一覧の各パーツの欄で「揺れ：〜」を選んでも付けられます。揺れボーンに付けたパーツは、再生中に鎖に沿って曲がります。節は曲がるだけで長さは変わらないので、伸びたり縮んだりしません。揺れはモーションの「全体の揺れ」の倍率も受けます。「停止」で揺れはリセットされます。揺れボーンはモデルと一緒に保存され、元に戻す／やり直しもできます。パーツを動かしたあとは「選んだパーツに合わせる」で鎖を置き直してください。</p>
-    <p>「当たり判定」で、パーツにカプセルか球の当たり判定を付けられます。パーツを右クリックして「当たり判定を追加」を押すか、パーツを選んで左のパネルの「当たり判定を追加」を押すと、パーツの大きさに合わせて、細長いパーツにはカプセル、丸いパーツには球が付きます。当たり判定はビューに水色のワイヤーフレームで表示され（選んでいるパーツのものは黄色）、パーツの移動・回転・拡大や、ボーンとモーションに合わせて一緒に動きます。選んでいるパーツの当たり判定には水色（半径）と橙（長さ）のハンドルが出て、ドラッグで大きさを変えられます。パネルでは形（カプセル・球）、半径、長さ、グループを数字で直せ、「形に合わせ直す」で置き直し、「外す」で取り除けます。左右対称がオンで左右の相方がいるパーツは、相方にも鏡写しの当たり判定が付きます（パーツが増えたり消えたりすることはありません）。「床を追加」「壁を追加」で、どのパーツにも付かない平面の当たり判定を置けます（橙の格子）。向きの側が外で、裏側にはめり込みません。位置・向き・表示の大きさ・グループを変えたり、「止める」で一時的に無効にしたりできます。「当たり判定を表示」でワイヤーフレームの表示を切り替えます。揺れボーンのカードで「衝突する」をオンにすると、再生中に揺れボーンが当たり判定にめり込まないよう押し出されます（節の長さとしなり方は保たれ、正中線に固定した揺れボーンは左右にずれません）。「太さ」はボーンの半径（1 節の長さに対する割合）、「当たるグループ」に名前を入れると、そのグループの当たり判定とだけ衝突します（空ならすべてと衝突します）。揺れボーンに割り当てたパーツ自身の当たり判定とは衝突しません。「柔らかくする」を付けたパーツは、「揺れ（垂れ・ぷるん）」の揺れもほかのパーツの当たり判定や平面に押し出されます。当たり判定はモデルと一緒に保存されます。</p>
-    <p>パーツを右クリックして「柔らかくする」を選ぶと、そのパーツはほかのパーツの当たり判定・平面・「衝突する」をオンにした揺れボーンに押されたときに、へこんだりつぶれたりします（「柔らかくする」を付けていないパーツは、当たっても形が変わりません。揺れボーンの衝突も、ボーンが曲がるだけです）。左のパネルの「へこみ（柔らかさ）」で、「柔らかさ」（当たった所のまわりがどれだけ広くなだらかにへこむか）、「厚み」（へこめる最大の深さ）、「戻りの速さ」（離したときに戻る速さ）を変えられ、「柔らかめ」「普通」「弾力」でまとめて設定できます。めり込んだ所は当たり判定の表面まで押し出され、壁に押し付けると横がふくらみます。離すとばねで少し行き過ぎてから元に戻ります。編集中にパーツや当たり判定を動かしたり大きさを変えたりすると、その場ですぐ形が変わり、モーション再生中も同じように動きます。自分自身の当たり判定ではへこみません。左右対称がオンで相方がいるときは、相方にも同じ設定が付きます。編集中も、「衝突する」揺れボーンは当たり判定を避けるように曲がり、割り当てたパーツも一緒に曲がります。</p>
+    <p>「当たり判定」で、パーツにカプセルか球の当たり判定を付けられます。パーツを右クリックして「当たり判定を追加」を押すか、パーツを選んで左のパネルの「当たり判定を追加」を押すと、パーツの大きさに合わせて、細長いパーツにはカプセル、丸いパーツには球が付きます。当たり判定はビューに水色のワイヤーフレームで表示され（選んでいるパーツのものは黄色）、パーツの移動・回転・拡大や、ボーンとモーションに合わせて一緒に動きます。選んでいるパーツの当たり判定には水色（半径）と橙（長さ）のハンドルが出て、ドラッグで大きさを変えられます。パネルでは形（カプセル・球）、半径、長さ、グループを数字で直せ、「形に合わせ直す」で置き直し、「外す」で取り除けます。左右対称がオンで左右の相方がいるパーツは、相方にも鏡写しの当たり判定が付きます（パーツが増えたり消えたりすることはありません）。「床を追加」「壁を追加」で、どのパーツにも付かない平面の当たり判定を置けます（橙の格子）。向きの側が外で、裏側にはめり込みません。位置・向き・表示の大きさ・グループを変えたり、「止める」で一時的に無効にしたりできます。「当たり判定を表示」でワイヤーフレームの表示を切り替えます。揺れボーンのカードで「衝突する」をオンにすると、再生中に揺れボーンが当たり判定にめり込まないよう押し出されます（節の長さとしなり方は保たれ、正中線に固定した揺れボーンは左右にずれません）。「太さ」はボーンの半径（1 節の長さに対する割合）、「当たるグループ」に名前を入れると、そのグループの当たり判定とだけ衝突します（空ならすべてと衝突します）。揺れボーンに割り当てたパーツ自身の当たり判定とは衝突しません。「柔らかくする」を付けたパーツや「揺れ（垂れ・ぷるん）」を付けたおっぱいなどは、ほかのパーツの当たり判定や平面に押し出されます。棒状のパーツにカプセルの当たり判定を付けて押し当てると、胸がへこみます。当たり判定はモデルと一緒に保存されます。</p>
+    <p>パーツを右クリックして「柔らかくする」を選ぶと、そのパーツはほかのパーツの当たり判定・平面・「衝突する」をオンにした揺れボーン・紐パスに押されたときに、へこんだりつぶれたりします。「揺れ（垂れ・ぷるん）」を付けたパーツは、へこみを付けなくても同じように棒や紐で押されると変形します（へこみを付けると柔らかさ・厚み・戻りの速さを細かく変えられます）。左のパネルの「へこみ（柔らかさ）」で、「柔らかさ」（当たった所のまわりがどれだけ広くなだらかにへこむか）、「厚み」（へこめる最大の深さ）、「戻りの速さ」（離したときに戻る速さ）を変えられ、「柔らかめ」「普通」「弾力」でまとめて設定できます。めり込んだ所は当たり判定の表面まで押し出され、壁に押し付けると横がふくらみます。離すとばねで少し行き過ぎてから元に戻ります。編集中にパーツや当たり判定を動かしたり大きさを変えたりすると、その場ですぐ形が変わり、モーション再生中も同じように動きます。自分自身の当たり判定ではへこみません。左右対称がオンで相方がいるときは、相方にも同じ設定が付きます。編集中も、「衝突する」揺れボーンは当たり判定を避けるように曲がり、割り当てたパーツも一緒に曲がります。</p>
+    <p>パス（カーブ・ループ）を選ぶと、左のパネルに「紐・締め付け」が出ます。「柔らかいパーツに当たる（紐）」をオンにすると、パスがカプセルをつないだ紐の当たり判定になり、揺れやへこみのあるパーツ（おっぱいなど）を締め付けたり溝状に押しつぶしたりできます。太さは沿わせたパーツの太さを基準に倍率で変えられます。名前に「紐」が付いたループは、チェックを外さない限り自動で紐として当たります。胸に巻き付けるループを小さくすると締め付けられ、棒状パーツに当たり判定を付けて押し当てると押し付け変形になります。</p>
     <p>パーツを選ぶと、左のパネルのいちばん上の「このパーツの設定」に、「左右対称」「揺れ（垂れ・ぷるん）」「へこみ（柔らかさ）」「当たり判定」「揺れボーン」のオン・オフと、その設定がどこから来ているか（「個別」か「フォルダ「〜」から」）がまとめて出ます。「フォルダ「〜」から」をクリックすると、そのフォルダが選ばれます。相方や付き先のパーツ名をクリックすると、そのパーツに移ります。「揺れ（垂れ・ぷるん）」と「へこみ（柔らかさ）」はパーツごと（個別）にも、フォルダ全体にも付けられます。フォルダを選ぶと「このフォルダの設定」になり、それぞれ「フォルダ全体に設定」と「中のパーツそれぞれに設定」から選びます。フォルダ全体に設定すると、中のパーツ（中のフォルダのパーツも）のうち個別の設定がないものが、その設定を受け継ぎます。フォルダの値はここのスライダーで変え、「フォルダの設定を外す」で受け継ぎも外れます。受け継いでいるパーツで揺れやへこみを変えると、そのパーツだけ個別の設定になります。「フォルダの設定に戻す」で受け継ぎに戻せ、「なし」や「やめる」を選ぶとそのパーツだけ個別にオフになります。「中のパーツそれぞれに設定」は、揺れなら下の「揺れ（垂れ・ぷるん）」のパネルで選んだパーツすべてに個別の設定を付け、へこみなら「普通」を、当たり判定なら形に合わせた当たり判定を、まだ持っていないパーツそれぞれに付けます。フォルダを選んだだけでは、どちらかを選ぶまでパーツの設定は変わりません。「左右対称」「当たり判定」「揺れボーン」はパーツごとの設定で、フォルダでは中のパーツの数が出ます。パーツの一覧（レイヤー）の行には、対（左右対称）・揺（揺れ）・凹（へこみ）・当（当たり判定）の小さな印が付き、その行に直接付いている設定ははっきりした色、フォルダから受け継いでいるだけの設定は薄い色で表示されます。</p>
     <p>平面（円・三角・四角）を選ぶと、左のパネルに「盛り上がり」が出ます。「高さ」を上げると、面の中央点を頂点にして前面が盛り上がります（100% で幅の半分の高さ）。ふだん裏面は平らなままですが、「裏面にも盛り上げる」を入れると、後ろの面も同じ高さとカーブで盛り上がり、前後対称の形になります。「円形」は中央点からの距離で高さが決まり、角に向かって低くなります。「輪郭に沿う」は面の輪郭と同じ形の等高線で、辺に向かって低くなります。トーンカーブは横が中央点（左）から縁（右）、縦が高さです。空いた所をクリックすると点が増え、点をドラッグすると盛り上げ方が変わります。ダブルクリックか右クリックで点を消せます。「ドーム」「山形」「台地」で代表的な形を選べ、「リセット」でなだらかな初期のカーブに戻ります。盛り上げた平面は立体として扱われ、ほかのパーツと結合したり、ラスタライズしたりできます。</p>
     <p>「追加」の「断面」は、輪切りにした断面の形を上下につないで作る立体です（円柱から始まります）。選ぶと左のパネルに「断面」が出て、3D 表示にも断面の輪が重なります（選んでいる断面はオレンジ）。縦棒は2本あり、どちらも横から見た形で、下が根元、上が先端です。いちばん左の細い縦棒は全体図で、上下にドラッグして範囲を囲むと、その範囲が中央の縦棒に拡大表示されます。青い枠はドラッグで移動、上下の端をドラッグで伸縮でき、枠の外をクリックするとその位置へ枠が移ります。ダブルクリックか「全体を表示」で範囲指定をやめます。中央の縦棒の上でホイールを回しても、カーソルの位置を中心に拡大・縮小できます。全身のような長い形でも、範囲を絞れば胸やくびれなどの断面を細かく並べられます。中央の縦棒の空いた所をクリックすると断面が増え（最大 60 個）、目盛りをドラッグすると上下に動き、ダブルクリックか右クリックで消せます。右の図は選んだ断面を真上から見た形で、下が正面側です。前後の断面が点線で重なります。線の近くをクリックで点を追加、ドラッグで移動、ダブルクリックで削除、右クリックで角／なめらかを切り替えます。その下の「輪郭で編集」には、正面から見た輪郭（幅）と横から見た輪郭（厚み、右が正面側）が並びます。輪郭の点をドラッグすると、その高さの断面の幅や厚みと高さが変わり（反対側の輪郭は動きません。Shift を押しながらなら高さは固定）、断面の形を1枚ずつ描き直さなくても全体のシルエットを作れます。輪郭の外の空いた所をクリックすると、その高さに前後の断面から補間した断面が増え、そのままドラッグで形を決められます。点をダブルクリックか右クリックするとその断面を消せます。「左右対称に編集」が入っていると右半分だけを編集し、左半分は自動で鏡写しになります。「大きさ」「傾き」（＋で後ろ側が上がる）「左右」「前後」は選んだ断面ごとの値です。形は中心から放射状に読み取るので、中心から見て裏側に回り込む形は外側の線だけが使われます（そのときは警告が出ます）。「端の形」で先端と根元を平ら・丸く・とがるから選べ、「長さ」で丸みやとがりの長さを変えられます。「ペニス」のテンプレートは、竿・くびれ・傾いたカリ首・切れ込みのある亀頭・先端の断面を並べた形です（正面側が裏筋側。上に向いて立った向きなので、回転させて使ってください）。軸はまっすぐですが、曲げたいときは「パスに沿わせる」が使えます。モーフと盛り上がりは効きません。ほかのパーツと結合したり、ラスタライズしたりできます。</p>
@@ -5176,8 +5183,8 @@ if (decalOn > 0.5) {
     ];
     centerParts.push(...torsoParts);
     const pairedParts = [[
-      block(figure, 4.8, 4.3, 3.7, 2.2, 17.15, 2.2),
-      block(figure, 4.8, 4.3, 3.7, -2.2, 17.15, 2.2),
+      block(figure, 4.4, 4.4, 4.4, 2.95, 17.2, 2.4),
+      block(figure, 4.4, 4.4, 4.4, -2.95, 17.2, 2.4),
     ]];
 
     const sideParts = { 1: [], [-1]: [] };
@@ -5203,7 +5210,10 @@ if (decalOn > 0.5) {
     ["頭", "首", "胸", "腰", "腰回り"].forEach((name, index) => {
       centerParts[index].userData.label = name;
     });
-    for (const mesh of pairedParts[0]) mesh.userData.label = "胸";
+    for (const mesh of pairedParts[0]) {
+      mesh.userData.label = "胸";
+      setMorph(mesh, 0, 1, 0, 0);
+    }
     ["上腕", "前腕", "手", "太もも", "すね", "足"].forEach((name, index) => {
       sideParts[1][index].userData.label = name;
       sideParts[-1][index].userData.label = name;
@@ -10946,6 +10956,7 @@ self.onmessage = (event) => {
       document.getElementById("dome-section").hidden = !domeable;
       if (domeable) refreshDomeUI();
       refreshSagUI();
+      refreshPathCordUI();
       refreshColliderUI();
       refreshSquishUI();
       refreshSummaryUI();
@@ -15514,6 +15525,8 @@ self.onmessage = (event) => {
           if (curve.quaternion != null && !isVector(curve.quaternion, 4)) throw new Error("invalid");
           if (curve.scale != null && !isVector(curve.scale, 3)) throw new Error("invalid");
           if (curve.closed != null && typeof curve.closed !== "boolean") throw new Error("invalid");
+          if (curve.cord != null && typeof curve.cord !== "boolean") throw new Error("invalid");
+          if (curve.cordScale != null && (typeof curve.cordScale !== "number" || !(curve.cordScale > 0) || curve.cordScale > 3)) throw new Error("invalid");
           const minPoints = curve.closed === true ? 3 : 2;
           if (!Array.isArray(curve.points) || curve.points.length < minPoints || curve.points.length > 64) throw new Error("invalid");
           for (const point of curve.points) {
@@ -16925,6 +16938,8 @@ self.onmessage = (event) => {
         scale: round(curve.scale),
         ...(data.closed ? { closed: true } : {}),
         ...(data.sag ? { sag: { ...data.sag } } : {}),
+        ...(data.cord === true ? { cord: true } : data.cord === false ? { cord: false } : {}),
+        ...(Number.isFinite(data.cordScale) && Math.abs(data.cordScale - 1) > 1e-6 ? { cordScale: roundNumber(data.cordScale) } : {}),
         ...(Number.isFinite(data.mirrorX) ? { mirrorX: roundNumber(data.mirrorX) } : {}),
         ...(Number.isFinite(data.mirrorX) && data.closed && Number.isInteger(data.mirrorSum) ? { mirrorSum: data.mirrorSum } : {}),
         points: data.points.map((point) => {
@@ -16962,6 +16977,11 @@ self.onmessage = (event) => {
       curve.userData.locked = Boolean(data.locked);
       curve.userData.home = isVector(data.home, 3) ? [...data.home] : undefined;
       setSag(curve, data.sag ?? null);
+      if (data.cord === true) curve.userData.cord = true;
+      else if (data.cord === false) curve.userData.cord = false;
+      else delete curve.userData.cord;
+      if (Number.isFinite(data.cordScale) && data.cordScale > 0) curve.userData.cordScale = Math.min(3, Math.max(0.25, data.cordScale));
+      else delete curve.userData.cordScale;
       curve.userData.mirrorX = Number.isFinite(data.mirrorX) ? data.mirrorX : undefined;
       curve.userData.mirrorSum = closed && Number.isInteger(data.mirrorSum) ? data.mirrorSum : undefined;
       curve.position.fromArray(data.position);
@@ -22182,7 +22202,9 @@ self.onmessage = (event) => {
     }
 
     function hasColliders() {
-      return colliderPlanes.some((plane) => !plane.hidden) || editableMeshes().some((mesh) => mesh.userData.collider && !mesh.userData.hidden);
+      return colliderPlanes.some((plane) => !plane.hidden)
+        || editableMeshes().some((mesh) => mesh.userData.collider && !mesh.userData.hidden)
+        || curves.some(curveIsCord);
     }
 
     // モーションの姿勢（matrices）を掛けた当たり判定の一覧。matrices が無ければ今の matrixWorld のまま
@@ -22202,6 +22224,7 @@ self.onmessage = (event) => {
         shapes.push(shape);
       });
       for (const plane of colliderPlanes) if (!plane.hidden) shapes.push(planeWorldShape(plane));
+      for (const shape of curveCordShapes()) shapes.push(shape);
       return shapes;
     }
 
@@ -22211,6 +22234,88 @@ self.onmessage = (event) => {
     function frameColliderShapes() {
       colliderFrameShapes ??= hasColliders() ? colliderShapes() : [];
       return colliderFrameShapes;
+    }
+
+    // パスを紐として扱うか（明示オン／オフ、未設定なら名前に「紐」が付いたループ）
+    function curveIsCord(curve) {
+      if (!curve || curve.userData.hidden) return false;
+      if (curve.userData.cord === false) return false;
+      if (curve.userData.cord === true) return true;
+      const label = String(curve.userData.label ?? "");
+      return Boolean(curve.userData.closed) && label.includes("紐");
+    }
+
+    function curveCordScale(curve) {
+      const scale = curve?.userData.cordScale;
+      return Number.isFinite(scale) && scale > 0 ? Math.min(3, Math.max(0.25, scale)) : 1;
+    }
+
+    // 紐の基準半径：沿わせたパーツの細い断面を目安に、溝が付く程度の細さに抑える
+    function curveCordBaseRadius(curve) {
+      const id = curve.userData.id;
+      let best = 0;
+      const consider = (mesh) => {
+        if (!mesh?.geometry) return;
+        if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+        const size = mesh.geometry.boundingBox.getSize(new THREE.Vector3());
+        const dims = [size.x, size.y, size.z].sort((a, b) => a - b);
+        mesh.updateWorldMatrix(true, false);
+        // いちばん細い向きの半径の半分相当（紐は太くしすぎない）
+        const radius = dims[0] * 0.22 * colliderScaleOf(mesh.matrixWorld);
+        if (radius > best) best = radius;
+      };
+      for (const mesh of editableMeshes()) {
+        if (mesh.userData.curveBind?.curveId === id && !mesh.userData.hidden) consider(mesh);
+      }
+      for (const link of links) {
+        if (link.curveBind?.curveId !== id || link.hidden) continue;
+        const anchor = linkAnchors.get(link.id);
+        if (!anchor) continue;
+        for (const mesh of anchor.userData.inner?.children ?? []) consider(mesh);
+      }
+      if (best > 1e-5) return Math.min(best, 0.014);
+      const frames = curveFrames(curve);
+      const span = frames.total || 0.2;
+      return Math.min(0.01, Math.max(0.004, span * 0.01));
+    }
+
+    // 紐パスを折れ線カプセル列にする（へこみは曲線ごとに最深1本、揺れ押し出し用に数本）
+    function curveCordShapes() {
+      const shapes = [];
+      for (const curve of curves) {
+        if (!curveIsCord(curve)) continue;
+        const frames = curveFrames(curve);
+        const points = frames.points;
+        if (points.length < 2) continue;
+        // へこみは曲線ごとに最深1本だけ使うが、揺れ押し出し用に数本は残す
+        const base = Math.min(0.012, curveCordBaseRadius(curve) * curveCordScale(curve));
+        const count = points.length;
+        const step = Math.max(1, Math.ceil((count - 1) / 6));
+        let prev = 0;
+        const pushSeg = (i0, i1) => {
+          const a = points[i0];
+          const b = points[i1];
+          if (a.distanceToSquared(b) < 1e-12) return;
+          const r = base * Math.max(0.2, 0.5 * ((frames.sizes[i0] ?? 1) + (frames.sizes[i1] ?? 1)));
+          shapes.push({
+            type: "capsule",
+            a: a.clone(),
+            b: b.clone(),
+            r: Math.min(r, 0.014),
+            owner: curve,
+            key: `cord:${curve.userData.id}:${i0}:${i1}`,
+            group: "",
+            bone: null,
+            cord: true,
+          });
+        };
+        for (let index = step; index < count; index += step) {
+          pushSeg(prev, index);
+          prev = index;
+        }
+        if (prev < count - 1) pushSeg(prev, count - 1);
+      }
+      return shapes;
     }
 
     function closestOnSegment(a, b, p, target) {
@@ -22338,7 +22443,7 @@ self.onmessage = (event) => {
     const sagPushPoint = new THREE.Vector3();
 
     function collideSagTip(owner, tip, motion, sag, length) {
-      if (!(sag.wobble > 0) || !owner.userData?.squish) return;
+      if (!(sag.wobble > 0) || !activeSquish(owner)) return;
       const shapes = frameColliderShapes();
       if (!shapes.length) return;
       const radius = Math.max((sagSpans.get(owner)?.cross ?? length * 0.3) * 0.5, length * 0.05);
@@ -22429,7 +22534,8 @@ self.onmessage = (event) => {
     }
 
     // ===== 柔らかさ（へこみ・つぶれ） =====
-    // 「柔らかくする」を付けたパーツだけが、ほかのパーツの当たり判定・平面・「衝突する」揺れボーンに押されてへこむ。
+    // 「柔らかくする」を付けたパーツ、または「揺れる」を付けたパーツが、ほかのパーツの当たり判定・平面・
+    // 「衝突する」揺れボーン・紐パスに押されてへこむ。
     // 変形は頂点シェーダー（squishOffset）で行い、CPU はパーツごとに当たっている形（最大 SQUISH_MAX 個）と、
     // 当たりの深さ・接している割合・戻りのばねの値だけを求める。何も変わらないフレームでは何もしない。
     const SQUISH_PRESETS = {
@@ -22443,12 +22549,24 @@ self.onmessage = (event) => {
     const squishSphere = new THREE.Sphere();
     const squishPoint = new THREE.Vector3();
     const squishOut = new THREE.Vector3();
+    const squishSagDelta = new THREE.Vector3();
 
     function readSquish(value) {
       if (!value || typeof value !== "object") return null;
       const within = (number, fallback) => (typeof number === "number" && Number.isFinite(number) ? Math.min(1, Math.max(0, number)) : fallback);
       const base = SQUISH_PRESETS.normal;
       return { softness: within(value.softness, base.softness), depth: within(value.depth, base.depth), speed: within(value.speed, base.speed) };
+    }
+
+    // 明示のへこみ設定、なければ「揺れる」パーツを普通の柔らかさとして扱う（棒・紐の押し付け用）
+    function activeSquish(mesh) {
+      if (!mesh || mesh.userData.isMask || isCurve(mesh) || isLinkAnchor(mesh)) return null;
+      const own = readSquish(mesh.userData.squish);
+      if (own) return own;
+      if (mesh.userData.squishOff) return null;
+      const sag = mesh.userData.sag;
+      if (sag && !sag.follow) return SQUISH_PRESETS.normal;
+      return null;
     }
 
     function setSquish(mesh, value) {
@@ -22511,17 +22629,21 @@ self.onmessage = (event) => {
     function shapeKey(shape) {
       if (shape.key) return shape.key;
       if (shape.type === "plane") return `plane:${shape.owner.id}`;
+      if (isCurve(shape.owner)) return `cord:${shape.owner.userData.id}`;
       return `part:${shape.owner.uuid}`;
     }
 
     function snapshotShape(shape) {
       if (shape.type === "plane") return { type: "plane", point: shape.point.clone(), normal: shape.normal.clone() };
-      return { type: shape.type, a: shape.a.clone(), b: shape.b.clone(), r: shape.r };
+      return { type: shape.type, a: shape.a.clone(), b: shape.b.clone(), r: shape.r, cord: Boolean(shape.cord) };
     }
 
     function squishTargets() {
       const list = [];
-      for (const mesh of editableMeshes()) if (mesh.userData.squish && mesh.material?.userData?.maskUniforms?.squishOn && shownInScene(mesh)) list.push(mesh);
+      for (const mesh of editableMeshes()) {
+        if (!activeSquish(mesh) || !mesh.material?.userData?.maskUniforms?.squishOn || !shownInScene(mesh)) continue;
+        list.push(mesh);
+      }
       return list;
     }
 
@@ -22551,18 +22673,21 @@ self.onmessage = (event) => {
     }
 
     function updateSquishMesh(mesh, parts, dt) {
-      const squish = mesh.userData.squish;
+      const squish = activeSquish(mesh);
+      if (!squish) return;
       const geometry = mesh.geometry;
       if (!geometry?.attributes?.position) return;
       if (!geometry.boundingSphere) geometry.computeBoundingSphere();
       mesh.updateWorldMatrix(true, false);
       squishSphere.copy(geometry.boundingSphere).applyMatrix4(mesh.matrixWorld);
       const size = Math.max(squishSphere.radius, 1e-6);
-      const reach = size * (0.05 + 0.3 * squish.softness);
+      const sagU = sagUniformsOf(mesh);
+      const sagExtra = sagU ? Math.abs(sagU.sagStrength.value) + sagU.sagWobble.value.length() : 0;
+      const reach = size * (0.05 + 0.3 * squish.softness) + sagExtra;
       const shapes = [];
       const bone = rig ? rigBoneOf(mesh) : null;
       for (const shape of [...parts, ...(rig ? chainSegmentShapes(bone) : [])]) {
-        if (shape.owner === mesh) continue;
+        if (shape.owner === mesh || shape.owner === sagHost(mesh)) continue;
         if (shape.type === "plane") {
           if (squishPoint.subVectors(squishSphere.center, shape.point).dot(shape.normal) > size + reach) continue;
         } else {
@@ -22576,7 +22701,10 @@ self.onmessage = (event) => {
         state = { key: "", contacts: new Map() };
         squishStates.set(mesh, state);
       }
-      const key = `${mesh.matrixWorld.elements.map((value) => value.toFixed(5)).join(",")}|${JSON.stringify(squish)}|${geometry.attributes.position.version}|${shapes.map((shape) => shape.type === "plane"
+      const sagKey = sagU
+        ? `${sagU.sagStrength.value.toFixed(4)}:${sagU.sagWobble.value.toArray().map((v) => v.toFixed(4)).join(",")}:${sagU.sagHalf.value.toFixed(4)}`
+        : "";
+      const key = `${mesh.matrixWorld.elements.map((value) => value.toFixed(5)).join(",")}|${JSON.stringify(squish)}|${sagKey}|${geometry.attributes.position.version}|${shapes.map((shape) => shape.type === "plane"
         ? `${shapeKey(shape)}:${shape.point.toArray().join(",")}:${shape.normal.toArray().join(",")}`
         : `${shapeKey(shape)}:${shape.a.toArray().map((v) => v.toFixed(5)).join(",")}:${shape.b.toArray().map((v) => v.toFixed(5)).join(",")}:${shape.r.toFixed(5)}`).join(";")}`;
       const springing = [...state.contacts.values()].some((contact) => !contact.touching);
@@ -22592,9 +22720,18 @@ self.onmessage = (event) => {
           const x = samples[index * 3];
           const y = samples[index * 3 + 1];
           const z = samples[index * 3 + 2];
-          world[index * 3] = e[0] * x + e[4] * y + e[8] * z + e[12];
-          world[index * 3 + 1] = e[1] * x + e[5] * y + e[9] * z + e[13];
-          world[index * 3 + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
+          squishPoint.set(
+            e[0] * x + e[4] * y + e[8] * z + e[12],
+            e[1] * x + e[5] * y + e[9] * z + e[13],
+            e[2] * x + e[6] * y + e[10] * z + e[14],
+          );
+          if (sagU) {
+            sagOffsetCpu(sagU, squishPoint, squishSagDelta);
+            squishPoint.add(squishSagDelta);
+          }
+          world[index * 3] = squishPoint.x;
+          world[index * 3 + 1] = squishPoint.y;
+          world[index * 3 + 2] = squishPoint.z;
         }
         const seen = new Set();
         for (const shape of shapes) {
@@ -22609,10 +22746,24 @@ self.onmessage = (event) => {
             }
           }
           if (!(deepest > 0)) continue;
-          const id = shapeKey(shape);
+          const fraction = inside / Math.max(count, 1);
+          // 紐は貫通でぐちゃぐちゃにしないよう、溝は浅めに抑える
+          if (shape.cord) {
+            deepest = Math.min(deepest, size * (0.1 + 0.14 * squish.depth));
+            if (fraction > 0.35) deepest *= 0.4;
+            else if (fraction > 0.2) deepest *= 0.65;
+          }
+          // 紐は曲線ごとに最深の1本だけ（セグメントを足すと溝がぐちゃぐちゃになる）
+          const id = shape.cord && isCurve(shape.owner)
+            ? `cord:${shape.owner.userData.id}`
+            : shapeKey(shape);
+          if (shape.cord && seen.has(id)) {
+            const prev = state.contacts.get(id);
+            if (prev && prev.depth >= deepest) continue;
+          }
           seen.add(id);
           const contact = state.contacts.get(id) ?? { s: 1, v: 0 };
-          Object.assign(contact, { shape: snapshotShape(shape), depth: deepest, fraction: inside / Math.max(count, 1), touching: true, s: 1, v: 0 });
+          Object.assign(contact, { shape: snapshotShape(shape), depth: deepest, fraction, touching: true, s: 1, v: 0 });
           state.contacts.set(id, contact);
         }
         for (const [id, contact] of state.contacts) if (!seen.has(id)) contact.touching = false;
@@ -22651,8 +22802,13 @@ self.onmessage = (event) => {
           a.set(shape.a.x, shape.a.y, shape.a.z, shape.r);
           b.set(shape.b.x, shape.b.y, shape.b.z, 0);
         }
-        const bulge = Math.min(contact.depth, (contact.depth * contact.fraction) / Math.max(1 - contact.fraction, 0.2)) * 0.7;
-        uniforms.squishC.value[index].set(contact.depth, contact.s, bulge, 0);
+        let depth = contact.depth;
+        let bulge = Math.min(contact.depth, (contact.depth * contact.fraction) / Math.max(1 - contact.fraction, 0.2)) * 0.7;
+        if (shape.cord) {
+          depth = Math.min(depth, size * 0.18);
+          bulge = Math.min(bulge * 0.25, depth * 0.45);
+        }
+        uniforms.squishC.value[index].set(depth, contact.s, bulge, 0);
       });
       uniforms.squishCount.value = contacts.length;
       uniforms.squishOn.value = contacts.length ? 1 : 0;
@@ -28633,6 +28789,59 @@ void main() {
       requestRender();
     });
 
+    // ===== パスの紐・締め付け =====
+    function pathCordSubject() {
+      if (isCurve(selected)) return selected;
+      if (selected?.userData.isCurvePoint) return curveOf(selected);
+      return null;
+    }
+
+    function refreshPathCordUI() {
+      const section = document.getElementById("path-cord-section");
+      const curve = pathCordSubject();
+      const shown = Boolean(curve) && !maskTarget && !softTarget && !reliefTarget && !featureTarget;
+      section.hidden = !shown;
+      if (!shown) return;
+      const locked = Boolean(curve.userData.locked);
+      const on = curveIsCord(curve);
+      const check = document.getElementById("path-cord");
+      check.checked = on;
+      check.disabled = locked;
+      setSlider("path-cord-scale", Math.round(curveCordScale(curve) * 100));
+      document.getElementById("path-cord-scale").disabled = locked || !on;
+      document.getElementById("path-cord-scale-row").hidden = !on;
+      const auto = curve.userData.cord == null && Boolean(curve.userData.closed) && String(curve.userData.label ?? "").includes("紐");
+      document.getElementById("path-cord-hint").textContent = auto
+        ? "名前に「紐」が付いたループのため、自動で紐として当たっています。オフにすると当たり判定を外せます。棒状パーツは「当たり判定」を付けて押し当ててください。"
+        : "オンにすると、このパスが紐の当たり判定になり、揺れを付けたおっぱいなどを締め付けたり押しつぶしたりできます。名前に「紐」が付いたループは自動でオンになります。棒状のパーツは「当たり判定」を付けて押し当ててください。";
+    }
+
+    document.getElementById("path-cord").addEventListener("change", (event) => {
+      const curve = pathCordSubject();
+      if (!curve || curve.userData.locked) return;
+      curve.userData.cord = event.target.checked;
+      commit();
+      refreshPathCordUI();
+      requestRender();
+      setFileStatus(event.target.checked
+        ? `パス「${curve.userData.label}」を紐として当たるようにしました`
+        : `パス「${curve.userData.label}」の紐当たりを外しました`);
+    });
+    {
+      const range = document.getElementById("path-cord-scale");
+      range.addEventListener("input", () => {
+        const curve = pathCordSubject();
+        if (!curve || curve.userData.locked) return;
+        const scale = Number(range.value) / 100;
+        if (Math.abs(scale - 1) < 1e-6) delete curve.userData.cordScale;
+        else curve.userData.cordScale = Math.min(3, Math.max(0.25, scale));
+        requestRender();
+      });
+      range.addEventListener("change", () => {
+        if (pathCordSubject()) commit();
+      });
+    }
+
     // ===== 柔らかさ（へこみ）のパネルと右クリックメニュー =====
     function squishSubject() {
       const mesh = selected;
@@ -30866,6 +31075,7 @@ void main() {
     setupClothPane();
     // 布シミュ初期化後に撮る（serialize が clothSim を読むため）
     startupTemplateDoc = serialize();
+
   </script>
 </body>
 </html>
