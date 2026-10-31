@@ -5183,8 +5183,8 @@ if (decalOn > 0.5) {
     ];
     centerParts.push(...torsoParts);
     const pairedParts = [[
-      block(figure, 4.8, 4.3, 3.7, 2.2, 17.15, 2.2),
-      block(figure, 4.8, 4.3, 3.7, -2.2, 17.15, 2.2),
+      block(figure, 4.4, 4.4, 4.4, 2.95, 17.2, 2.4),
+      block(figure, 4.4, 4.4, 4.4, -2.95, 17.2, 2.4),
     ]];
 
     const sideParts = { 1: [], [-1]: [] };
@@ -5210,7 +5210,10 @@ if (decalOn > 0.5) {
     ["頭", "首", "胸", "腰", "腰回り"].forEach((name, index) => {
       centerParts[index].userData.label = name;
     });
-    for (const mesh of pairedParts[0]) mesh.userData.label = "胸";
+    for (const mesh of pairedParts[0]) {
+      mesh.userData.label = "胸";
+      setMorph(mesh, 0, 1, 0, 0);
+    }
     ["上腕", "前腕", "手", "太もも", "すね", "足"].forEach((name, index) => {
       sideParts[1][index].userData.label = name;
       sideParts[-1][index].userData.label = name;
@@ -22247,7 +22250,7 @@ self.onmessage = (event) => {
       return Number.isFinite(scale) && scale > 0 ? Math.min(3, Math.max(0.25, scale)) : 1;
     }
 
-    // 紐の基準半径：沿わせたパーツの断面、なければパス全体の大きさから見積もる
+    // 紐の基準半径：沿わせたパーツの細い断面を目安に、溝が付く程度の細さに抑える
     function curveCordBaseRadius(curve) {
       const id = curve.userData.id;
       let best = 0;
@@ -22257,7 +22260,8 @@ self.onmessage = (event) => {
         const size = mesh.geometry.boundingBox.getSize(new THREE.Vector3());
         const dims = [size.x, size.y, size.z].sort((a, b) => a - b);
         mesh.updateWorldMatrix(true, false);
-        const radius = ((dims[0] + dims[1]) * 0.25) * colliderScaleOf(mesh.matrixWorld);
+        // いちばん細い向きの半径の半分相当（紐は太くしすぎない）
+        const radius = dims[0] * 0.22 * colliderScaleOf(mesh.matrixWorld);
         if (radius > best) best = radius;
       };
       for (const mesh of editableMeshes()) {
@@ -22269,13 +22273,13 @@ self.onmessage = (event) => {
         if (!anchor) continue;
         for (const mesh of anchor.userData.inner?.children ?? []) consider(mesh);
       }
-      if (best > 1e-5) return best;
+      if (best > 1e-5) return Math.min(best, 0.014);
       const frames = curveFrames(curve);
       const span = frames.total || 0.2;
-      return Math.min(0.04, Math.max(0.006, span * 0.02));
+      return Math.min(0.01, Math.max(0.004, span * 0.01));
     }
 
-    // 紐パスを折れ線カプセル列にする（へこみ・揺れの押し出しに使う）
+    // 紐パスを折れ線カプセル列にする（へこみは曲線ごとに最深1本、揺れ押し出し用に数本）
     function curveCordShapes() {
       const shapes = [];
       for (const curve of curves) {
@@ -22283,24 +22287,26 @@ self.onmessage = (event) => {
         const frames = curveFrames(curve);
         const points = frames.points;
         if (points.length < 2) continue;
-        const base = curveCordBaseRadius(curve) * curveCordScale(curve);
+        // へこみは曲線ごとに最深1本だけ使うが、揺れ押し出し用に数本は残す
+        const base = Math.min(0.012, curveCordBaseRadius(curve) * curveCordScale(curve));
         const count = points.length;
-        const step = Math.max(1, Math.ceil((count - 1) / 28));
+        const step = Math.max(1, Math.ceil((count - 1) / 6));
         let prev = 0;
         const pushSeg = (i0, i1) => {
           const a = points[i0];
           const b = points[i1];
           if (a.distanceToSquared(b) < 1e-12) return;
-          const r = base * Math.max(0.05, 0.5 * ((frames.sizes[i0] ?? 1) + (frames.sizes[i1] ?? 1)));
+          const r = base * Math.max(0.2, 0.5 * ((frames.sizes[i0] ?? 1) + (frames.sizes[i1] ?? 1)));
           shapes.push({
             type: "capsule",
             a: a.clone(),
             b: b.clone(),
-            r,
+            r: Math.min(r, 0.014),
             owner: curve,
             key: `cord:${curve.userData.id}:${i0}:${i1}`,
             group: "",
             bone: null,
+            cord: true,
           });
         };
         for (let index = step; index < count; index += step) {
@@ -22629,7 +22635,7 @@ self.onmessage = (event) => {
 
     function snapshotShape(shape) {
       if (shape.type === "plane") return { type: "plane", point: shape.point.clone(), normal: shape.normal.clone() };
-      return { type: shape.type, a: shape.a.clone(), b: shape.b.clone(), r: shape.r };
+      return { type: shape.type, a: shape.a.clone(), b: shape.b.clone(), r: shape.r, cord: Boolean(shape.cord) };
     }
 
     function squishTargets() {
@@ -22740,10 +22746,24 @@ self.onmessage = (event) => {
             }
           }
           if (!(deepest > 0)) continue;
-          const id = shapeKey(shape);
+          const fraction = inside / Math.max(count, 1);
+          // 紐は貫通でぐちゃぐちゃにしないよう、溝は浅めに抑える
+          if (shape.cord) {
+            deepest = Math.min(deepest, size * (0.1 + 0.14 * squish.depth));
+            if (fraction > 0.35) deepest *= 0.4;
+            else if (fraction > 0.2) deepest *= 0.65;
+          }
+          // 紐は曲線ごとに最深の1本だけ（セグメントを足すと溝がぐちゃぐちゃになる）
+          const id = shape.cord && isCurve(shape.owner)
+            ? `cord:${shape.owner.userData.id}`
+            : shapeKey(shape);
+          if (shape.cord && seen.has(id)) {
+            const prev = state.contacts.get(id);
+            if (prev && prev.depth >= deepest) continue;
+          }
           seen.add(id);
           const contact = state.contacts.get(id) ?? { s: 1, v: 0 };
-          Object.assign(contact, { shape: snapshotShape(shape), depth: deepest, fraction: inside / Math.max(count, 1), touching: true, s: 1, v: 0 });
+          Object.assign(contact, { shape: snapshotShape(shape), depth: deepest, fraction, touching: true, s: 1, v: 0 });
           state.contacts.set(id, contact);
         }
         for (const [id, contact] of state.contacts) if (!seen.has(id)) contact.touching = false;
@@ -22782,8 +22802,13 @@ self.onmessage = (event) => {
           a.set(shape.a.x, shape.a.y, shape.a.z, shape.r);
           b.set(shape.b.x, shape.b.y, shape.b.z, 0);
         }
-        const bulge = Math.min(contact.depth, (contact.depth * contact.fraction) / Math.max(1 - contact.fraction, 0.2)) * 0.7;
-        uniforms.squishC.value[index].set(contact.depth, contact.s, bulge, 0);
+        let depth = contact.depth;
+        let bulge = Math.min(contact.depth, (contact.depth * contact.fraction) / Math.max(1 - contact.fraction, 0.2)) * 0.7;
+        if (shape.cord) {
+          depth = Math.min(depth, size * 0.18);
+          bulge = Math.min(bulge * 0.25, depth * 0.45);
+        }
+        uniforms.squishC.value[index].set(depth, contact.s, bulge, 0);
       });
       uniforms.squishCount.value = contacts.length;
       uniforms.squishOn.value = contacts.length ? 1 : 0;
@@ -31050,6 +31075,7 @@ void main() {
     setupClothPane();
     // 布シミュ初期化後に撮る（serialize が clothSim を読むため）
     startupTemplateDoc = serialize();
+
   </script>
 </body>
 </html>
