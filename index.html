@@ -1757,7 +1757,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg>
           回転
         </button>
-        <button id="mode-scale" type="button" aria-pressed="false">
+        <button id="mode-scale" type="button" aria-pressed="false" title="拡大縮小。ドラッグした画面上の距離で少しずつ変わる。Altでさらに細かく">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20 20 4"/><path d="M14 4h6v6M10 20H4v-6"/></svg>
           拡縮
         </button>
@@ -2375,7 +2375,7 @@
       </table>
     </section>
     <p>「ファイル → ワークショップを開く」で、みんなが公開したモデルやモーションの一覧を見られます。種類やタグで絞り込み、「エディターで開く」か「ダウンロード」で使えます。「ファイル → ワークショップに公開…」では、今のモデル、または「ボーンとモーション」で読み込んだモーションを、タイトル・作者・タグ・サムネイル付きで公開できます。公開先は GitHub のリポジトリで、GitHub のトークン（fine-grained、そのリポジトリの Contents と Pull requests の書き込み権限）が必要です。トークンはこのブラウザの中だけに保存されます。トークンがないときは「パッケージをダウンロード」で 1 つのファイルにまとめて渡せ、受け取った人は「読み込み」で開けます。「ファイル → モーションを書き出す」で読み込んだモーションのファイルだけを書き出せます。</p>
-    <p>クリックで選択し、Shift+クリックで追加します（パーツ一覧では Shift+クリックで間の行もまとめて選べます）。移動・回転・拡縮はボタンで重ねて選べます。移動と拡縮を同時に選ぶと、拡縮のハンドルは外側に出ます。Shift を押しながらドラッグすると、移動はつかんだ矢印以外の方向（面をつかんだ場合はその面に垂直な方向）に動き、回転は45度刻みになり、拡縮はつかんだ側の反対の面を固定して伸び縮みします。ロックしたパーツは動きません。Ctrl+C でコピー、Ctrl+V で少しずらした位置に貼り付けます。フォルダを選んでコピーすると、中のフォルダやパーツごとフォルダをまるごとコピーします。貼り付け先は、フォルダを選んでいればそのフォルダの中、パーツを選んでいればそのパーツのすぐ下になります。リンクパーツを貼り付けると、同じリンク先モデルを共有するリンクが増えます。Ctrl+D で選んだものをその場に複製します（クリップボードは変わりません）。パスもパーツと同じようにコピー・貼り付け・複製でき、パーツとそのパスを一緒にコピーすると、貼り付けたパーツは新しいパスに沿います。</p>
+    <p>クリックで選択し、Shift+クリックで追加します（パーツ一覧では Shift+クリックで間の行もまとめて選べます）。移動・回転・拡縮はボタンで重ねて選べます。拡縮のハンドルは、軸の先・面・全体用が離れて出ます（移動と一緒のときは移動の矢印の外側）。ドラッグした画面上の距離で伸び縮みし、少しの動きは少しだけ変わります（大きく変えるときは長くドラッグ。Alt でさらに細かく。中心を通り越しても向きは反転しません）。Shift を押しながらドラッグすると、移動はつかんだ矢印以外の方向（面をつかんだ場合はその面に垂直な方向）に動き、回転は45度刻みになり、拡縮はつかんだ側の反対の面を固定して伸び縮みします。ロックしたパーツは動きません。Ctrl+C でコピー、Ctrl+V で少しずらした位置に貼り付けます。フォルダを選んでコピーすると、中のフォルダやパーツごとフォルダをまるごとコピーします。貼り付け先は、フォルダを選んでいればそのフォルダの中、パーツを選んでいればそのパーツのすぐ下になります。リンクパーツを貼り付けると、同じリンク先モデルを共有するリンクが増えます。Ctrl+D で選んだものをその場に複製します（クリップボードは変わりません）。パスもパーツと同じようにコピー・貼り付け・複製でき、パーツとそのパスを一緒にコピーすると、貼り付けたパーツは新しいパスに沿います。</p>
     <p>パーツをパスに沿わせるには、パーツ一覧でパーツの行をパスの行の中央にドラッグするか、右クリックの「パスに沿わせる…」を選んで画面のパスをクリックします（Esc でやめる）。メニューには最近使ったパス・近いパスが 5 つまで並び、ほかのパスは「ほかのパスから選ぶ…」で名前を検索して選べます。沿わせたパーツをパス以外の場所へドラッグするとパスから外れます。</p>
     <p>画面右下のアイコンでワイヤーフレーム・自動回転・パースを切り替えられます。パースをオフにすると遠近感のない平行投影になり、形の比率や左右のずれを確かめやすくなります。平行投影中もホイールで拡大縮小できます。視点を回す中心は、パーツを選ぶとそのパーツの中心（複数なら最初に選んだパーツの中心）に移ります。選択を外しても視点の中心はその場所にとどまります。</p>
     <p>画面の左と上にスケール（cm）が表示されます。回転の中心を通る面での長さです（パースオフなら画面全体で正確です）。左のスケールをドラッグすると上下スケールの起点（0 の位置）を動かせ、ドラッグ中は起点から横に線が表示されます。ダブルクリックで画面下に戻ります。</p>
@@ -5308,8 +5308,13 @@ if (decalOn > 0.5) {
     });
     const toolByMode = { translate: toolList[0], rotate: toolList[1], scale: toolList[2] };
     let activeTool = toolByMode.translate;
-    let scaleApart = false;
     let usedGizmo = false;
+    let scaleDrag = null;
+    let scaleFine = false;
+    // 中心からの距離比だと、寄ってハンドルが中心に近いほど少しの移動で倍率が跳ねる。
+    // 画面上の移動量で決める（このピクセル数で 2 倍。Alt はその約 3.5 倍細かい）。
+    const SCALE_DOUBLE_PX = 180;
+    const SCALE_DOUBLE_PX_FINE = 640;
     let dragSignature = "";
     let groupDrag = false;
     const dragOrigins = new Map();
@@ -5327,7 +5332,7 @@ if (decalOn > 0.5) {
     const updateScaleGizmo = scaleGizmo.updateMatrixWorld.bind(scaleGizmo);
     scaleGizmo.updateMatrixWorld = function (force) {
       updateScaleGizmo(force);
-      if (!scaleApart) return;
+      if (!toolModes.has("scale")) return;
       let reach = 0;
       for (const handle of this.gizmo.scale.children) reach = Math.max(reach, Math.abs(handle.scale.x));
       if (!reach) return;
@@ -5337,6 +5342,10 @@ if (decalOn > 0.5) {
     };
 
     function placeScaleHandles(group, reach, visual) {
+      const alone = !toolModes.has("translate");
+      const axisTarget = alone ? 1.28 : 1.05;
+      const planeTarget = alone ? 0.92 : 0.84;
+      const uniform = alone ? 0.62 : 0.48;
       for (const handle of group.children) {
         if (!handle.geometry) continue;
         if (!handle.geometry.boundingBox) handle.geometry.computeBoundingBox();
@@ -5346,22 +5355,28 @@ if (decalOn > 0.5) {
         const longest = Math.max(scaleSize.x, scaleSize.y, scaleSize.z);
         const shortest = Math.min(scaleSize.x, scaleSize.y, scaleSize.z);
         if (visual && longest > 0.25 && shortest < 0.05) {
-          handle.visible = false;
+          if (!alone) {
+            handle.visible = false;
+            continue;
+          }
+          const long = scaleSize.x >= scaleSize.y && scaleSize.x >= scaleSize.z ? "x" : scaleSize.y >= scaleSize.z ? "y" : "z";
+          const far = Math.max(Math.abs(box.min[long]), Math.abs(box.max[long]));
+          if (far > 1e-6) handle.scale[long] = reach * axisTarget / far;
           continue;
         }
         const axis = handle.name === "X" || handle.name === "Y" || handle.name === "Z";
         if (scaleCenter.lengthSq() > 1e-8) {
-          const grab = visual || !axis ? 1 : 0.36;
+          const grab = visual || !axis ? 1 : (alone ? 0.55 : 0.36);
           if (grab !== 1) handle.scale.multiplyScalar(grab);
           const centerSpan = scaleCenter.length() * grab;
-          const target = axis ? 1.05 : 0.84;
+          const target = axis ? axisTarget : planeTarget;
           scaleShift.copy(scaleCenter).normalize().applyQuaternion(handle.quaternion);
           handle.position.addScaledVector(scaleShift, reach * (target - centerSpan));
         } else if (handle.name === "XYZ") {
           scaleRight.set(1, 0, 0).applyQuaternion(camera.quaternion);
           scaleUp.set(0, 1, 0).applyQuaternion(camera.quaternion);
-          handle.position.addScaledVector(scaleRight, reach * 0.48);
-          handle.position.addScaledVector(scaleUp, reach * 0.48);
+          handle.position.addScaledVector(scaleRight, reach * uniform);
+          handle.position.addScaledVector(scaleUp, reach * uniform);
         }
       }
     }
@@ -5386,8 +5401,7 @@ if (decalOn > 0.5) {
     }
 
     function syncTools() {
-      scaleApart = toolModes.has("scale") && toolModes.has("translate");
-      toolByMode.scale.setSize(scaleApart ? 0.9 : 1);
+      toolByMode.scale.setSize(toolModes.has("scale") && toolModes.has("translate") ? 0.9 : 1);
       const locked = selected?.userData.locked || (isCurvePart(selected) && curveOf(selected)?.userData.locked);
       const target = !reliefDrawing && selected && selected.visible && !locked ? selected : null;
       toolByMode.rotate.setSpace(target?.userData.isCurvePoint || target?.userData.curveBind ? "local" : "world");
@@ -5440,6 +5454,7 @@ if (decalOn > 0.5) {
         controls.enabled = true;
         groupDrag = false;
         anchorScale = null;
+        scaleDrag = null;
         dragOrigins.clear();
         mirrorShiftOrigins.clear();
         pointSizeOrigins.clear();
@@ -5447,6 +5462,7 @@ if (decalOn > 0.5) {
         if (liveSignature() !== dragSignature) commit();
       });
       control.addEventListener("objectChange", () => {
+        if (activeTool === control && control.mode === "scale") applyGentleScale(control);
         if (activeTool === control && control.mode === "scale" && control.object?.userData.isCurvePoint) {
           applyPointScale(control.object);
           return;
@@ -5478,11 +5494,16 @@ if (decalOn > 0.5) {
 
     window.addEventListener("keydown", (event) => {
       if (event.key === "Shift") setShiftHeld(true);
+      if (event.key === "Alt") scaleFine = true;
     });
     window.addEventListener("keyup", (event) => {
       if (event.key === "Shift") setShiftHeld(false);
+      if (event.key === "Alt") scaleFine = false;
     });
-    window.addEventListener("blur", () => setShiftHeld(false));
+    window.addEventListener("blur", () => {
+      setShiftHeld(false);
+      scaleFine = false;
+    });
 
     function localBounds(object) {
       const box = new THREE.Box3();
@@ -5512,6 +5533,11 @@ if (decalOn > 0.5) {
     toolByMode.scale.pointerDown = function (pointer) {
       if (shiftHeld && !this.dragging) this.getHelper().updateMatrixWorld(true);
       TransformControls.prototype.pointerDown.call(this, pointer);
+      scaleDrag = this.dragging ? {
+        pointer: { x: pointer.x, y: pointer.y },
+        pointerNow: { x: pointer.x, y: pointer.y },
+        start: this._scaleStart.clone(),
+      } : null;
       anchorScale = null;
       const object = this.object;
       if (!shiftHeld || !this.dragging || !object || !/^(X|Y|Z|XY|YZ|XZ)$/.test(this.axis ?? "")) return;
@@ -5521,17 +5547,17 @@ if (decalOn > 0.5) {
       const startInverse = this.worldQuaternionStart.clone().invert();
       const side = this.pointStart.clone().applyQuaternion(startInverse);
       const anchor = box.getCenter(new THREE.Vector3());
-      const axes = [...this.axis].map((letter) => letter.toLowerCase());
-      for (const axis of axes) anchor[axis] = side[axis] >= 0 ? box.min[axis] : box.max[axis];
+      for (const letter of this.axis) {
+        const axis = letter.toLowerCase();
+        anchor[axis] = side[axis] >= 0 ? box.min[axis] : box.max[axis];
+      }
       object.updateWorldMatrix(true, false);
-      const world = anchor.clone().applyMatrix4(object.matrixWorld);
-      anchorScale = {
-        axes,
-        local: anchor,
-        world,
-        offset: world.clone().sub(this.worldPositionStart).applyQuaternion(startInverse),
-        startInverse,
-      };
+      anchorScale = { local: anchor, world: anchor.clone().applyMatrix4(object.matrixWorld) };
+    };
+
+    toolByMode.scale.pointerMove = function (pointer) {
+      if (scaleDrag && pointer) scaleDrag.pointerNow = { x: pointer.x, y: pointer.y };
+      TransformControls.prototype.pointerMove.call(this, pointer);
     };
 
     const pointSizeOrigins = new Map();
@@ -5563,14 +5589,7 @@ if (decalOn > 0.5) {
     function applyAnchorScale(control) {
       const object = control.object;
       if (!object) return;
-      const { axes, local, world, offset, startInverse } = anchorScale;
-      const start = control.pointStart.clone().applyQuaternion(startInverse);
-      const end = control.pointEnd.clone().applyQuaternion(startInverse);
-      for (const axis of axes) {
-        const from = start[axis] - offset[axis];
-        if (Math.abs(from) < 1e-6) continue;
-        object.scale[axis] = control._scaleStart[axis] * ((end[axis] - offset[axis]) / from);
-      }
+      const { local, world } = anchorScale;
       object.updateWorldMatrix(true, false);
       const drift = world.clone().sub(local.clone().applyMatrix4(object.matrixWorld));
       object.getWorldPosition(worldPos).add(drift);
@@ -5578,9 +5597,71 @@ if (decalOn > 0.5) {
       object.updateWorldMatrix(false, false);
     }
 
+    const scaleLocal = new THREE.Vector3();
+    const scaleAxis = new THREE.Vector3();
+    const scaleTip = new THREE.Vector3();
+    const scaleProjected = new THREE.Vector3();
+    const scaleQuat = new THREE.Quaternion();
+
+    function scalePointerPx(ndc, rect) {
+      return {
+        x: (ndc.x + 1) * 0.5 * rect.width,
+        y: (1 - ndc.y) * 0.5 * rect.height,
+      };
+    }
+
+    function scaleWorldPx(world, rect) {
+      scaleProjected.copy(world).project(camera);
+      return scalePointerPx(scaleProjected, rect);
+    }
+
+    function scaleScreenDir(control, rect) {
+      scaleLocal.copy(control.pointStart).applyQuaternion(scaleQuat.copy(control.worldQuaternionStart).invert());
+      scaleAxis.set(0, 0, 0);
+      for (const letter of control.axis) {
+        const key = letter.toLowerCase();
+        scaleAxis[key] = Math.sign(scaleLocal[key]) || 1;
+      }
+      if (scaleAxis.lengthSq() < 1e-8) scaleAxis.set(1, 0, 0);
+      scaleAxis.normalize().applyQuaternion(control.worldQuaternionStart);
+      const origin = scaleWorldPx(control.worldPositionStart, rect);
+      const tip = scaleWorldPx(scaleTip.copy(control.worldPositionStart).add(scaleAxis), rect);
+      return { x: tip.x - origin.x, y: tip.y - origin.y };
+    }
+
+    function scaleDragPixels(control) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      const start = scalePointerPx(scaleDrag.pointer, rect);
+      const now = scalePointerPx(scaleDrag.pointerNow, rect);
+      if (control.axis === "XYZ") {
+        const center = scaleWorldPx(control.worldPositionStart, rect);
+        return Math.hypot(now.x - center.x, now.y - center.y) - Math.hypot(start.x - center.x, start.y - center.y);
+      }
+      const dir = scaleScreenDir(control, rect);
+      const length = Math.hypot(dir.x, dir.y);
+      if (length < 6) return start.y - now.y;
+      return ((now.x - start.x) * dir.x + (now.y - start.y) * dir.y) / length;
+    }
+
+    function applyGentleScale(control) {
+      const object = control.object;
+      if (!scaleDrag || !object || !control.axis) return;
+      const span = scaleFine ? SCALE_DOUBLE_PX_FINE : SCALE_DOUBLE_PX;
+      const factor = 2 ** (scaleDragPixels(control) / span);
+      const start = scaleDrag.start;
+      const axes = control.axis === "XYZ" ? ["x", "y", "z"] : [...control.axis].map((letter) => letter.toLowerCase());
+      object.scale.copy(start);
+      for (const axis of axes) {
+        const sign = Math.sign(start[axis]) || 1;
+        const magnitude = Math.min(80, Math.max(0.01, Math.abs(start[axis] || 0.01) * factor));
+        object.scale[axis] = sign * magnitude;
+      }
+    }
+
     renderer.domElement.addEventListener("pointerdown", (event) => {
       if (reliefDrawing || event.button !== 0) return;
       setShiftHeld(event.shiftKey);
+      scaleFine = event.altKey;
       const winner = pickTool(event);
       for (const control of toolList) control.enabled = !winner || control === winner;
     }, true);
