@@ -313,7 +313,7 @@
     #path-draw-banner[hidden] { display: none; }
     body.path-drawing #viewport { box-shadow: inset 0 0 0 2px rgba(53, 214, 255, 0.55); }
     body.path-drawing #viewport canvas { cursor: crosshair; }
-    #add-draw-path[aria-pressed="true"] { background: rgba(53, 214, 255, 0.16); border-color: #35d6ff; }
+    #add-draw-path[aria-pressed="true"], #add-outline[aria-pressed="true"] { background: rgba(53, 214, 255, 0.16); border-color: #35d6ff; }
 
     #relief-cursor {
       position: absolute;
@@ -1607,6 +1607,10 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="1"/></svg>
             四角
           </button>
+          <button id="add-outline" type="button" aria-pressed="false" title="クリックして外形のパスを描き、閉じるとその形の薄い平面を作る">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 16c.4-6 3.2-9 5-9s4.6 3 5 9-2.2 4.2-5 4.2S6.6 22 7 16z"/><circle cx="7" cy="16" r="1.3"/><circle cx="12" cy="7" r="1.3"/><circle cx="17" cy="16" r="1.3"/></svg>
+            パス
+          </button>
         </div>
       </div>
       <div class="add-block" id="add-cloth-block">
@@ -2378,9 +2382,10 @@
     <p>メニューバーの左右対称アイコンがオンのときは、左右の組になっているパーツの片側の編集がもう一方にも反映されます。オフにすると、編集は片側だけになります。左右対称モードでパーツが勝手に増えたり消えたりすることはありません（追加した形は1つだけ置かれます）。反対側のパーツを作りたいときは、パーツを右クリックして「左右対称のパーツを作る」を選びます（複数選んでいれば、選んだパーツのうち相手のないものすべてに作られます。中心線上にあるパーツには作れません）。「左右対称を解除」を選ぶと、両方のパーツを残したまま組だけを解除します。組の片側だけを削除すると、残った側は組のない普通のパーツになります。</p>
     <p>パーツやフォルダを右クリックするとメニューが開き、マスク編集・名前の変更・ロック・非表示・削除を選べます。マスク編集では、置いた図形と重なる範囲が非表示になります。マスク範囲の図形はパーツ作成と同じ立体（球・三角・四角・断面）と平面（円・三角・四角）から選べ、断面は通常のパーツと同じく断面パネルで形を編集できます。パーツを Ctrl+C でコピーしておき、マスク編集中に Ctrl+V で貼り付けると、そのパーツと同じ形・位置・大きさ・回転のマスク範囲になります（傾きと平面のドームは反映されません）。マスク編集中に「カーブ」「ループ」を押すと、パスとそれに沿って曲がる筒状のマスク範囲が追加されます（ループなら輪になります）。パスの点を動かすと切り取る範囲も曲がり、範囲を選ぶとパーツと同じカーブのパネルで始点・終点・太さの変化などを調整できます。ほかのマスク範囲も右クリックから既存のパスに沿わせたり外したりできます。フォルダでマスク編集すると、置いた図形1つでフォルダ内の全パーツをまとめて切り取れます。リンクパーツも右クリックからマスク編集でき、リンク先の中身全体をまとめて切り取れます（マスクは元のモデル側に保存されます）。フォルダを右クリックして「左右対称に配置」を選ぶと、中の片側だけのパーツ（サブフォルダやマスク、リンクパーツも含む）に反対側の鏡像コピーが付きます。「左右対称を解除」で、両方のパーツを残したまま組を解除します（リンクパーツは反対側のコピーの表示をやめます）。</p>
     <p>「別モデル化して別タブで編集」を選ぶと、そのパーツやフォルダが別モデルになり、別タブで開きます。別タブでの変更は自動で元のモデルに反映されます。元のモデルではリンクアイコン付きの1つのパーツとして扱われ、まとめて移動・回転・拡大縮小できます（中身はリンク先で編集します）。右クリックでリンク先の編集やリンクの解除ができ、「左右対称に配置」を選ぶと反対側に鏡像のコピーが表示されます（移動・回転・マスクも自動で反映）。リンクを残すには、元のモデルを保存してください。リンク先が表示できないときは、右クリックの「リンクをつけなおす…」か、リンク先タブに出るウィンドウから保存したファイル（.json）を選ぶと、つけなおせます。</p>
-    <p>「追加」は立体・平面・パスに分かれています。立体は球・三角柱・四角柱・断面、平面は薄い円・三角・四角です。「パス」の「カーブ」でベジエ曲線を置けます。パスは、右のパーツ一覧でそのパスを選んでいるときと、パスに沿わせたパーツやマスク範囲を選んでいるときだけ画面に表示されます。フォルダの表示・非表示を切り替えると、中のパスもまとめて切り替わります。カーブをクリックすると点（黄）とハンドル（ピンク）が表示され、点やハンドルを選んで移動ギズモで形を変えられます。ハンドルは反対側も連動して滑らかにつながります。点を右クリックして「角にする」を選ぶと、点が四角になり、2本のハンドルを別々に動かしてカーブを折り曲げられます（「滑らかな点にする」で元に戻ります）。角の点やそのハンドルを右クリックして「前のハンドルを削除」「次のハンドルを削除」を選ぶとハンドルがなくなり、その側はまっすぐ点に入ります（「…のハンドルを戻す」で再び出せます）。右クリックで点の追加・削除ができます（線の上で右クリックすると、その位置に中間点を追加できます）。パスを右クリックして「中間点で左右対称に編集」をオンにすると、真ん中の点（点が偶数なら真ん中の2点の間）を通る左右の面を境に、パスの形が鏡のように揃います。オンにしたときは右クリックした側（パス全体なら前半）の形がもう半分に写され、以後は点やハンドルを動かす・角にする・ハンドルを削除するといった操作が反対側の対になる点にも反映されます。点の追加と削除も左右で同時に行われ、真ん中の点は境の面の上に留まります。点を選んで回転ギズモを使うと、点のまわりでハンドルの向きがまとめて回ります。赤い輪（カーブの進む方向が軸）で回すと、カーブに沿わせたパーツがその点でねじれます。カーブ全体を選ぶと移動・回転・拡縮できます。パーツを右クリックして「カーブに沿わせる」または「ループに沿わせる」を選ぶと、パーツがそのパスに沿って曲がります。リンクパーツも右クリックから同じようにパスに沿わせられ、リンク先のモデル全体がひとまとまりで曲がります。パスに沿わせたパーツやリンクは、右のパーツ一覧ではそれぞれ元の場所（フォルダや並び順）のまま表示され、パスの行と水色の線でつながります（パスの行は白抜きの丸、沿わせたものは塗りの丸です）。閉じたフォルダの中にあるものは、そのフォルダの行に線がつながります。パスや沿わせたものを選んでいると線が濃くなります。左のパネルで始点・終点の範囲と両端の太さを調整できます。パスに沿わせたパーツを選ぶと、沿わせる前の形が元の位置に半透明の青で表示されます。点を選ぶと左のパネルに「点の太さ」が出て、その点を通る所でパーツを太く・細くできます（「拡縮」を選んで点の拡縮ギズモをドラッグしても変えられ、複数の点を選んでいればまとめて変わります）。点と点のあいだの太さはなめらかにつながり、両端の太さとも掛け合わされます。「曲がり具合」を下げるとパーツの曲がりが弱まり、0%ではパーツはまっすぐのまま、パスの位置と向きにだけ合わせて置かれます（並べたときはそれぞれが1つずつまっすぐになります）。「伸ばす」はパーツ1つをその区間の長さに引き延ばして曲げます。「並べる」は同じ形を引き延ばさず、区間の中に等間隔で置いて、それぞれをパスに沿って曲げます（角をつけた点でも隣同士の間に隙間ができません）。「個数を指定」では個数で並べる数を変えられ、「均等に配置」ではパーツの長さに合わせて入るだけ等間隔に並べ、「重なり」スライダーで間隔を変えられます（0%で隣同士がちょうど接し、プラスにすると重なって数が増え、マイナスにすると隙間が空きます。区間やパーツの長さを変えると数も変わり、ループ一周に並べたときは継ぎ目も同じ間隔になります）。法線編集で描いた模様や法線マップは、曲げたパーツに合わせて一緒に曲がります（左右対称オンなら反対側も鏡像で曲がります。拡縮ギズモで太さや長さも変えられます）。パスに沿わせたパーツやリンクは、「回転」を選ぶと回転ギズモで回せます。パーツ自身の向きの輪で、緑はパスの進む方向を軸にしたねじり、赤と青はパスに対する傾きになります。寸法の「回転」に数値を入れても回せます。回転はパスに沿わせたときの向きを基準にします。</p>
+    <p>「追加」は立体・平面・パスに分かれています。立体は球・三角柱・四角柱・断面、平面は薄い円・三角・四角と、パスで外形を指定する板です。「パス」の「カーブ」でベジエ曲線を置けます。パスは、右のパーツ一覧でそのパスを選んでいるときと、パスに沿わせたパーツやマスク範囲を選んでいるときだけ画面に表示されます。フォルダの表示・非表示を切り替えると、中のパスもまとめて切り替わります。カーブをクリックすると点（黄）とハンドル（ピンク）が表示され、点やハンドルを選んで移動ギズモで形を変えられます。ハンドルは反対側も連動して滑らかにつながります。点を右クリックして「角にする」を選ぶと、点が四角になり、2本のハンドルを別々に動かしてカーブを折り曲げられます（「滑らかな点にする」で元に戻ります）。角の点やそのハンドルを右クリックして「前のハンドルを削除」「次のハンドルを削除」を選ぶとハンドルがなくなり、その側はまっすぐ点に入ります（「…のハンドルを戻す」で再び出せます）。右クリックで点の追加・削除ができます（線の上で右クリックすると、その位置に中間点を追加できます）。パスを右クリックして「中間点で左右対称に編集」をオンにすると、真ん中の点（点が偶数なら真ん中の2点の間）を通る左右の面を境に、パスの形が鏡のように揃います。オンにしたときは右クリックした側（パス全体なら前半）の形がもう半分に写され、以後は点やハンドルを動かす・角にする・ハンドルを削除するといった操作が反対側の対になる点にも反映されます。点の追加と削除も左右で同時に行われ、真ん中の点は境の面の上に留まります。点を選んで回転ギズモを使うと、点のまわりでハンドルの向きがまとめて回ります。赤い輪（カーブの進む方向が軸）で回すと、カーブに沿わせたパーツがその点でねじれます。カーブ全体を選ぶと移動・回転・拡縮できます。パーツを右クリックして「カーブに沿わせる」または「ループに沿わせる」を選ぶと、パーツがそのパスに沿って曲がります。リンクパーツも右クリックから同じようにパスに沿わせられ、リンク先のモデル全体がひとまとまりで曲がります。パスに沿わせたパーツやリンクは、右のパーツ一覧ではそれぞれ元の場所（フォルダや並び順）のまま表示され、パスの行と水色の線でつながります（パスの行は白抜きの丸、沿わせたものは塗りの丸です）。閉じたフォルダの中にあるものは、そのフォルダの行に線がつながります。パスや沿わせたものを選んでいると線が濃くなります。左のパネルで始点・終点の範囲と両端の太さを調整できます。パスに沿わせたパーツを選ぶと、沿わせる前の形が元の位置に半透明の青で表示されます。点を選ぶと左のパネルに「点の太さ」が出て、その点を通る所でパーツを太く・細くできます（「拡縮」を選んで点の拡縮ギズモをドラッグしても変えられ、複数の点を選んでいればまとめて変わります）。点と点のあいだの太さはなめらかにつながり、両端の太さとも掛け合わされます。「曲がり具合」を下げるとパーツの曲がりが弱まり、0%ではパーツはまっすぐのまま、パスの位置と向きにだけ合わせて置かれます（並べたときはそれぞれが1つずつまっすぐになります）。「伸ばす」はパーツ1つをその区間の長さに引き延ばして曲げます。「並べる」は同じ形を引き延ばさず、区間の中に等間隔で置いて、それぞれをパスに沿って曲げます（角をつけた点でも隣同士の間に隙間ができません）。「個数を指定」では個数で並べる数を変えられ、「均等に配置」ではパーツの長さに合わせて入るだけ等間隔に並べ、「重なり」スライダーで間隔を変えられます（0%で隣同士がちょうど接し、プラスにすると重なって数が増え、マイナスにすると隙間が空きます。区間やパーツの長さを変えると数も変わり、ループ一周に並べたときは継ぎ目も同じ間隔になります）。法線編集で描いた模様や法線マップは、曲げたパーツに合わせて一緒に曲がります（左右対称オンなら反対側も鏡像で曲がります。拡縮ギズモで太さや長さも変えられます）。パスに沿わせたパーツやリンクは、「回転」を選ぶと回転ギズモで回せます。パーツ自身の向きの輪で、緑はパスの進む方向を軸にしたねじり、赤と青はパスに対する傾きになります。寸法の「回転」に数値を入れても回せます。回転はパスに沿わせたときの向きを基準にします。</p>
     <p>「パス」の「ループ」は、端を持たない閉じた輪です。カーブの端にあるような視点の終点はなく、最初は左右の2点と、そのあいだの中間点で輪っかになります。線は最後の点から最初の点へ戻ります。点やハンドルの編集、右クリックでの追加・削除、パーツを沿わせる操作はカーブと同じです。</p>
     <p>「パス」の「クリック」を押すと、中央の画面をクリックした位置に点を打ってパスを描けます。マウスの先に表示中のパーツがあればその表面に、何もなければ直前の点と同じ奥行きに点が付きます（カーソルの点が黄色なら表面、灰色なら空中です）。点が2つ以上の状態で右クリック・Enter・Esc を押すとカーブとして確定し、3点以上打ってから最初の点をクリックするとループになります。Backspace（または Ctrl+Z）で直前の点を取り消せます。描いている間は右ドラッグで視点を回せます。点のあいだは滑らかにつながり、確定後は通常のパスと同じように編集できます。</p>
+    <p>「平面」の「パス」を押すと、クリックした点を外形にして薄い平面を作れます。点は最初のクリックで決めた、画面の方を向いた平面の上に付きます（パーツの上でも、その奥行きには吸い付きません）。3点以上打ってから最初の点をクリックするか、右クリックか Enter で閉じると、その形の板になります。Esc で中止、Backspace（または Ctrl+Z）で直前の点を取り消せます。描いている間は右ドラッグで視点を回せます。できた平面を選ぶと、パスと同じ黄の点とピンクのハンドルが出ます。点やハンドルを移動ギズモで動かし、右クリックで点の追加・削除や角にできます。閉じたパス（ループ）を右クリックして「この外形で平面を作る」を選ぶと、そのパスの形の平面を作れます。パスが平らでないときは、パス自身の厚み方向へ押しつけて平らにします。外形は保存と元に戻すに含まれ、左右対称の相手を作ると形も鏡写しになります。</p>
     <p>「追加」の「下書き」で、画面に重ねて描ける下書きレイヤーを置けます。下書きは視点を回しても動かず、画面に貼り付いたまま表示されます（画面の中央を基準に、画面の高さに合わせて拡縮されます）。右のパーツ一覧にパーツやパスと同じように並び、ドラッグで並べ替えやフォルダへの出し入れができます。一覧で上にある下書きほど手前に表示されます。行を右クリックして「描く」を選ぶか、行のペンのボタンを押すと描画モードになり、画面上部のバーでペン・鉛筆・マーカー・直線・消しゴムを切り替え、色と太さを選んで左ドラッグで描けます。描画モード中も、右ドラッグで視点を回し、中ドラッグで平行移動、ホイールで拡大縮小できます。「透過率」で下書きの透け具合を変えられ、右クリックのメニューからも 0〜75% を選べます。描いた線は Ctrl+Z で1本ずつ取り消せ、保存ファイルにも含まれます。「完了」か Esc で描画モードを終えます。</p>
     <p>パーツを2つ以上選んで右クリック（または「編集」メニュー）から「選択中のパーツを結合」を選ぶと、重なった内側の面が消え、表面がすき間なくつながった1つのメッシュになります。元のパーツの表面はそのまま残り、変わるのはパーツどうしが接している部分だけです。左のパネルの「なだらか」で、接している部分のまわりの表面そのものを粘土のように盛り上げてなめらかにつなげます（つなぎ目のまわりは自動で細かく分割されます）。立体と平面の板も結合できます。結合したあとは元のパーツに戻せません（戻すには Ctrl+Z）。左右対称オンで片側のパーツだけを選んで結合すると、反対側も鏡像で結合されます。平面の円・三角・四角どうしも、同じ向きなら結合でき、輪郭が1つにつながった板になります。前後に重ねた平面は、飛び出した部分の厚みをそのまま残します。平面の「なだらか」は、パーツどうしが接している部分（輪郭が交わる角や、重ねた板の段差の付け根）にだけ丸みを付け、ほかの輪郭は変えません。パーツを1つ右クリックして「ラスタライズ」を選ぶと、モーフ・マスク・カーブに沿った曲がりをそのまま焼き込んだ形に変わります（リンクパーツ以外）。ラスタライズしたパーツや結合したパーツは、左のパネルの「角の丸み」で角や切り口をまとめて丸められます。マスクで切り取ったパーツでは「切り口」も表示され、ほかの角はそのままで切り口の縁だけを丸められます。マスク編集中でもラスタライズできます。</p>
     <p>保存したモデルファイル（.json）を画面にドラッグ＆ドロップすると、「読み込み」と同じように開けます。「ファイル」→「新規作成」（Ctrl+N）では、女性・男性・四足動物・鳥・空白のテンプレートから選んで始められます。選んだ形はあとからパーツの追加や変形で変えられます。保存していない変更は破棄されます。「インポート」では、保存済みのモデルファイルを、1つのリンクパーツとして取り込むか、パーツとフォルダをすべて取り込むかを選べます。左のパネルと右のパーツ一覧は、境目をドラッグして幅を変えられます。左のパネルの見出し（「追加」「変形」など）をクリックすると、その項目を折りたためます。折りたたんだ状態は次に開いたときも保たれます。</p>
@@ -3364,6 +3369,7 @@ if (decalOn > 0.5) {
     let reliefDrawing = false;
     let reliefTarget = null;
     let pathDraw = null;
+    let outlineSyncing = false;
     let reliefSession = null;
     let featureTarget = null;
     let featureSession = null;
@@ -5450,6 +5456,14 @@ if (decalOn > 0.5) {
         else if (activeTool === control) syncFrom(control.object);
         if (activeTool === control && control.object?.userData.isCurveHandle) alignCurveHandle(control.object);
         if (activeTool === control) mirrorCurveEdits(selection.includes(control.object) ? selection : [control.object], control.object);
+        const edited = curveOf(control.object);
+        if (edited?.userData.outlineOf) {
+          flattenOutlineCurve(edited);
+          updateCurveVisual(edited);
+          flushOutlineEditor(edited);
+        }
+        const movedOutline = control.object?.userData.outlineCurve;
+        if (movedOutline) syncOutlineEditorMatrix(movedOutline);
       });
     }
     const SHIFT_ROTATE_SNAP = THREE.MathUtils.degToRad(45);
@@ -5970,6 +5984,157 @@ if (decalOn > 0.5) {
       geometry.computeBoundingBox();
       geometry.computeBoundingSphere();
       return geometry;
+    }
+
+    const OUTLINE_LIMIT = 48;
+
+    function isOutlinePoint(spec) {
+      return Array.isArray(spec?.p) && spec.p.length === 2 && spec.p.every(Number.isFinite)
+        && Array.isArray(spec.in) && spec.in.length === 2 && spec.in.every(Number.isFinite)
+        && Array.isArray(spec.out) && spec.out.length === 2 && spec.out.every(Number.isFinite)
+        && (spec.c == null || typeof spec.c === "boolean");
+    }
+
+    function readOutline(value) {
+      const list = value?.points;
+      if (!Array.isArray(list) || list.length < 3) return null;
+      const clamp = (number) => Math.round(Math.min(20, Math.max(-20, number)) * 1e5) / 1e5 || 0;
+      const points = [];
+      for (const raw of list.slice(0, OUTLINE_LIMIT)) {
+        if (!isOutlinePoint(raw)) return null;
+        const point = { p: raw.p.map(clamp), in: raw.in.map(clamp), out: raw.out.map(clamp) };
+        if (raw.c) point.c = true;
+        points.push(point);
+      }
+      return points.length >= 3 ? { points } : null;
+    }
+
+    function defaultOutline() {
+      const radius = 0.09;
+      const handle = radius * 0.5522847498;
+      return readOutline({
+        points: [
+          { p: [radius, 0], in: [0, -handle], out: [0, handle] },
+          { p: [0, radius], in: [handle, 0], out: [-handle, 0] },
+          { p: [-radius, 0], in: [0, handle], out: [0, -handle] },
+          { p: [0, -radius], in: [-handle, 0], out: [handle, 0] },
+        ],
+      });
+    }
+
+    function mirroredOutline(outline) {
+      const source = readOutline(outline);
+      if (!source) return null;
+      return readOutline({
+        points: source.points.map((spec) => ({
+          p: [spec.p[0] ? -spec.p[0] : 0, spec.p[1]],
+          in: [spec.out[0] ? -spec.out[0] : 0, spec.out[1]],
+          out: [spec.in[0] ? -spec.in[0] : 0, spec.in[1]],
+          ...(spec.c ? { c: true } : {}),
+        })).reverse(),
+      });
+    }
+
+    function sampleOutline(points, steps) {
+      const samples = [];
+      const count = points.length;
+      for (let index = 0; index < count; index += 1) {
+        const a = points[index];
+        const b = points[(index + 1) % count];
+        const p0 = a.p;
+        const p1 = b.p;
+        const c0 = [p0[0] + a.out[0], p0[1] + a.out[1]];
+        const c1 = [p1[0] + b.in[0], p1[1] + b.in[1]];
+        for (let step = 0; step < steps; step += 1) {
+          const t = step / steps;
+          const u = 1 - t;
+          samples.push([
+            u * u * u * p0[0] + 3 * u * u * t * c0[0] + 3 * u * t * t * c1[0] + t * t * t * p1[0],
+            u * u * u * p0[1] + 3 * u * u * t * c0[1] + 3 * u * t * t * c1[1] + t * t * t * p1[1],
+          ]);
+        }
+      }
+      return samples;
+    }
+
+    function outlineArea(points) {
+      return Math.abs(polygonArea(sampleOutline(points, 8)));
+    }
+
+    function orientedOutline(points) {
+      if (polygonArea(sampleOutline(points, 8)) >= 0) return points;
+      return points.map((spec) => ({
+        p: spec.p,
+        in: spec.out,
+        out: spec.in,
+        ...(spec.c ? { c: true } : {}),
+      })).reverse();
+    }
+
+    function outlineFallbackGeometry(points) {
+      const contour = sampleOutline(orientedOutline(points), 6);
+      const half = FLAT_THICKNESS / 2;
+      const positions = [];
+      const top = contour.map(([x, y]) => {
+        const index = positions.length / 3;
+        positions.push(x, y, half);
+        return index;
+      });
+      const bottom = contour.map(([x, y]) => {
+        const index = positions.length / 3;
+        positions.push(x, y, -half);
+        return index;
+      });
+      const indices = [];
+      let faces = [];
+      try {
+        faces = THREE.ShapeUtils.triangulateShape(contour.map(([x, y]) => new THREE.Vector2(x, y)), []);
+      } catch {
+        faces = [];
+      }
+      if (!faces.length && contour.length >= 3) {
+        for (let index = 1; index < contour.length - 1; index += 1) faces.push([0, index, index + 1]);
+      }
+      for (const [a, b, c] of faces) {
+        indices.push(top[a], top[b], top[c], bottom[a], bottom[c], bottom[b]);
+      }
+      for (let index = 0; index < contour.length; index += 1) {
+        const next = (index + 1) % contour.length;
+        indices.push(top[index], bottom[index], bottom[next], top[index], bottom[next], top[next]);
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+      geometry.setIndex(indices);
+      geometry.computeVertexNormals();
+      geometry.computeBoundingBox();
+      geometry.computeBoundingSphere();
+      return geometry;
+    }
+
+    function createOutlineGeometry(outline, detail = 1) {
+      const points = (readOutline(outline) ?? defaultOutline()).points;
+      const flat = orientedOutline(points);
+      try {
+        const shape = new THREE.Shape();
+        shape.moveTo(flat[0].p[0], flat[0].p[1]);
+        for (let index = 0; index < flat.length; index += 1) {
+          const a = flat[index];
+          const b = flat[(index + 1) % flat.length];
+          const straight = Math.hypot(a.out[0], a.out[1]) < 1e-6 && Math.hypot(b.in[0], b.in[1]) < 1e-6;
+          if (straight) shape.lineTo(b.p[0], b.p[1]);
+          else shape.bezierCurveTo(a.p[0] + a.out[0], a.p[1] + a.out[1], b.p[0] + b.in[0], b.p[1] + b.in[1], b.p[0], b.p[1]);
+        }
+        const segments = Math.max(2, Math.round(8 * (Number.isFinite(detail) ? detail : 1)));
+        const geometry = new THREE.ExtrudeGeometry(shape, { depth: FLAT_THICKNESS, bevelEnabled: false, curveSegments: segments });
+        geometry.translate(0, 0, -FLAT_THICKNESS / 2);
+        const positions = geometry.attributes.position?.array;
+        if (!positions?.length || positions.some((value) => !Number.isFinite(value))) throw new Error("outline");
+        geometry.computeBoundingBox();
+        geometry.computeBoundingSphere();
+        return geometry;
+      } catch {
+        return outlineFallbackGeometry(points);
+      }
     }
 
     const DOME_MAX = 0.08;
@@ -6522,6 +6687,7 @@ if (decalOn > 0.5) {
     }
 
     function createShapeGeometry(kind, detail = 1, dome = null, loft = null) {
+      if (kind === "flatPath") return createOutlineGeometry(null, detail);
       if (kind === "loft") return createLoftGeometry(loft, detail);
       if (FLAT_KINDS.has(kind)) return dome?.height > 0 ? createDomeGeometry(kind, detail, dome) : createFlatGeometry(kind, detail);
       if (kind !== "sphere") return createProfileGeometry(kind, detail);
@@ -6572,7 +6738,8 @@ if (decalOn > 0.5) {
     }
 
     function createMesh(kind) {
-      const geometry = createShapeGeometry(kind);
+      const outline = kind === "flatPath" ? defaultOutline() : null;
+      const geometry = outline ? createOutlineGeometry(outline) : createShapeGeometry(kind);
       const material = skin.clone();
       material.wireframe = wireButton.getAttribute("aria-pressed") === "true";
       installMaskShader(material);
@@ -6589,8 +6756,10 @@ if (decalOn > 0.5) {
         circle: "円",
         flatTriangle: "三角",
         flatSquare: "四角",
+        flatPath: "パス",
         loft: "断面",
       }[kind];
+      if (outline) mesh.userData.outline = outline;
       if (kind === "loft") mesh.userData.loft = defaultLoft();
       if (kind === "triangle" || kind === "box") {
         mesh.userData.morph = 0;
@@ -6620,7 +6789,7 @@ if (decalOn > 0.5) {
 
     function detailSupported(mesh) {
       if (!mesh || mesh.userData.isMask) return false;
-      return ["sphere", "box", "triangle", "circle", "merged", "loft"].includes(mesh.userData.kind) || domeActive(mesh);
+      return ["sphere", "box", "triangle", "circle", "merged", "loft", "flatPath"].includes(mesh.userData.kind) || domeActive(mesh);
     }
 
     function setDetail(mesh, value) {
@@ -6654,8 +6823,22 @@ if (decalOn > 0.5) {
       replaceShapeGeometry(mesh);
     }
 
+    function setOutline(mesh, value) {
+      if (mesh?.userData.kind !== "flatPath") return;
+      const outline = readOutline(value) ?? mesh.userData.outline ?? defaultOutline();
+      const same = JSON.stringify(outline) === JSON.stringify(mesh.userData.outline);
+      if (!same || !mesh.geometry?.attributes?.position?.count) {
+        mesh.userData.outline = outline;
+        replaceShapeGeometry(mesh);
+      } else if (!mesh.userData.outline) mesh.userData.outline = outline;
+      if (!mesh.userData.linkParent) syncOutlineEditor(mesh, !same);
+      requestRender();
+    }
+
     function replaceShapeGeometry(mesh) {
-      const geometry = createShapeGeometry(mesh.userData.kind, detailOf(mesh), mesh.userData.dome, mesh.userData.loft);
+      const geometry = mesh.userData.kind === "flatPath"
+        ? createOutlineGeometry(mesh.userData.outline, detailOf(mesh))
+        : createShapeGeometry(mesh.userData.kind, detailOf(mesh), mesh.userData.dome, mesh.userData.loft);
       const state = mesh.userData.curveGeometry;
       const old = state ? state.rest : mesh.geometry;
       if (state) {
@@ -6776,7 +6959,7 @@ if (decalOn > 0.5) {
         };
         const x = mesh.userData.merge.mirrored ? [-max.x, -min.x] : [min.x, max.x];
         node.box = [x[0], min.y, min.z, x[1], max.y, max.z];
-      } else if (pushed || mesh.userData.curveBind || domeActive(mesh) || mesh.userData.kind === "loft") {
+      } else if (pushed || mesh.userData.curveBind || domeActive(mesh) || mesh.userData.kind === "loft" || mesh.userData.kind === "flatPath") {
         // パスに沿って曲げたもの・押し込みマスクでへこませたものは、見えている形そのもの（頂点）で結合する
         const shown = pushed ?? mesh.geometry;
         const source = shown.attributes.position.array;
@@ -8814,7 +8997,7 @@ self.onmessage = (event) => {
     }
 
     function solidMergeable(mesh) {
-      return MERGE_KINDS.has(mesh?.userData.kind) || domeActive(mesh) || mesh?.userData.kind === "loft";
+      return MERGE_KINDS.has(mesh?.userData.kind) || domeActive(mesh) || mesh?.userData.kind === "loft" || mesh?.userData.kind === "flatPath";
     }
 
     function mergeCandidates() {
@@ -8981,6 +9164,7 @@ self.onmessage = (event) => {
       setCloth(target, mirroredCloth(source.userData.cloth));
       if (FLAT_KINDS.has(source.userData.kind)) setDome(target, source.userData.dome);
       if (source.userData.kind === "loft") setLoft(target, mirroredLoft(source.userData.loft));
+      if (source.userData.kind === "flatPath") setOutline(target, mirroredOutline(source.userData.outline));
       if (detailOf(source) !== detailOf(target)) setDetail(target, detailOf(source));
       if (isMorphable(source) && isMorphable(target)) copyMorph(source, target);
       if (source.userData.merge && target.userData.merge) {
@@ -9040,6 +9224,11 @@ self.onmessage = (event) => {
         mesh.userData.loft = mirroredLoft(source.userData.loft);
         replaceShapeGeometry(mesh);
       }
+      if (source.userData.kind === "flatPath") {
+        mesh.userData.outline = mirroredOutline(source.userData.outline) ?? defaultOutline();
+        replaceShapeGeometry(mesh);
+        if (!mesh.userData.linkParent) syncOutlineEditor(mesh, true);
+      }
       if (source.userData.curveBind) {
         const bind = source.userData.curveBind;
         setCurveBind(mesh, { ...bind, mirror: !bind.mirror, rest: mirroredRest(bind.rest) });
@@ -9051,6 +9240,7 @@ self.onmessage = (event) => {
 
     function discard(mesh) {
       if (!mesh) return;
+      mesh.userData.outlineCurve?.removeFromParent();
       mesh.removeFromParent();
     }
 
@@ -10099,6 +10289,8 @@ self.onmessage = (event) => {
     // 閉じたフォルダの中なら祖先フォルダを開き、スクロールの外なら行が見える所までスクロールする。
     // 一覧のクリック・すべて選択などからは呼ばない（中央で選んだ主選択だけ）。
     function revealInOutliner(item) {
+      const outlineMesh = curveOf(item)?.userData.outlineOf;
+      if (outlineMesh) item = outlineMesh;
       if (!item || faceSession || renaming || item.userData.isMask) return;
       let type = "part";
       let id = item.userData.id;
@@ -10164,15 +10356,17 @@ self.onmessage = (event) => {
         return;
       }
       if (event.button !== 0) return;
-      if (!press || usedGizmo) {
-        usedGizmo = false;
-        press = null;
-        return;
-      }
-      const moved = (event.clientX - press.x) ** 2 + (event.clientY - press.y) ** 2;
+      const start = press;
+      const gizmo = usedGizmo;
+      usedGizmo = false;
       press = null;
+      if (!start) return;
+      const moved = (event.clientX - start.x) ** 2 + (event.clientY - start.y) ** 2;
       if (moved > 16) return;
-      const hit = pickScene(event);
+      let hit = pickScene(event);
+      // 平面の移動ギズモは小さい外形の点に重なる。ドラッグしていないクリックなら、点を選ぶ。
+      if (gizmo && !(hit?.userData.isCurvePoint || hit?.userData.isCurveHandle)) return;
+      if (isCurve(hit) && hit.userData.outlineOf) hit = hit.userData.outlineOf;
       if (!hit || (maskTarget && !hit.userData.isMask && !isCurve(hit) && !isCurvePart(hit))) {
         if (!event.shiftKey && !event.ctrlKey && !event.metaKey) select(null);
         return;
@@ -10212,7 +10406,8 @@ self.onmessage = (event) => {
     document.getElementById("add-loft").addEventListener("click", () => addShape("loft"));
     document.getElementById("add-curve").addEventListener("click", () => addPath(false));
     document.getElementById("add-loop").addEventListener("click", () => addPath(true));
-    document.getElementById("add-draw-path").addEventListener("click", beginPathDraw);
+    document.getElementById("add-draw-path").addEventListener("click", () => beginPathDraw("path"));
+    document.getElementById("add-outline").addEventListener("click", () => beginPathDraw("plane"));
     document.getElementById("add-sketch").addEventListener("click", addSketch);
     document.getElementById("mask-save").addEventListener("click", saveMask);
     document.getElementById("mask-discard").addEventListener("click", discardMask);
@@ -10313,7 +10508,8 @@ self.onmessage = (event) => {
         + (mesh.userData.curveBind ? `|${JSON.stringify(mesh.userData.curveBind)}` : "")
         + (mesh.userData.shear ? `|shear:${mesh.userData.shear.join(",")}` : "")
         + (mesh.userData.dome ? `|${JSON.stringify(mesh.userData.dome)}` : "")
-        + (mesh.userData.loft ? `|${JSON.stringify(mesh.userData.loft)}` : "");
+        + (mesh.userData.loft ? `|${JSON.stringify(mesh.userData.loft)}` : "")
+        + (mesh.userData.outline ? `|outline:${JSON.stringify(mesh.userData.outline)}` : "");
     }
 
     function maskSignature(mesh) {
@@ -10356,6 +10552,7 @@ self.onmessage = (event) => {
         detail: detailOf(mesh),
         dome: mesh.userData.dome ? readDome(mesh.userData.dome) : null,
         loft: mesh.userData.loft ? structuredClone(mesh.userData.loft) : null,
+        outline: mesh.userData.kind === "flatPath" ? structuredClone(mesh.userData.outline) : null,
         smooth: mesh.userData.merge?.smooth ?? null,
         round: mesh.userData.merge?.round ?? 0,
         cut: mesh.userData.merge?.cut ?? 0,
@@ -10467,6 +10664,7 @@ self.onmessage = (event) => {
       if (!packed.mesh.userData.isMask) setConform(packed.mesh, packed.conform ?? null);
       setDome(packed.mesh, packed.dome ?? null);
       if (packed.loft) setLoft(packed.mesh, packed.loft);
+      if (packed.mesh.userData.kind === "flatPath") setOutline(packed.mesh, packed.outline);
       if (packed.detail != null) setDetail(packed.mesh, packed.detail);
       if (packed.morph != null) setMorph(packed.mesh, packed.morph, packed.sphere ?? 0, packed.bulge ?? 0, packed.taper ?? 0);
       if (packed.smooth != null) {
@@ -10590,6 +10788,17 @@ self.onmessage = (event) => {
         if (keep.has(softTarget)) fadeSoftOthers(true);
         else dropSoftMode();
       }
+      parkOutlineEditors();
+      for (const mesh of editableMeshes()) {
+        const curve = mesh.userData.outlineCurve;
+        if (!curve) continue;
+        keep.add(curve);
+        for (const point of curve.userData.points) {
+          keep.add(point);
+          keep.add(point.userData.in);
+          keep.add(point.userData.out);
+        }
+      }
       const restored = softTarget || rigEditing ? [] : (state.selection ?? (state.selected ? [state.selected] : [])).filter((mesh) => keep.has(mesh));
       setSelection(restored, keep.has(state.selected) ? state.selected : null);
     }
@@ -10597,6 +10806,7 @@ self.onmessage = (event) => {
     function commit() {
       requestRender();
       if (restoring) return;
+      flushOutlineEditors();
       syncFolderSettings();
       const next = packState();
       if (historyIndex >= 0 && history[historyIndex].signature === next.signature) {
@@ -11359,6 +11569,7 @@ self.onmessage = (event) => {
         case "circle": return "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><ellipse cx=\"12\" cy=\"13\" rx=\"9\" ry=\"5\"/></svg>";
         case "flatTriangle": return "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 7L3 19h18z\"/></svg>";
         case "flatSquare": return "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"4\" y=\"9\" width=\"16\" height=\"9\" rx=\"1\"/></svg>";
+        case "flatPath": return "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6 16c.6-6 3.4-9 6-9s5.4 3 6 9-2.4 4-6 4-5.4 2-6-4z\"/></svg>";
         default: return "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"5\" y=\"5\" width=\"14\" height=\"14\" rx=\"2\"/></svg>";
       }
     }
@@ -12520,9 +12731,17 @@ self.onmessage = (event) => {
         return;
       }
       if (pathDraw && !isTextField(event.target)) {
-        if (event.key === "Enter" || event.key === "Escape") {
+        if (event.key === "Escape") {
           event.preventDefault();
-          finishPathDraw();
+          if (pathDraw.mode === "plane") {
+            endPathDraw();
+            setFileStatus("外形の作成を中止しました");
+          } else finishPathDraw();
+          return;
+        }
+        if (event.key === "Enter") {
+          event.preventDefault();
+          finishPathDraw(pathDraw.mode === "plane");
           return;
         }
         if (event.key === "Backspace" || event.key === "Delete" || ((event.ctrlKey || event.metaKey) && event.code === "KeyZ")) {
@@ -15287,6 +15506,7 @@ self.onmessage = (event) => {
         detail: mesh.userData.detail ?? undefined,
         dome: mesh.userData.dome ? readDome(mesh.userData.dome) ?? undefined : undefined,
         loft: mesh.userData.loft ? structuredClone(mesh.userData.loft) : undefined,
+        outline: mesh.userData.kind === "flatPath" ? mesh.userData.outline : undefined,
         locked: mesh.userData.locked || undefined,
         hidden: mesh.userData.hidden || undefined,
         folderId: mesh.userData.folderId ?? undefined,
@@ -15385,7 +15605,7 @@ self.onmessage = (event) => {
     function assertDocument(data) {
       if (!data || data.version !== 1 || !Array.isArray(data.records)) throw new Error("invalid");
       const parents = new Set(["figure", "edits", "arm-1", "arm--1"]);
-      const kinds = new Set(["body", "sphere", "triangle", "box", "circle", "flatTriangle", "flatSquare", "merged", "loft"]);
+      const kinds = new Set(["body", "sphere", "triangle", "box", "circle", "flatTriangle", "flatSquare", "flatPath", "merged", "loft"]);
       const maskKinds = MASK_KINDS;
       const seen = new Set();
       const baselineIds = new Set();
@@ -15429,6 +15649,7 @@ self.onmessage = (event) => {
           if (part.home != null && !isVector(part.home, 3)) throw new Error("invalid");
           if (part.size != null && (!isVector(part.size, 3) || part.size.some((value) => value <= 0))) throw new Error("invalid");
           if (part.kind === "merged" && !isMergeData(part.merge)) throw new Error("invalid");
+          if (part.kind === "flatPath" && !readOutline(part.outline)) throw new Error("invalid");
           if (part.curve != null && typeof part.curve?.curveId !== "string") throw new Error("invalid");
           if (part.masks != null) {
             if (!Array.isArray(part.masks)) throw new Error("invalid");
@@ -15624,6 +15845,7 @@ self.onmessage = (event) => {
       setCurveBind(mesh, readCurveBind(part.curve));
       setDome(mesh, part.dome);
       setLoft(mesh, part.loft);
+      setOutline(mesh, part.outline);
       setDetail(mesh, Number.isFinite(part.detail) ? part.detail : 1);
       if (isMorphable(mesh)) {
         const legacyBody = mesh.userData.kind === "body" && !Number.isFinite(part.morph);
@@ -16230,6 +16452,7 @@ self.onmessage = (event) => {
       mesh.material.wireframe = wireButton.getAttribute("aria-pressed") === "true";
       setDome(mesh, part.dome);
       setLoft(mesh, part.loft);
+      setOutline(mesh, part.outline);
       setDetail(mesh, Number.isFinite(part.detail) ? part.detail : 1);
       if (isMorphable(mesh)) {
         const legacyBody = mesh.userData.kind === "body" && !Number.isFinite(part.morph);
@@ -16881,6 +17104,7 @@ self.onmessage = (event) => {
         const curve = curveOf(point);
         if (curve) updateCurveVisual(curve);
       }
+      flushOutlineEditors();
     }
 
     function settleCurvePoint(point) {
@@ -17074,8 +17298,149 @@ self.onmessage = (event) => {
       curve.userData.handles.geometry.computeBoundingSphere();
     }
 
+    function outlineCurves() {
+      const list = [];
+      for (const mesh of editableMeshes()) {
+        const curve = mesh.userData.outlineCurve;
+        if (curve) list.push(curve);
+      }
+      return list;
+    }
+
+    function allCurves() {
+      return [...curves, ...outlineCurves()];
+    }
+
+    function parkOutlineEditors() {
+      const live = new Set(editableMeshes());
+      for (const child of [...scene.children]) {
+        const owner = child.userData?.outlineOf;
+        if (owner && !live.has(owner)) child.removeFromParent();
+      }
+    }
+
+    function ensureOutlineEditor(mesh) {
+      if (!mesh || mesh.userData.kind !== "flatPath" || mesh.userData.linkParent) return null;
+      let curve = mesh.userData.outlineCurve;
+      if (!curve) {
+        curve = createCurve(`${mesh.userData.id || "outline"}:outline`, false);
+        curve.userData.outlineOf = mesh;
+        curve.matrixAutoUpdate = false;
+        curve.frustumCulled = false;
+        mesh.userData.outlineCurve = curve;
+        scene.add(curve);
+      }
+      return curve;
+    }
+
+    function syncOutlineEditorMatrix(curve) {
+      const mesh = curve?.userData.outlineOf;
+      if (!mesh) return;
+      mesh.updateWorldMatrix(true, false);
+      curve.matrix.copy(mesh.matrixWorld);
+      curve.matrixWorldNeedsUpdate = true;
+      curve.updateMatrixWorld(true);
+    }
+
+    function outlineToCurveData(mesh) {
+      return {
+        name: mesh.userData.label || "パス",
+        closed: true,
+        folderId: null,
+        order: 0,
+        position: [0, 0, 0],
+        quaternion: [0, 0, 0, 1],
+        scale: [1, 1, 1],
+        points: mesh.userData.outline.points.map((spec) => ({
+          p: [spec.p[0], spec.p[1], 0],
+          in: [spec.in[0], spec.in[1], 0],
+          out: [spec.out[0], spec.out[1], 0],
+          ...(spec.c ? { c: true } : {}),
+        })),
+      };
+    }
+
+    function syncOutlineEditor(mesh, force = true) {
+      const curve = ensureOutlineEditor(mesh);
+      if (!curve || !mesh.userData.outline) return;
+      const key = JSON.stringify(mesh.userData.outline);
+      if (!force && curve.userData.boundOutline === key) {
+        syncOutlineEditorMatrix(curve);
+        return;
+      }
+      outlineSyncing = true;
+      try {
+        writeCurve(curve, outlineToCurveData(mesh), scene);
+        curve.userData.outlineOf = mesh;
+        curve.userData.boundOutline = key;
+        curve.matrixAutoUpdate = false;
+        curve.frustumCulled = false;
+      } finally {
+        outlineSyncing = false;
+      }
+      syncOutlineEditorMatrix(curve);
+    }
+
+    function flattenOutlineCurve(curve) {
+      if (!curve?.userData.outlineOf) return;
+      for (const point of curve.userData.points) {
+        point.position.z = 0;
+        const incoming = pointHandle(point, "in");
+        const outgoing = pointHandle(point, "out");
+        incoming.z = 0;
+        outgoing.z = 0;
+        if (incoming.lengthSq() < 1e-12 && outgoing.lengthSq() < 1e-12) continue;
+        setPointHandles(point, incoming, outgoing);
+        point.position.z = 0;
+      }
+    }
+
+    function curveToOutline(curve) {
+      return readOutline({
+        points: curve.userData.points.map((point) => {
+          const incoming = pointHandle(point, "in");
+          const outgoing = pointHandle(point, "out");
+          return {
+            p: [point.position.x, point.position.y],
+            in: [incoming.x, incoming.y],
+            out: [outgoing.x, outgoing.y],
+            ...(point.userData.corner ? { c: true } : {}),
+          };
+        }),
+      });
+    }
+
+    function flushOutlineEditor(curve) {
+      if (outlineSyncing || restoring || !curve?.userData.outlineOf) return;
+      const mesh = curve.userData.outlineOf;
+      if (mesh.userData.kind !== "flatPath") return;
+      flattenOutlineCurve(curve);
+      const outline = curveToOutline(curve);
+      if (!outline) return;
+      const same = JSON.stringify(outline) === JSON.stringify(mesh.userData.outline);
+      if (!same) {
+        mesh.userData.outline = outline;
+        curve.userData.boundOutline = JSON.stringify(outline);
+        replaceShapeGeometry(mesh);
+        requestRender();
+        if (symmetric) syncFrom(mesh);
+      }
+    }
+
+    function flushOutlineEditors() {
+      if (outlineSyncing || restoring) return;
+      for (const curve of outlineCurves()) flushOutlineEditor(curve);
+    }
+
     // パスは、パス自身か、それに沿わせたパーツ・マスク範囲を選んでいるときだけ表示する。
+    // 外形の平面は、その平面か外形の点を選んでいるときに点とハンドルを出す。
     function curveShown(curve) {
+      if (curve.userData.outlineOf) {
+        const mesh = curve.userData.outlineOf;
+        curve.userData.locked = Boolean(mesh.userData.locked);
+        if (!mesh.parent || mesh.userData.hidden || !shownInScene(mesh)) return false;
+        return selection.some((item) => item === mesh || curveOf(item) === curve);
+      }
       if (curve.userData.hidden) return false;
       if (softTarget === curve || pathPick) return true;
       const id = curve.userData.id;
@@ -17083,8 +17448,12 @@ self.onmessage = (event) => {
     }
 
     function paintCurves() {
-      for (const curve of curves) {
-        const active = selection.some((item) => curveOf(item) === curve);
+      for (const curve of allCurves()) {
+        if (curve.userData.outlineOf) {
+          curve.userData.locked = Boolean(curve.userData.outlineOf.userData.locked);
+          syncOutlineEditorMatrix(curve);
+        }
+        const active = selection.some((item) => curveOf(item) === curve || item === curve.userData.outlineOf);
         curve.visible = curveShown(curve);
         curve.userData.line.material.color.setHex(curve === selected ? CURVE_COLORS.lineSelected : active ? CURVE_COLORS.lineActive : CURVE_COLORS.line);
         curve.userData.line.material.linewidth = pathPick ? 7 : active ? 4 : 3;
@@ -17104,7 +17473,7 @@ self.onmessage = (event) => {
     }
 
     function sizeCurveMarkers() {
-      for (const curve of curves) {
+      for (const curve of allCurves()) {
         if (!curve.visible) continue;
         for (const point of curve.userData.points) {
           if (!point.visible) continue;
@@ -17363,8 +17732,20 @@ self.onmessage = (event) => {
       pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(pointer, camera);
+      if (pathDraw?.mode === "plane" && pathDraw.plane) {
+        const point = raycaster.ray.intersectPlane(pathDraw.plane, new THREE.Vector3());
+        return point ? { point, surface: false } : null;
+      }
       const targets = [...editableMeshes(), ...linkMeshes(), ...mirrorMeshes()].filter((mesh) => mesh.isMesh && shownInScene(mesh));
       const hit = raycaster.intersectObjects(targets, false)[0];
+      if (pathDraw?.mode === "plane") {
+        const towardCamera = camera.getWorldDirection(new THREE.Vector3()).negate();
+        const anchor = hit ? hit.point.clone() : controls.target;
+        const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(towardCamera, anchor);
+        const point = hit ? hit.point.clone() : raycaster.ray.intersectPlane(plane, new THREE.Vector3());
+        if (!point) return null;
+        return { point, surface: Boolean(hit), plane };
+      }
       if (hit) return { point: hit.point.clone(), surface: true };
       const anchor = pathDraw?.points.at(-1) ?? controls.target;
       const normal = camera.getWorldDirection(new THREE.Vector3());
@@ -17413,7 +17794,8 @@ self.onmessage = (event) => {
     function syncPathDraw(hover = pathDraw?.hover) {
       if (!pathDraw) return;
       const { points } = pathDraw;
-      setLinePoints(pathDrawLine, pathDrawSamples(points, false));
+      const closePreview = pathDraw.mode === "plane" && points.length >= 3;
+      setLinePoints(pathDrawLine, pathDrawSamples(points, closePreview));
       while (pathDrawDots.children.length > points.length) pathDrawDots.remove(pathDrawDots.children.at(-1));
       while (pathDrawDots.children.length < points.length) {
         const dot = new THREE.Mesh(curveDotGeometry, new THREE.MeshBasicMaterial({ color: CURVE_COLORS.point, depthTest: false, transparent: true }));
@@ -17449,21 +17831,33 @@ self.onmessage = (event) => {
       return (event.clientX - x) ** 2 + (event.clientY - y) ** 2 <= 100;
     }
 
-    function beginPathDraw() {
+    function setPathDrawBanner(mode) {
+      const banner = document.getElementById("path-draw-banner");
+      banner.innerHTML = mode === "plane"
+        ? `外形を描く（<span id="path-draw-count"></span>） · クリックで点 · 最初の点か Enter で閉じる · Esc で中止 · Backspace で戻す`
+        : `パスを描く（<span id="path-draw-count"></span>） · クリックで点 · 最初の点でループ · 右クリック／Enterで確定 · Backspaceで戻す`;
+    }
+
+    function beginPathDraw(mode = "path") {
       if (pathDraw) {
-        finishPathDraw();
+        finishPathDraw(pathDraw.mode === "plane");
         return;
       }
       if (maskTarget || reliefTarget || featureTarget || softTarget || rigEditing) {
-        setFileStatus("マスク・法線・顔手足・揺れ・ボーンの編集中はパスを描けません。編集を終えてから使ってください");
+        setFileStatus(mode === "plane"
+          ? "マスク・法線・顔手足・揺れ・ボーンの編集中は外形を描けません。編集を終えてから使ってください"
+          : "マスク・法線・顔手足・揺れ・ボーンの編集中はパスを描けません。編集を終えてから使ってください");
         return;
       }
       endSketchDraw(false);
       closeContextMenu();
       select(null);
       pathDraw = {
+        mode,
         points: [],
         surfaces: [],
+        plane: null,
+        frame: null,
         hover: null,
         press: null,
         rightPress: null,
@@ -17472,11 +17866,15 @@ self.onmessage = (event) => {
       controls.mouseButtons.LEFT = -1;
       controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE;
       document.body.classList.add("path-drawing");
-      document.getElementById("add-draw-path").setAttribute("aria-pressed", "true");
+      document.getElementById("add-draw-path").setAttribute("aria-pressed", mode === "path" ? "true" : "false");
+      document.getElementById("add-outline").setAttribute("aria-pressed", mode === "plane" ? "true" : "false");
+      setPathDrawBanner(mode);
       document.getElementById("path-draw-banner").hidden = false;
       pathDrawGroup.visible = true;
       syncPathDraw(null);
-      setFileStatus("クリックした位置に点を打ちます。パーツの上なら表面に付きます");
+      setFileStatus(mode === "plane"
+        ? "クリックで外形の点を打ちます。3点以上で閉じて平面になります"
+        : "クリックした位置に点を打ちます。パーツの上なら表面に付きます");
     }
 
     function endPathDraw() {
@@ -17486,6 +17884,7 @@ self.onmessage = (event) => {
       pathDraw = null;
       document.body.classList.remove("path-drawing");
       document.getElementById("add-draw-path").setAttribute("aria-pressed", "false");
+      document.getElementById("add-outline").setAttribute("aria-pressed", "false");
       document.getElementById("path-draw-banner").hidden = true;
       pathDrawGroup.visible = false;
       setLinePoints(pathDrawLine, []);
@@ -17493,10 +17892,129 @@ self.onmessage = (event) => {
       pathDrawDots.clear();
     }
 
+    function uniqueOutlineName() {
+      const names = new Set(editableMeshes().map((mesh) => mesh.userData.label));
+      if (!names.has("パス")) return "パス";
+      let index = 2;
+      while (names.has(`パス ${index}`)) index += 1;
+      return `パス ${index}`;
+    }
+
+    function planeFrame(normal) {
+      const z = normal.clone().normalize();
+      const y = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+      y.addScaledVector(z, -y.dot(z));
+      if (y.lengthSq() < 1e-8) {
+        y.set(1, 0, 0).cross(z);
+        if (y.lengthSq() < 1e-8) y.set(0, 0, 1).cross(z);
+      }
+      y.normalize();
+      const x = new THREE.Vector3().crossVectors(y, z).normalize();
+      y.crossVectors(z, x).normalize();
+      return { x, y, z };
+    }
+
+    function addOutlineFromWorld(points, frame) {
+      const basis = frame ?? planeFrame(camera.getWorldDirection(new THREE.Vector3()).negate());
+      const { x, y, z } = basis;
+      const centroid = new THREE.Vector3();
+      points.forEach((point) => centroid.add(point));
+      centroid.multiplyScalar(1 / points.length);
+      const handles = pathDrawHandles(points, true);
+      const project = (vector) => {
+        const delta = vector.clone().sub(centroid);
+        return [delta.dot(x), delta.dot(y)];
+      };
+      const projectDir = (vector) => [vector.dot(x), vector.dot(y)];
+      const outline = readOutline({
+        points: points.map((point, index) => ({
+          p: project(point),
+          in: projectDir(handles[index].in),
+          out: projectDir(handles[index].out),
+        })),
+      });
+      if (!outline || outlineArea(outline.points) < 1e-6) {
+        setFileStatus("点が一直線に近すぎるため、平面は作成しませんでした");
+        return;
+      }
+      const mesh = createMesh("flatPath");
+      mesh.userData.label = uniqueOutlineName();
+      mesh.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
+      mesh.position.copy(centroid);
+      mesh.userData.home = mesh.position.toArray();
+      edits.add(mesh);
+      records.push({ mesh, mirror: null, kind: "flatPath", solo: true });
+      setOutline(mesh, outline);
+      placeNewItem("part", mesh.userData.id, newItemDestination());
+      select(mesh);
+      commit();
+      setFileStatus(`外形「${mesh.userData.label}」を点 ${outline.points.length} 個で作成しました。点を動かすと形が変わります`);
+    }
+
+    function outlineFromCurve(curve) {
+      const scale = curve.scale;
+      return readOutline({
+        points: curve.userData.points.map((point) => {
+          const incoming = pointHandle(point, "in");
+          const outgoing = pointHandle(point, "out");
+          const spec = {
+            p: [point.position.x * scale.x, point.position.y * scale.y],
+            in: [incoming.x * scale.x, incoming.y * scale.y],
+            out: [outgoing.x * scale.x, outgoing.y * scale.y],
+          };
+          if (point.userData.corner) spec.c = true;
+          return spec;
+        }),
+      });
+    }
+
+    function createPlaneFromCurve(curve) {
+      if (!curve?.userData.closed || curve.userData.outlineOf) return;
+      if (maskTarget || reliefTarget || featureTarget || softTarget || rigEditing) {
+        setFileStatus("この編集中は平面を作れません");
+        return;
+      }
+      const outline = outlineFromCurve(curve);
+      if (!outline || outlineArea(outline.points) < 1e-6) {
+        setFileStatus("このパスは平らな面にならないため、平面は作成しませんでした");
+        return;
+      }
+      const bent = curve.userData.points.some((point) => {
+        const incoming = pointHandle(point, "in");
+        const outgoing = pointHandle(point, "out");
+        return Math.abs(point.position.z) > 0.002 || Math.abs(incoming.z) > 0.002 || Math.abs(outgoing.z) > 0.002;
+      });
+      const mesh = createMesh("flatPath");
+      mesh.userData.label = uniqueOutlineName();
+      mesh.position.copy(curve.position);
+      mesh.quaternion.copy(curve.quaternion);
+      mesh.userData.home = mesh.position.toArray();
+      edits.add(mesh);
+      records.push({ mesh, mirror: null, kind: "flatPath", solo: true });
+      setOutline(mesh, outline);
+      placeNewItem("part", mesh.userData.id, { parentId: curve.userData.folderId ?? null, after: { type: "curve", id: curve.userData.id } });
+      select(mesh);
+      commit();
+      setFileStatus(bent
+        ? `「${curve.userData.label}」の外形で平面を作りました（厚み方向は平らにしています）。点を動かすと形が変わります`
+        : `「${curve.userData.label}」の外形で平面を作りました。点を動かすと形が変わります`);
+    }
+
     function finishPathDraw(closed = false) {
       if (!pathDraw) return;
+      const mode = pathDraw.mode ?? "path";
       const points = pathDraw.points.map((point) => point.clone());
+      const frame = pathDraw.frame;
+      if (mode === "plane" && !closed && points.length >= 3) closed = true;
       endPathDraw();
+      if (mode === "plane") {
+        if (!closed || points.length < 3) {
+          setFileStatus("点が3つ未満のため、平面は作成しませんでした");
+          return;
+        }
+        addOutlineFromWorld(points, frame);
+        return;
+      }
       if (points.length < 2) {
         setFileStatus("点が2つ未満のため、パスは作成しませんでした");
         return;
@@ -17567,7 +18085,7 @@ self.onmessage = (event) => {
         pathDraw.rightPress = null;
         if (!start || (event.clientX - start.x) ** 2 + (event.clientY - start.y) ** 2 > 16) return;
         rightPress = null;
-        finishPathDraw();
+        finishPathDraw(pathDraw.mode === "plane");
         return;
       }
       if (event.button !== 0) return;
@@ -17581,8 +18099,16 @@ self.onmessage = (event) => {
       }
       const hit = pathDrawHit(event);
       if (!hit) return;
+      if (pathDraw.mode === "plane" && pathDraw.points.length >= OUTLINE_LIMIT) {
+        setFileStatus("点は48個までです");
+        return;
+      }
       const last = pathDraw.points.at(-1);
       if (last && last.distanceToSquared(hit.point) < 1e-10) return;
+      if (hit.plane && !pathDraw.plane) {
+        pathDraw.plane = hit.plane;
+        pathDraw.frame = planeFrame(hit.plane.normal);
+      }
       pathDraw.points.push(hit.point);
       pathDraw.surfaces.push(hit.surface);
       pathDraw.hover = { ...hit, closing: false };
@@ -17982,6 +18508,10 @@ self.onmessage = (event) => {
     document.getElementById("sketch-done").addEventListener("click", () => endSketchDraw());
 
     function insertCurvePoint(curve, index, t = 0.5) {
+      if (curve.userData.outlineOf && curve.userData.points.length >= OUTLINE_LIMIT) {
+        setFileStatus("点は48個までです");
+        return;
+      }
       const points = curve.userData.points;
       const closed = Boolean(curve.userData.closed);
       const segmentCount = closed ? points.length : Math.max(points.length - 1, 0);
@@ -18096,6 +18626,7 @@ self.onmessage = (event) => {
         updateCurveVisual(curve);
         changed = true;
       }
+      if (changed) flushOutlineEditors();
       return changed;
     }
 
@@ -18114,13 +18645,15 @@ self.onmessage = (event) => {
     const curveHitPoint = new THREE.Vector3();
 
     function pickCurve() {
-      const markers = curves.filter((curve) => curve.visible).flatMap((curve) => curve.userData.points.flatMap((point) => [point, point.userData.in, point.userData.out]))
+      for (const curve of outlineCurves()) syncOutlineEditorMatrix(curve);
+      const pool = allCurves();
+      const markers = pool.filter((curve) => curve.visible).flatMap((curve) => curve.userData.points.flatMap((point) => [point, point.userData.in, point.userData.out]))
         .filter((owner) => owner.visible && (!owner.userData.isCurveHandle || owner.parent.visible))
         .map((owner) => owner.userData.dot);
       const marker = raycaster.intersectObjects(markers, false)[0];
       if (marker) return marker.object.userData.markerOf;
       raycaster.params.Line2 = { threshold: 6 };
-      const lines = curves.filter((curve) => curve.visible).map((curve) => curve.userData.line);
+      const lines = pool.filter((curve) => curve.visible).map((curve) => curve.userData.line);
       const hit = raycaster.intersectObjects(lines, false)[0];
       if (hit) curveHitPoint.copy(hit.pointOnLine ?? hit.point);
       return hit ? curveOf(hit.object) : null;
@@ -19182,7 +19715,50 @@ self.onmessage = (event) => {
       commit();
     }
 
+    function outlineCurveMenu(curve, point, masking, at = null, handle = null) {
+      const mesh = curve.userData.outlineOf;
+      const points = curve.userData.points;
+      const index = point ? points.indexOf(point) : 0;
+      const blocked = Boolean(mesh?.userData.locked) || Boolean(masking);
+      const adders = point
+        ? [
+          { label: "前に中間点を追加", disabled: blocked, run: () => insertCurvePoint(curve, (index - 1 + points.length) % points.length) },
+          { label: "次に中間点を追加", disabled: blocked, run: () => insertCurvePoint(curve, index) },
+        ]
+        : [
+          ...(at ? [{ label: "ここに点を追加", disabled: blocked, run: () => insertCurvePoint(curve, at.index, at.t) }] : []),
+          { label: "点を追加", disabled: blocked, run: () => insertCurvePoint(curve, 0) },
+        ];
+      return {
+        title: point ? `外形「${mesh.userData.label}」の点 ${index + 1}` : `外形「${mesh.userData.label}」`,
+        items: [
+          menuGroup("点の編集", [
+            ...adders,
+            ...(point ? [{ label: point.userData.corner ? "滑らかな点にする" : "角にする", disabled: blocked, run: () => toggleCurveCorner(point) }] : []),
+            ...(point ? handleItems(curve, point, handle, blocked) : []),
+            {
+              label: "点を削除",
+              disabled: !point || points.length <= 3 || blocked,
+              run: () => {
+                removeCurveItems([point]);
+                select(mesh);
+                commit();
+              },
+            },
+            { label: "平面を選択", disabled: !point, run: () => select(mesh) },
+            {
+              label: "中間点で左右対称に編集",
+              checked: curveMirrored(curve),
+              disabled: blocked,
+              run: () => toggleCurveMirror(curve, point),
+            },
+          ]),
+        ],
+      };
+    }
+
     function curveMenu(curve, point, masking, at = null, handle = null) {
+      if (curve.userData.outlineOf) return outlineCurveMenu(curve, point, masking, at, handle);
       const points = curve.userData.points;
       const closed = Boolean(curve.userData.closed);
       const noun = pathNoun(curve);
@@ -19241,6 +19817,11 @@ self.onmessage = (event) => {
             run: () => toggleCurveMirror(curve, point),
           },
           ]),
+          ...(closed ? [{
+            label: "この外形で平面を作る",
+            disabled: blocked || points.length < 3 || Boolean(maskTarget),
+            run: () => createPlaneFromCurve(curve),
+          }] : []),
           menuGroup("クリップボード", clipItems([curve])),
           menuGroup("フォルダ", folderItems(curve, masking)),
           null,
@@ -19281,7 +19862,19 @@ self.onmessage = (event) => {
     }
 
     function copyTargets() {
-      return maskTarget ? [] : selection.filter((item) => !item.userData.isMask && !isCurve(item) && !isCurvePart(item));
+      if (maskTarget) return [];
+      const result = [];
+      for (const item of selection) {
+        if (!item || item.userData.isMask) continue;
+        const owner = curveOf(item)?.userData.outlineOf;
+        if (owner) {
+          if (!result.includes(owner)) result.push(owner);
+          continue;
+        }
+        if (isCurve(item) || isCurvePart(item)) continue;
+        if (!result.includes(item)) result.push(item);
+      }
+      return result;
     }
 
     // 選択中のパス（点や取っ手を選んでいるときはそのパス）
@@ -19291,7 +19884,7 @@ self.onmessage = (event) => {
         const ids = descendantFolderIds(folderId);
         return curves.filter((curve) => ids.has(curve.userData.folderId));
       }
-      return [...new Set(selection.map((item) => (isCurve(item) ? item : isCurvePart(item) ? curveOf(item) : null)).filter(Boolean))];
+      return [...new Set(selection.map((item) => (isCurve(item) ? item : isCurvePart(item) ? curveOf(item) : null)).filter((curve) => curve && !curve.userData.outlineOf))];
     }
 
     function copySelection() {
@@ -19426,6 +20019,7 @@ self.onmessage = (event) => {
       mesh.material.wireframe = wireButton.getAttribute("aria-pressed") === "true";
       setDome(mesh, part.dome);
       setLoft(mesh, part.loft);
+      setOutline(mesh, part.outline);
       setDetail(mesh, Number.isFinite(part.detail) ? part.detail : 1);
       if (isMorphable(mesh)) {
         const sphere = Number.isFinite(part.sphere) ? part.sphere : mesh.userData.kind === "body" ? BODY_SPHERE : 0;
@@ -29043,6 +29637,10 @@ void main() {
       for (const anchor of activeAnchors()) updateLinkMirror(anchor);
       const swaying = new Set(curves.filter(pathSwaying).map((curve) => curve.userData.id));
       for (const curve of curves) if (curve.visible && !swaying.has(curve.userData.id)) updateCurveVisual(curve);
+      for (const curve of outlineCurves()) {
+        syncOutlineEditorMatrix(curve);
+        if (curve.visible) updateCurveVisual(curve);
+      }
       sizeCurveMarkers();
       sizePathDrawMarkers();
       const settled = (object) => object.userData.curveBind && !swaying.has(object.userData.curveBind.curveId);
